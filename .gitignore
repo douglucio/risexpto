@@ -1,0 +1,18 @@
+# Operating-system download metadata
+*:Zone.Identifier
+
+# Environment and credentials
+.env
+.env.*
+!.env.example
+
+# Dependencies and build output
+node_modules/
+.next/
+dist/
+coverage/
+.turbo/
+
+# Local tooling
+.DS_Store
+*.log

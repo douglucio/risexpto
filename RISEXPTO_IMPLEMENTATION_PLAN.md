@@ -1,0 +1,1912 @@
+# RiseXPTO — Plano Mestre de Implementação com Codex
+
+> **Documento operacional do projeto**
+>
+> Este arquivo deve permanecer na **raiz do repositório** e funcionar como fonte principal de continuidade para o Codex.
+> Antes de iniciar qualquer tarefa, leia este documento por completo, identifique a próxima fase incompleta e valide o estado real do código.
+>
+> Conforme cada item for implementado e validado, altere `[ ]` para `[x]`.
+>
+> **Regra principal:** cada fase deste documento deve ser tratada como uma **feature independente**, com branch própria.
+>
+> Ao concluir uma feature, o Codex está autorizado a:
+>
+> 1. executar testes, lint e build;
+> 2. atualizar este documento;
+> 3. realizar commit;
+> 4. realizar push da feature;
+> 5. fazer merge da feature em `develop`;
+> 6. fazer push de `develop`.
+>
+> A branch `main` é de responsabilidade exclusiva do proprietário do projeto.
+> **NUNCA fazer merge ou push diretamente para `main`.**
+
+---
+
+# 1. Visão Geral
+
+## Nome
+
+**RiseXPTO**
+
+## Produto
+
+RiseXPTO será um SaaS internacional para automação de estratégias de trading em criptomoedas.
+
+O usuário conectará sua própria conta em exchanges compatíveis, inicialmente a Binance, utilizando API Key.
+
+A plataforma permitirá:
+
+- conectar a conta da exchange;
+- consultar saldo e mercado;
+- escolher estratégias automatizadas;
+- criar bots;
+- selecionar capital autorizado para cada bot;
+- selecionar pares/ativos permitidos;
+- configurar limites de risco;
+- utilizar Paper Trading;
+- executar backtests;
+- ativar LIVE Trading;
+- acompanhar posições e ordens;
+- acompanhar lucro/prejuízo;
+- acompanhar drawdown;
+- visualizar histórico;
+- receber alertas;
+- visualizar métricas;
+- controlar bots 24/7.
+
+A RiseXPTO será **non-custodial**.
+
+Os fundos permanecerão sempre na exchange do usuário.
+
+---
+
+# 2. Princípios Obrigatórios
+
+## 2.1 Non-Custodial
+
+A RiseXPTO nunca deve custodiar os ativos do usuário.
+
+O dinheiro permanece na Binance ou em outra exchange integrada.
+
+A plataforma apenas envia instruções de negociação por API.
+
+---
+
+## 2.2 Nunca solicitar permissão de saque
+
+A API Key conectada à RiseXPTO deve possuir somente as permissões estritamente necessárias.
+
+Inicialmente:
+
+- leitura;
+- consulta de conta;
+- consulta de ordens;
+- consulta de saldo;
+- negociação Spot;
+- cancelamento de ordens.
+
+Nunca depender de permissão de saque.
+
+Sempre que possível, validar as permissões da chave antes de permitir LIVE Trading.
+
+---
+
+## 2.3 Risk First
+
+Nenhuma estratégia pode enviar uma ordem diretamente para a exchange.
+
+Fluxo obrigatório:
+
+```text
+Market Data
+     ↓
+Strategy Engine
+     ↓
+Trade Proposal
+     ↓
+Risk Engine
+     ↓
+Execution Engine
+     ↓
+Exchange Connector
+     ↓
+Binance
+```
+
+Se o Risk Engine rejeitar a operação, nenhuma ordem pode chegar à exchange.
+
+---
+
+## 2.4 Separação entre Strategy e Execution
+
+Uma Strategy deve:
+
+- analisar mercado;
+- analisar contexto;
+- gerar sinal;
+- gerar Trade Proposal.
+
+Uma Strategy NÃO deve:
+
+- conhecer API Secret;
+- acessar Binance diretamente;
+- executar ordem;
+- ignorar Risk Engine;
+- controlar infraestrutura;
+- fazer acesso arbitrário ao banco.
+
+---
+
+## 2.5 Segurança
+
+Nunca:
+
+- armazenar API Secret em texto puro;
+- retornar API Secret pelo backend;
+- mostrar API Secret novamente no frontend;
+- colocar secrets em logs;
+- versionar `.env`;
+- colocar credenciais reais em testes;
+- enviar secrets para analytics;
+- retornar stack trace sensível em produção.
+
+As credenciais das exchanges devem ser criptografadas em repouso.
+
+Criar arquitetura preparada para:
+
+- rotação de chave de criptografia;
+- revogação;
+- auditoria;
+- mascaramento;
+- isolamento por usuário.
+
+---
+
+## 2.6 Sem promessa de rentabilidade
+
+A plataforma nunca deve afirmar:
+
+- lucro garantido;
+- retorno garantido;
+- estratégia infalível;
+- bot sem risco;
+- renda garantida;
+- IA que sempre ganha.
+
+Backtests, métricas históricas e Paper Trading devem possuir disclaimer de que desempenho passado não garante resultado futuro.
+
+---
+
+# 3. Diretrizes para o Codex
+
+Antes de escrever código:
+
+1. leia este documento;
+2. analise o estado atual do repositório;
+3. identifique a próxima fase incompleta;
+4. valide se partes dela já foram implementadas;
+5. preserve padrões existentes quando forem bons;
+6. proponha melhorias quando necessário;
+7. não reimplemente funcionalidades já corretas;
+8. atualize documentação quando decisões estruturais forem tomadas.
+
+Nunca marque uma fase como concluída somente porque o código foi escrito.
+
+Uma fase só pode ser marcada como concluída depois de:
+
+- implementação;
+- revisão;
+- lint;
+- testes;
+- build;
+- validação funcional mínima.
+
+---
+
+# 4. Fluxo Git Obrigatório
+
+A branch de integração é:
+
+```text
+develop
+```
+
+A branch:
+
+```text
+main
+```
+
+é controlada pelo proprietário.
+
+## O Codex NÃO pode
+
+- fazer merge em `main`;
+- fazer push em `main`;
+- fazer rebase de `main`;
+- apagar `main`;
+- alterar regras de proteção da `main`.
+
+---
+
+## Processo obrigatório por feature
+
+Antes de iniciar uma fase:
+
+```bash
+git checkout develop
+git pull origin develop
+git checkout -b feature/<nome-da-feature>
+```
+
+Ao concluir:
+
+```bash
+git status
+git add .
+git commit -m "feat: descrição da feature"
+git push -u origin feature/<nome-da-feature>
+
+git checkout develop
+git pull origin develop
+git merge --no-ff feature/<nome-da-feature>
+git push origin develop
+```
+
+Antes do merge:
+
+- executar lint;
+- executar testes;
+- executar build;
+- corrigir erros;
+- atualizar este documento.
+
+Depois do merge em `develop`, executar novamente testes essenciais.
+
+---
+
+# 5. Registro de Decisões Técnicas
+
+Criar:
+
+```text
+docs/architecture/
+```
+
+Utilizar ADRs — Architecture Decision Records.
+
+Exemplos:
+
+```text
+ADR-001-stack.md
+ADR-002-monorepo.md
+ADR-003-authentication.md
+ADR-004-secret-encryption.md
+ADR-005-trading-engine.md
+ADR-006-risk-engine.md
+ADR-007-payments.md
+```
+
+Cada ADR deve conter:
+
+- contexto;
+- opções consideradas;
+- decisão;
+- justificativa;
+- consequências;
+- riscos.
+
+---
+
+# 6. FEATURE 01 — Brand Foundation
+
+Branch sugerida:
+
+```text
+feature/01-brand-foundation
+```
+
+Esta deve ser a primeira feature.
+
+## Objetivo
+
+Criar um **Brand Reference Kit** para garantir consistência visual desde o início.
+
+A RiseXPTO deve transmitir:
+
+- tecnologia;
+- confiança;
+- segurança;
+- inteligência;
+- automação;
+- precisão;
+- performance;
+- crescimento;
+- produto financeiro premium.
+
+A aplicação NÃO deve parecer:
+
+- cassino;
+- site de apostas;
+- memecoin;
+- exchange duvidosa;
+- dashboard hacker exagerado;
+- projeto amador.
+
+---
+
+## 6.1 Logo
+
+Antes de criar a UI, verificar se existem skills ou ferramentas disponíveis no ambiente do Codex relacionadas a:
+
+```text
+logo-generator
+brand-generator
+brand-kit
+design-system
+ui-design
+```
+
+Se existir algo equivalente, utilizar.
+
+Se não existir:
+
+- não bloquear o desenvolvimento;
+- criar especificação da marca;
+- criar logo provisório original em SVG;
+- manter logo desacoplado para substituição futura.
+
+Criar variações:
+
+- logo horizontal;
+- símbolo compacto;
+- versão clara;
+- versão escura;
+- favicon;
+- app icon.
+
+Evitar clichês como:
+
+- foguete;
+- Bitcoin literal;
+- cifrão;
+- candle gráfico dentro do logo.
+
+Preferir conceitos abstratos ligados a:
+
+- Rise;
+- movimento;
+- ascensão;
+- inteligência;
+- algoritmos;
+- conexão;
+- fluxo.
+
+---
+
+## 6.2 Cores
+
+Escolher uma paleta moderna e profissional.
+
+Direção recomendada:
+
+```text
+Base: dark fintech premium
+Primary: azul/índigo/ciano tecnológico
+Positive: verde somente para ganhos/sucesso
+Negative: vermelho somente para perdas/erros
+Warning: âmbar
+Neutral: escala consistente de cinzas
+```
+
+Não utilizar verde como cor primária apenas porque o produto envolve trading.
+
+A paleta final deve atender acessibilidade e contraste.
+
+---
+
+## 6.3 Tipografia
+
+Escolher tipografia moderna, altamente legível e adequada a dashboards financeiros.
+
+Considerar fontes como:
+
+- Inter;
+- Geist;
+- Manrope;
+- IBM Plex Sans;
+- outra opção tecnicamente justificada.
+
+Criar:
+
+- escala tipográfica;
+- pesos;
+- tamanhos;
+- line-height;
+- regras para números financeiros.
+
+Números de tabelas e KPIs devem ser fáceis de comparar visualmente.
+
+---
+
+## 6.4 Design Tokens
+
+Definir:
+
+- cores;
+- spacing;
+- border radius;
+- shadows;
+- typography;
+- transitions;
+- breakpoints;
+- z-index;
+- estados;
+- tamanhos de componentes.
+
+---
+
+## 6.5 Entregáveis
+
+Criar:
+
+```text
+docs/brand/brand-reference.md
+docs/brand/logo/
+docs/brand/examples/
+```
+
+Checklist:
+
+- [ ] Conceito da marca definido.
+- [ ] Personalidade da marca definida.
+- [ ] Paleta definida.
+- [ ] Tipografia definida.
+- [ ] Design tokens definidos.
+- [ ] Logo provisório ou final criado.
+- [ ] Favicon criado.
+- [ ] Versão dark definida.
+- [ ] Versão light definida.
+- [ ] Brand Reference Kit documentado.
+- [ ] Lint/testes/build executados quando aplicável.
+- [ ] Feature integrada à `develop`.
+
+---
+
+# 7. FEATURE 02 — Technical Foundation
+
+Branch:
+
+```text
+feature/02-technical-foundation
+```
+
+Antes de implementar, avaliar o ecossistema atual e escolher a stack mais adequada.
+
+A decisão deve considerar:
+
+- modernidade;
+- segurança;
+- DX;
+- escalabilidade;
+- TypeScript;
+- processamento assíncrono;
+- workers;
+- WebSocket;
+- integração Stripe;
+- integração Binance;
+- internacionalização;
+- dashboards;
+- testes;
+- deploy Linux;
+- Docker.
+
+---
+
+## 7.1 Stack de referência
+
+A stack abaixo é a referência preferencial, mas o Codex pode escolher alternativa superior desde que documente a decisão.
+
+### Monorepo
+
+```text
+pnpm
+Turborepo
+```
+
+### Frontend
+
+Avaliar preferencialmente:
+
+```text
+Next.js
+React
+TypeScript
+Tailwind CSS
+shadcn/ui
+TanStack Query
+TanStack Table
+React Hook Form
+Zod
+ECharts ou Recharts
+```
+
+Next.js é especialmente interessante por:
+
+- landing page pública;
+- SEO;
+- internacionalização;
+- área autenticada;
+- boa estrutura de aplicação.
+
+### Backend
+
+Avaliar preferencialmente:
+
+```text
+NestJS
+TypeScript
+Prisma
+PostgreSQL
+Redis
+BullMQ
+WebSocket
+```
+
+### Autenticação
+
+Preferência inicial:
+
+```text
+Keycloak
+```
+
+Avaliar integração via OIDC/OAuth2.
+
+### Infraestrutura
+
+```text
+Docker
+Docker Compose
+PostgreSQL
+Redis
+Keycloak
+```
+
+### Testes
+
+```text
+Vitest ou Jest
+Playwright
+Supertest
+```
+
+---
+
+## 7.2 Estrutura sugerida
+
+```text
+apps/
+  web/
+  api/
+  worker/
+
+packages/
+  ui/
+  config/
+  database/
+  shared/
+  trading-core/
+  risk-engine/
+  strategies/
+  exchange-connectors/
+
+docs/
+infra/
+```
+
+Checklist:
+
+- [ ] Stack analisada.
+- [ ] ADR da stack criado.
+- [ ] Monorepo criado.
+- [ ] TypeScript configurado.
+- [ ] Lint configurado.
+- [ ] Formatter configurado.
+- [ ] Test runner configurado.
+- [ ] PostgreSQL configurado.
+- [ ] Redis configurado.
+- [ ] Docker Compose funcionando.
+- [ ] `.env.example` criado.
+- [ ] `.gitignore` revisado.
+- [ ] README inicial criado.
+- [ ] CI básico criado.
+- [ ] Build completo funcionando.
+- [ ] Feature integrada à `develop`.
+
+---
+
+# 8. FEATURE 03 — Design System e App Shell
+
+Branch:
+
+```text
+feature/03-design-system
+```
+
+Implementar o design system baseado no Brand Reference Kit.
+
+## Componentes
+
+- [ ] Button.
+- [ ] Input.
+- [ ] Select.
+- [ ] Checkbox.
+- [ ] Radio.
+- [ ] Switch.
+- [ ] Form Field.
+- [ ] Card.
+- [ ] Dialog.
+- [ ] Drawer.
+- [ ] Tooltip.
+- [ ] Popover.
+- [ ] Dropdown.
+- [ ] Badge.
+- [ ] Alert.
+- [ ] Toast.
+- [ ] Skeleton.
+- [ ] Empty State.
+- [ ] Error State.
+- [ ] Data Table.
+- [ ] Pagination.
+- [ ] Tabs.
+- [ ] Progress.
+- [ ] KPI Card.
+- [ ] Currency Display.
+- [ ] Percentage Display.
+- [ ] P&L Indicator.
+- [ ] Risk Indicator.
+- [ ] Bot Status Indicator.
+
+## App Shell
+
+- [ ] Sidebar.
+- [ ] Topbar.
+- [ ] Breadcrumbs.
+- [ ] Navegação mobile.
+- [ ] Layout desktop.
+- [ ] Layout tablet.
+- [ ] Layout mobile.
+- [ ] Dark Mode.
+- [ ] Light Mode.
+- [ ] Persistência de preferência.
+
+## Páginas mockadas
+
+- [ ] Dashboard.
+- [ ] Bots.
+- [ ] Strategies.
+- [ ] Exchange Connections.
+- [ ] Backtests.
+- [ ] Trades.
+- [ ] Risk.
+- [ ] Notifications.
+- [ ] Billing.
+- [ ] Settings.
+- [ ] Admin placeholder.
+
+- [ ] Feature integrada à `develop`.
+
+---
+
+# 9. FEATURE 04 — Authentication
+
+Branch:
+
+```text
+feature/04-authentication
+```
+
+Implementar autenticação de produção.
+
+Funcionalidades:
+
+- [ ] Cadastro.
+- [ ] Login.
+- [ ] Logout.
+- [ ] Recuperação de senha.
+- [ ] Verificação de e-mail.
+- [ ] Sessão segura.
+- [ ] Refresh token.
+- [ ] Rotas protegidas.
+- [ ] Perfil.
+- [ ] Preferências.
+- [ ] Locale.
+- [ ] Timezone.
+- [ ] Moeda de referência.
+
+Roles iniciais:
+
+```text
+USER
+SUPPORT
+ADMIN
+```
+
+- [ ] Keycloak configurado ou alternativa documentada.
+- [ ] ADR criado.
+- [ ] Testes implementados.
+- [ ] Feature integrada à `develop`.
+
+---
+
+# 10. FEATURE 05 — Domain Model
+
+Branch:
+
+```text
+feature/05-domain-model
+```
+
+Entidades iniciais:
+
+```text
+User
+UserProfile
+ExchangeConnection
+Bot
+StrategyDefinition
+StrategyVersion
+BotConfiguration
+TradeProposal
+Order
+Trade
+Position
+RiskProfile
+RiskEvent
+BotEvent
+MarketSnapshot
+Backtest
+BacktestResult
+Notification
+AuditLog
+Plan
+Subscription
+Entitlement
+Usage
+```
+
+Enums:
+
+```text
+BotStatus:
+DRAFT
+READY
+RUNNING
+PAUSED
+STOPPED
+ERROR
+RISK_BLOCKED
+
+TradingMode:
+PAPER
+LIVE
+```
+
+Checklist:
+
+- [ ] Prisma Schema.
+- [ ] Migrations.
+- [ ] Seeds seguros.
+- [ ] Constraints.
+- [ ] Índices.
+- [ ] Relacionamentos documentados.
+- [ ] Testes de persistência.
+- [ ] Feature integrada à `develop`.
+
+---
+
+# 11. FEATURE 06 — Market Data Engine
+
+Branch:
+
+```text
+feature/06-market-data
+```
+
+Implementar dados públicos Binance Spot.
+
+- [ ] Symbols.
+- [ ] Price.
+- [ ] Ticker.
+- [ ] Candles.
+- [ ] Volume.
+- [ ] Book ticker.
+- [ ] Exchange info.
+- [ ] Symbol filters.
+- [ ] WebSocket quando apropriado.
+- [ ] Reconnect.
+- [ ] Retry.
+- [ ] Backoff.
+- [ ] Rate limit.
+- [ ] Circuit breaker.
+- [ ] Health check.
+- [ ] Métricas.
+
+Dados públicos não devem depender das credenciais privadas do usuário.
+
+- [ ] Feature integrada à `develop`.
+
+---
+
+# 12. FEATURE 07 — Binance Account Connection
+
+Branch:
+
+```text
+feature/07-binance-connection
+```
+
+Implementar conexão privada.
+
+- [ ] Cadastro de API Key.
+- [ ] Cadastro de API Secret.
+- [ ] Criptografia.
+- [ ] Mascaramento.
+- [ ] Teste de conexão.
+- [ ] Validação de permissões.
+- [ ] Bloqueio se houver configuração insegura.
+- [ ] Health status.
+- [ ] Revogação local.
+- [ ] Auditoria.
+- [ ] API Secret nunca retornado.
+
+Estados:
+
+```text
+CONNECTED
+DEGRADED
+INVALID
+DISCONNECTED
+```
+
+- [ ] Testes com mocks.
+- [ ] Feature integrada à `develop`.
+
+---
+
+# 13. FEATURE 08 — Paper Trading Engine
+
+Branch:
+
+```text
+feature/08-paper-trading
+```
+
+Paper Trading deve existir antes de LIVE Trading.
+
+Simular:
+
+- [ ] saldo.
+- [ ] ordens.
+- [ ] fills.
+- [ ] compra.
+- [ ] venda.
+- [ ] fees.
+- [ ] posições.
+- [ ] realized P&L.
+- [ ] unrealized P&L.
+
+Usar dados reais do Market Data Engine.
+
+Arquitetura recomendada:
+
+```text
+TradeProposal
+       ↓
+RiskEngine
+       ↓
+Execution
+       ↓
+PaperExecution | LiveExecution
+```
+
+- [ ] Testes determinísticos.
+- [ ] Feature integrada à `develop`.
+
+---
+
+# 14. FEATURE 09 — Risk Engine v1
+
+Branch:
+
+```text
+feature/09-risk-engine
+```
+
+Componente crítico.
+
+Implementar:
+
+- [ ] capital máximo alocado;
+- [ ] máximo por trade;
+- [ ] exposição máxima;
+- [ ] percentual máximo por posição;
+- [ ] máximo de posições;
+- [ ] perda máxima diária;
+- [ ] drawdown máximo;
+- [ ] symbols permitidos;
+- [ ] saldo disponível;
+- [ ] cooldown;
+- [ ] status do bot;
+- [ ] trading mode.
+
+Resultado:
+
+```text
+APPROVED
+REJECTED
+```
+
+Toda decisão deve registrar:
+
+```text
+reasonCode
+reason
+riskSnapshot
+timestamp
+```
+
+- [ ] Testes unitários abrangentes.
+- [ ] Edge cases.
+- [ ] Feature integrada à `develop`.
+
+---
+
+# 15. FEATURE 10 — Strategy Engine
+
+Branch:
+
+```text
+feature/10-strategy-engine
+```
+
+Criar contrato padronizado de Strategy.
+
+Exemplo:
+
+```typescript
+interface TradingStrategy {
+  analyze(context): Promise<TradeProposal[]>
+}
+```
+
+Implementar:
+
+- [ ] StrategyDefinition.
+- [ ] StrategyVersion.
+- [ ] parâmetros tipados.
+- [ ] schemas.
+- [ ] lifecycle.
+- [ ] logs funcionais.
+- [ ] métricas.
+- [ ] versionamento.
+- [ ] ativação/desativação.
+
+- [ ] Feature integrada à `develop`.
+
+---
+
+# 16. FEATURE 11 — Strategy DCA
+
+Branch:
+
+```text
+feature/11-strategy-dca
+```
+
+Primeira estratégia real.
+
+Parâmetros:
+
+- [ ] symbol.
+- [ ] frequência.
+- [ ] valor.
+- [ ] capital máximo.
+- [ ] condições opcionais.
+- [ ] limites de risco.
+
+Primeiro em PAPER.
+
+- [ ] Paper Trading validado.
+- [ ] Backtest suportado.
+- [ ] Testes.
+- [ ] Feature integrada à `develop`.
+
+---
+
+# 17. FEATURE 12 — Strategy Grid
+
+Branch:
+
+```text
+feature/12-strategy-grid
+```
+
+Implementar:
+
+- [ ] faixa;
+- [ ] níveis;
+- [ ] capital;
+- [ ] tamanho por ordem;
+- [ ] rebalanceamento;
+- [ ] critérios de interrupção;
+- [ ] rompimento da faixa;
+- [ ] volatilidade extrema;
+- [ ] falta de saldo;
+- [ ] restart seguro.
+
+- [ ] Paper validado.
+- [ ] Backtest suportado.
+- [ ] Feature integrada à `develop`.
+
+---
+
+# 18. FEATURE 13 — Strategy Trend Following
+
+Branch:
+
+```text
+feature/13-strategy-trend
+```
+
+Indicadores possíveis:
+
+- EMA;
+- ATR;
+- momentum;
+- volume.
+
+Evitar overfitting.
+
+- [ ] Strategy implementada.
+- [ ] Parâmetros versionados.
+- [ ] Paper validado.
+- [ ] Backtest suportado.
+- [ ] Feature integrada à `develop`.
+
+---
+
+# 19. FEATURE 14 — Bot Manager
+
+Branch:
+
+```text
+feature/14-bot-manager
+```
+
+Fluxo:
+
+```text
+Create
+Configure
+Validate
+Ready
+Start
+Run
+Pause
+Resume
+Stop
+Archive
+```
+
+Implementar:
+
+- [ ] criação.
+- [ ] edição.
+- [ ] validação.
+- [ ] start.
+- [ ] pause.
+- [ ] resume.
+- [ ] stop.
+- [ ] duplicação.
+- [ ] histórico.
+- [ ] eventos.
+- [ ] status em tempo real.
+
+- [ ] Feature integrada à `develop`.
+
+---
+
+# 20. FEATURE 15 — Worker Runtime 24/7
+
+Branch:
+
+```text
+feature/15-worker-runtime
+```
+
+Bots não devem depender de requisição HTTP para permanecer ativos.
+
+Avaliar:
+
+```text
+BullMQ
+Redis
+Schedulers
+Workers
+```
+
+Implementar:
+
+- [ ] jobs idempotentes.
+- [ ] retries.
+- [ ] backoff.
+- [ ] locks.
+- [ ] proteção contra duplicidade.
+- [ ] restart seguro.
+- [ ] crash recovery.
+- [ ] graceful shutdown.
+- [ ] heartbeat.
+- [ ] health check.
+- [ ] dead-letter strategy.
+
+- [ ] Feature integrada à `develop`.
+
+---
+
+# 21. FEATURE 16 — LIVE Execution Engine
+
+Branch:
+
+```text
+feature/16-live-execution
+```
+
+Somente iniciar após Paper Trading + Risk Engine + Strategy Engine estarem estáveis.
+
+Implementar:
+
+- [ ] market orders.
+- [ ] limit orders.
+- [ ] cancel.
+- [ ] status.
+- [ ] fills.
+- [ ] partial fills.
+- [ ] reconciliation.
+- [ ] timeout.
+- [ ] retries seguros.
+- [ ] idempotência.
+- [ ] client order IDs.
+
+Nunca reenviar ordem automaticamente sem saber se a tentativa anterior chegou à exchange.
+
+- [ ] Sandbox/mocks.
+- [ ] Feature integrada à `develop`.
+
+---
+
+# 22. FEATURE 17 — Kill Switch
+
+Branch:
+
+```text
+feature/17-kill-switch
+```
+
+Implementar:
+
+```text
+USER_KILL_SWITCH
+BOT_KILL_SWITCH
+SYSTEM_KILL_SWITCH
+```
+
+Triggers:
+
+- [ ] perda diária excedida.
+- [ ] drawdown excedido.
+- [ ] exchange indisponível.
+- [ ] dados inconsistentes.
+- [ ] divergência de posição.
+- [ ] autenticação inválida.
+- [ ] erros repetitivos.
+- [ ] risco de execução duplicada.
+- [ ] comportamento anômalo.
+
+Admin deve conseguir interromper LIVE Trading global sem derrubar dashboards.
+
+- [ ] Feature integrada à `develop`.
+
+---
+
+# 23. FEATURE 18 — Portfolio e P&L
+
+Branch:
+
+```text
+feature/18-portfolio
+```
+
+Dashboard financeiro:
+
+- [ ] capital total.
+- [ ] capital alocado.
+- [ ] capital disponível.
+- [ ] realized P&L.
+- [ ] unrealized P&L.
+- [ ] resultado diário.
+- [ ] semanal.
+- [ ] mensal.
+- [ ] acumulado.
+- [ ] drawdown.
+- [ ] exposição por ativo.
+- [ ] performance por bot.
+- [ ] performance por estratégia.
+
+- [ ] Feature integrada à `develop`.
+
+---
+
+# 24. FEATURE 19 — Backtesting Engine
+
+Branch:
+
+```text
+feature/19-backtesting
+```
+
+Reutilizar as mesmas Strategies do runtime real.
+
+Métricas:
+
+- [ ] retorno absoluto.
+- [ ] retorno percentual.
+- [ ] max drawdown.
+- [ ] win rate.
+- [ ] loss rate.
+- [ ] profit factor.
+- [ ] Sharpe.
+- [ ] número de trades.
+- [ ] média por trade.
+- [ ] melhor trade.
+- [ ] pior trade.
+- [ ] fees estimadas.
+
+Períodos:
+
+```text
+30D
+90D
+180D
+1Y
+CUSTOM
+```
+
+- [ ] Disclaimer de performance histórica.
+- [ ] Feature integrada à `develop`.
+
+---
+
+# 25. FEATURE 20 — Strategy Catalog
+
+Branch:
+
+```text
+feature/20-strategy-catalog
+```
+
+Cada estratégia deve apresentar:
+
+- [ ] nome;
+- [ ] descrição;
+- [ ] risco;
+- [ ] mercados indicados;
+- [ ] métricas;
+- [ ] drawdown;
+- [ ] versão;
+- [ ] parâmetros;
+- [ ] compatibilidade PAPER/LIVE;
+- [ ] status.
+
+- [ ] Feature integrada à `develop`.
+
+---
+
+# 26. FEATURE 21 — Bot Creation Wizard
+
+Branch:
+
+```text
+feature/21-bot-wizard
+```
+
+Fluxo:
+
+```text
+1. Strategy
+2. Exchange
+3. Market
+4. Capital
+5. Risk
+6. Review
+7. Start
+```
+
+Presets:
+
+```text
+Conservative
+Balanced
+Aggressive
+Custom
+```
+
+Preset apenas preenche parâmetros.
+
+Usuário deve poder revisar tudo antes de ativar.
+
+- [ ] Feature integrada à `develop`.
+
+---
+
+# 27. FEATURE 22 — Notifications
+
+Branch:
+
+```text
+feature/22-notifications
+```
+
+Eventos:
+
+- [ ] bot iniciado.
+- [ ] bot pausado.
+- [ ] bot encerrado.
+- [ ] Risk Engine bloqueou operação.
+- [ ] Kill Switch ativado.
+- [ ] Binance inválida.
+- [ ] drawdown perto do limite.
+- [ ] erro crítico.
+- [ ] backtest concluído.
+
+Canais:
+
+- [ ] in-app.
+- [ ] e-mail.
+
+Preparar arquitetura para:
+
+- push;
+- Telegram;
+- webhook.
+
+- [ ] Feature integrada à `develop`.
+
+---
+
+# 28. FEATURE 23 — Audit Trail
+
+Branch:
+
+```text
+feature/23-audit-trail
+```
+
+Tipos:
+
+```text
+USER_ACTION
+BOT_ACTION
+STRATEGY_SIGNAL
+TRADE_PROPOSAL
+RISK_DECISION
+ORDER_REQUEST
+ORDER_RESULT
+EXCHANGE_EVENT
+SYSTEM_EVENT
+ADMIN_ACTION
+```
+
+Logs devem ser:
+
+- [ ] estruturados.
+- [ ] pesquisáveis.
+- [ ] protegidos contra alteração comum.
+- [ ] sem secrets.
+- [ ] vinculados ao usuário.
+- [ ] vinculados ao bot.
+- [ ] vinculados a correlation ID.
+
+- [ ] Feature integrada à `develop`.
+
+---
+
+# 29. FEATURE 24 — Stripe Billing e Subscription Plans
+
+Branch:
+
+```text
+feature/24-stripe-billing
+```
+
+**Stripe será o provedor oficial de cobrança e assinaturas da RiseXPTO.**
+
+Utilizar Stripe para:
+
+- assinaturas;
+- pagamentos recorrentes;
+- upgrades;
+- downgrades;
+- cancelamentos;
+- invoices;
+- customer portal;
+- webhooks;
+- status de pagamento.
+
+## Regras
+
+O core de trading NÃO pode depender diretamente do Stripe.
+
+Criar abstração de Billing/Entitlements.
+
+Entidades:
+
+```text
+Plan
+Subscription
+Entitlement
+Usage
+BillingCustomer
+BillingEvent
+```
+
+Planos podem limitar:
+
+- número de bots;
+- capital máximo;
+- strategies disponíveis;
+- quantidade de backtests;
+- recursos premium;
+- notificações avançadas;
+- Auto Pilot futuramente.
+
+Implementar:
+
+- [ ] Stripe Customer.
+- [ ] Stripe Products.
+- [ ] Stripe Prices.
+- [ ] Checkout.
+- [ ] Subscription.
+- [ ] Upgrade.
+- [ ] Downgrade.
+- [ ] Cancelamento.
+- [ ] Customer Portal.
+- [ ] Webhooks.
+- [ ] Assinatura dos webhooks validada.
+- [ ] Idempotência.
+- [ ] Entitlements internos.
+- [ ] Grace period.
+- [ ] Estado past_due.
+- [ ] Estado canceled.
+- [ ] Estado trialing, se adotado.
+- [ ] Billing UI.
+- [ ] Histórico de invoices.
+
+Nunca confiar apenas no frontend para liberar features pagas.
+
+Permissões devem ser confirmadas no backend.
+
+- [ ] ADR de billing criado.
+- [ ] Testes de webhook.
+- [ ] Feature integrada à `develop`.
+
+---
+
+# 30. FEATURE 25 — Admin Console
+
+Branch:
+
+```text
+feature/25-admin
+```
+
+Admin deve permitir:
+
+- [ ] usuários.
+- [ ] subscriptions.
+- [ ] planos.
+- [ ] bots.
+- [ ] estratégias.
+- [ ] versões.
+- [ ] exchange connections sem secrets.
+- [ ] workers.
+- [ ] queues.
+- [ ] erros.
+- [ ] risk events.
+- [ ] kill switch.
+- [ ] audit logs.
+- [ ] health status.
+
+- [ ] Feature integrada à `develop`.
+
+---
+
+# 31. FEATURE 26 — Observability
+
+Branch:
+
+```text
+feature/26-observability
+```
+
+Implementar:
+
+- [ ] structured logging.
+- [ ] correlation ID.
+- [ ] metrics.
+- [ ] traces.
+- [ ] liveness.
+- [ ] readiness.
+- [ ] health endpoints.
+- [ ] queue metrics.
+- [ ] exchange latency.
+- [ ] order latency.
+- [ ] strategy runtime.
+- [ ] risk rejection metrics.
+- [ ] error rates.
+
+Avaliar:
+
+```text
+OpenTelemetry
+Prometheus
+Grafana
+Loki
+Sentry
+```
+
+- [ ] Feature integrada à `develop`.
+
+---
+
+# 32. FEATURE 27 — Security Hardening
+
+Branch:
+
+```text
+feature/27-security-hardening
+```
+
+Checklist:
+
+- [ ] CORS.
+- [ ] Security headers.
+- [ ] Rate limiting.
+- [ ] Brute-force protection.
+- [ ] Input validation.
+- [ ] Output sanitization.
+- [ ] Secret review.
+- [ ] Encryption review.
+- [ ] Dependency audit.
+- [ ] RBAC.
+- [ ] IDOR review.
+- [ ] SSRF review.
+- [ ] SQL injection review.
+- [ ] XSS review.
+- [ ] Sensitive log review.
+- [ ] API errors.
+- [ ] WebSocket auth.
+- [ ] Admin isolation.
+- [ ] Stripe webhook security.
+- [ ] Binance credential security.
+
+- [ ] Feature integrada à `develop`.
+
+---
+
+# 33. FEATURE 28 — Internationalization
+
+Branch:
+
+```text
+feature/28-i18n
+```
+
+RiseXPTO é um produto internacional.
+
+Preparar:
+
+- [ ] inglês como idioma principal.
+- [ ] português brasileiro.
+- [ ] arquitetura para novos idiomas.
+- [ ] números localizados.
+- [ ] moedas.
+- [ ] datas.
+- [ ] timezone.
+- [ ] textos de erro.
+- [ ] e-mails.
+- [ ] Stripe checkout/localização quando disponível.
+
+Evitar textos hardcoded fora do sistema de tradução.
+
+- [ ] Feature integrada à `develop`.
+
+---
+
+# 34. FEATURE 29 — Landing Page e Marketing Site
+
+Branch:
+
+```text
+feature/29-marketing-site
+```
+
+Criar landing page profissional.
+
+Seções sugeridas:
+
+- [ ] Hero.
+- [ ] Como funciona.
+- [ ] Segurança non-custodial.
+- [ ] Estratégias.
+- [ ] Risk Engine.
+- [ ] Paper Trading.
+- [ ] Backtesting.
+- [ ] Dashboard preview.
+- [ ] Pricing.
+- [ ] FAQ.
+- [ ] CTA.
+- [ ] Login.
+- [ ] Sign Up.
+
+Não usar claims enganosos de rentabilidade.
+
+- [ ] SEO.
+- [ ] Open Graph.
+- [ ] Metadata.
+- [ ] Responsive.
+- [ ] Performance.
+- [ ] Feature integrada à `develop`.
+
+---
+
+# 35. FEATURE 30 — Production Readiness
+
+Branch:
+
+```text
+feature/30-production-readiness
+```
+
+Antes de considerar MVP pronto:
+
+- [ ] testes unitários críticos.
+- [ ] testes de integração.
+- [ ] testes E2E.
+- [ ] migrations revisadas.
+- [ ] backups documentados.
+- [ ] restore documentado.
+- [ ] health checks.
+- [ ] monitoring.
+- [ ] logs.
+- [ ] alertas.
+- [ ] secrets de produção documentados.
+- [ ] Docker images.
+- [ ] deploy guide.
+- [ ] rollback guide.
+- [ ] incident guide.
+- [ ] security checklist.
+- [ ] billing checklist.
+- [ ] Binance checklist.
+- [ ] PAPER validado.
+- [ ] LIVE validado com valores mínimos/controlados.
+- [ ] Kill Switch validado.
+- [ ] Risk Engine validado.
+- [ ] Feature integrada à `develop`.
+
+---
+
+# 36. Fases Futuras — NÃO implementar no MVP sem autorização
+
+Itens abaixo devem permanecer fora do MVP inicial:
+
+- [ ] Futures.
+- [ ] Margin.
+- [ ] Leverage.
+- [ ] Short Selling avançado.
+- [ ] Outras exchanges.
+- [ ] Copy Trading.
+- [ ] Marketplace aberto para estratégias de terceiros.
+- [ ] Auto Pilot.
+- [ ] Market Regime Engine.
+- [ ] IA para otimização.
+- [ ] Machine Learning.
+- [ ] Mobile App nativo.
+- [ ] Social Trading.
+- [ ] API pública para clientes.
+- [ ] Webhooks externos.
+- [ ] Telegram bot.
+- [ ] White Label.
+
+Não implementar estes itens antecipadamente sem decisão explícita.
+
+---
+
+# 37. Definition of Done por Feature
+
+Uma feature somente está concluída quando:
+
+- [ ] requisito funcional implementado;
+- [ ] arquitetura consistente;
+- [ ] tipos corretos;
+- [ ] validação de entrada;
+- [ ] tratamento de erros;
+- [ ] segurança considerada;
+- [ ] testes implementados;
+- [ ] testes passando;
+- [ ] lint passando;
+- [ ] build passando;
+- [ ] documentação atualizada;
+- [ ] este checklist atualizado;
+- [ ] commit realizado;
+- [ ] push da feature realizado;
+- [ ] merge em `develop` realizado;
+- [ ] push de `develop` realizado.
+
+---
+
+# 38. Status Geral do Projeto
+
+Atualizar esta seção conforme o projeto avançar.
+
+| Fase | Feature | Status |
+|---|---|---|
+| 01 | Brand Foundation | ⬜ Pendente |
+| 02 | Technical Foundation | ⬜ Pendente |
+| 03 | Design System | ⬜ Pendente |
+| 04 | Authentication | ⬜ Pendente |
+| 05 | Domain Model | ⬜ Pendente |
+| 06 | Market Data | ⬜ Pendente |
+| 07 | Binance Connection | ⬜ Pendente |
+| 08 | Paper Trading | ⬜ Pendente |
+| 09 | Risk Engine | ⬜ Pendente |
+| 10 | Strategy Engine | ⬜ Pendente |
+| 11 | DCA | ⬜ Pendente |
+| 12 | Grid | ⬜ Pendente |
+| 13 | Trend Following | ⬜ Pendente |
+| 14 | Bot Manager | ⬜ Pendente |
+| 15 | Worker Runtime | ⬜ Pendente |
+| 16 | LIVE Execution | ⬜ Pendente |
+| 17 | Kill Switch | ⬜ Pendente |
+| 18 | Portfolio | ⬜ Pendente |
+| 19 | Backtesting | ⬜ Pendente |
+| 20 | Strategy Catalog | ⬜ Pendente |
+| 21 | Bot Wizard | ⬜ Pendente |
+| 22 | Notifications | ⬜ Pendente |
+| 23 | Audit Trail | ⬜ Pendente |
+| 24 | Stripe Billing | ⬜ Pendente |
+| 25 | Admin Console | ⬜ Pendente |
+| 26 | Observability | ⬜ Pendente |
+| 27 | Security Hardening | ⬜ Pendente |
+| 28 | Internationalization | ⬜ Pendente |
+| 29 | Marketing Site | ⬜ Pendente |
+| 30 | Production Readiness | ⬜ Pendente |
+
+Legenda:
+
+```text
+⬜ Pendente
+🟨 Em andamento
+✅ Concluído
+⛔ Bloqueado
+```
+
+Sempre atualizar a tabela quando o estado de uma fase mudar.
+
+---
+
+# 39. Registro de Progresso
+
+Adicionar entradas aqui ao concluir features.
+
+Formato:
+
+```text
+## YYYY-MM-DD — Feature XX
+
+Branch:
+feature/xx-name
+
+Commit:
+<hash>
+
+Resumo:
+- item;
+- item;
+- item.
+
+Validações:
+- lint: OK
+- tests: OK
+- build: OK
+
+Merge:
+feature/xx-name → develop
+
+Status:
+✅ concluído
+```
+
+Não apagar registros anteriores.
+
+---
+
+# 40. Ordem de Execução
+
+Por padrão seguir:
+
+```text
+01 → 02 → 03 → ... → 30
+```
+
+Pode haver pequenas exceções se dependências técnicas exigirem, mas:
+
+- documentar o motivo;
+- não criar features aleatórias fora do plano;
+- não antecipar complexidade desnecessária;
+- não avançar LIVE Trading antes das proteções essenciais.
+
+Prioridade do produto:
+
+```text
+SECURITY
+   ↓
+RISK
+   ↓
+RELIABILITY
+   ↓
+CORRECTNESS
+   ↓
+USER EXPERIENCE
+   ↓
+PERFORMANCE
+   ↓
+NEW FEATURES
+```
+
+---
+
+# 41. Instrução Final ao Codex
+
+Ao receber a instrução para iniciar ou continuar o RiseXPTO:
+
+1. leia este arquivo;
+2. leia o código existente;
+3. leia os ADRs;
+4. confira o Git;
+5. identifique a próxima feature;
+6. altere seu status para `🟨 Em andamento`;
+7. crie a branch da feature;
+8. implemente somente o escopo daquela fase;
+9. teste;
+10. atualize documentação;
+11. marque checkboxes;
+12. altere o status para `✅ Concluído`;
+13. commit;
+14. push da feature;
+15. merge em `develop`;
+16. push de `develop`;
+17. registre o progresso neste documento;
+18. pare e apresente ao usuário o resumo da feature concluída.
+
+**Nunca fazer merge em `main`.**
+
+A validação final e o merge:
+
+```text
+develop → main
+```
+
+serão realizados manualmente pelo proprietário do projeto.
