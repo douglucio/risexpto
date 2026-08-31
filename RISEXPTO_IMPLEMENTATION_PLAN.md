@@ -817,26 +817,26 @@ feature/06-market-data
 
 Implementar dados públicos Binance Spot.
 
-- [ ] Symbols.
-- [ ] Price.
-- [ ] Ticker.
-- [ ] Candles.
-- [ ] Volume.
-- [ ] Book ticker.
-- [ ] Exchange info.
-- [ ] Symbol filters.
-- [ ] WebSocket quando apropriado.
-- [ ] Reconnect.
-- [ ] Retry.
-- [ ] Backoff.
-- [ ] Rate limit.
-- [ ] Circuit breaker.
-- [ ] Health check.
-- [ ] Métricas.
+- [x] Symbols.
+- [x] Price.
+- [x] Ticker.
+- [x] Candles.
+- [x] Volume.
+- [x] Book ticker.
+- [x] Exchange info.
+- [x] Symbol filters.
+- [x] WebSocket quando apropriado.
+- [x] Reconnect.
+- [x] Retry.
+- [x] Backoff.
+- [x] Rate limit.
+- [x] Circuit breaker.
+- [x] Health check.
+- [x] Métricas.
 
 Dados públicos não devem depender das credenciais privadas do usuário.
 
-- [ ] Feature integrada à `develop`.
+- [x] Feature integrada à `develop`.
 
 ---
 
@@ -1768,7 +1768,7 @@ Atualizar esta seção conforme o projeto avançar.
 | 03 | Design System | ✅ Concluído |
 | 04 | Authentication | ✅ Concluído |
 | 05 | Domain Model | ✅ Concluído |
-| 06 | Market Data | ⬜ Pendente |
+| 06 | Market Data | ✅ Concluído |
 | 07 | Binance Connection | ⬜ Pendente |
 | 08 | Paper Trading | ⬜ Pendente |
 | 09 | Risk Engine | ⬜ Pendente |
@@ -1936,6 +1936,32 @@ Validações:
 
 Merge:
 feature/05-domain-model → develop
+
+Status:
+✅ concluído
+
+## 2026-08-31 — Feature 06
+
+Branch:
+feature/06-market-data
+
+Commit:
+ff00783
+
+Resumo:
+- cliente público Binance Spot para symbols, price, ticker, candles, volume, book ticker e exchange info criado;
+- filtros de símbolo, validação explícita de payloads e stream WebSocket com reconexão exponencial implementados;
+- rate limit local, retry com jitter, circuit breaker, health check e métricas adicionados sem dependência de credenciais privadas.
+
+Validações:
+- lint: OK
+- tests: OK (24 testes no monorepo; 4 de market data)
+- typecheck: OK
+- build: OK
+- format: OK
+
+Merge:
+feature/06-market-data → develop
 
 Status:
 ✅ concluído

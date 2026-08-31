@@ -137,6 +137,8 @@ importers:
         specifier: 4.20.5
         version: 4.20.5
 
+  packages/market-data: {}
+
   packages/shared: {}
 
   packages/ui:
