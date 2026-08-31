@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 268 64" role="img" aria-labelledby="title">
+  <title id="title">RiseXPTO logo for dark backgrounds</title>
+  <path d="M15 49V34c0-10 7-18 17-18h11M31 34h12M31 34l17 15" fill="none" stroke="#6F8CFF" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/><circle cx="15" cy="49" r="4.5" fill="#9AADFF"/><circle cx="43" cy="16" r="4.5" fill="#6F8CFF"/><circle cx="48" cy="49" r="4.5" fill="#F1F5F9"/>
+  <text x="72" y="42" fill="#F1F5F9" font-family="Inter, Arial, sans-serif" font-size="31" font-weight="650" letter-spacing="-1">Rise<tspan fill="#6F8CFF">XPTO</tspan></text>
+</svg>

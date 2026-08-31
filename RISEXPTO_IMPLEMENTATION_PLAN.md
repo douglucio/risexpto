@@ -1763,7 +1763,7 @@ Atualizar esta seção conforme o projeto avançar.
 
 | Fase | Feature | Status |
 |---|---|---|
-| 01 | Brand Foundation | ⬜ Pendente |
+| 01 | Brand Foundation | 🟨 Em andamento |
 | 02 | Technical Foundation | ⬜ Pendente |
 | 03 | Design System | ⬜ Pendente |
 | 04 | Authentication | ⬜ Pendente |
