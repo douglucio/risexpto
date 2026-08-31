@@ -33,6 +33,17 @@ pnpm build
 pnpm format:check
 ```
 
+Database schema operations require `DATABASE_URL` and are intentionally explicit:
+
+```bash
+pnpm --filter @risexpto/database db:validate
+pnpm --filter @risexpto/database db:generate
+pnpm --filter @risexpto/database db:deploy
+pnpm --filter @risexpto/database db:seed
+```
+
+Production and shared environments use `db:deploy`; `db:migrate` is reserved for creating migrations during local development. Review every generated SQL migration before applying it. The relational model and invariants are documented in [`docs/architecture/domain-model.md`](./docs/architecture/domain-model.md).
+
 The web app runs on port 3000 and the API on 3001 (`GET /health`). Infrastructure instructions are in [`infra/README.md`](./infra/README.md), architecture decisions in [`docs/architecture/`](./docs/architecture/), and the visual contract in [`docs/brand/`](./docs/brand/).
 
 Authentication is provided by Keycloak using OIDC Authorization Code with PKCE. Generate `AUTH_SESSION_SECRET` from a cryptographically secure source with at least 32 bytes; never reuse a database, Stripe, or exchange secret. Browser refresh tokens remain in encrypted `HttpOnly` cookies, while the API independently validates bearer tokens and roles.

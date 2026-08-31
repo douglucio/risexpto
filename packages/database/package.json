@@ -1,0 +1,30 @@
+{
+  "name": "@risexpto/database",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "prisma generate && tsc -p tsconfig.json",
+    "lint": "eslint src prisma.config.ts",
+    "test": "vitest run",
+    "typecheck": "prisma generate && tsc --noEmit",
+    "db:validate": "prisma validate",
+    "db:generate": "prisma generate",
+    "db:migrate": "node -e \"if (!process.env.DATABASE_URL) throw new Error('DATABASE_URL is required')\" && prisma migrate dev",
+    "db:deploy": "node -e \"if (!process.env.DATABASE_URL) throw new Error('DATABASE_URL is required')\" && prisma migrate deploy",
+    "db:seed": "tsx prisma/seed.ts"
+  },
+  "dependencies": {
+    "@prisma/adapter-pg": "7.10.0",
+    "@prisma/client": "7.10.0",
+    "pg": "8.23.0"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "0.5.8",
+    "@types/pg": "8.23.1",
+    "prisma": "7.10.0",
+    "tsx": "4.20.5"
+  }
+}

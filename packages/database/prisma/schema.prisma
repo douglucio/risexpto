@@ -1,0 +1,562 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/client"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  USER
+  SUPPORT
+  ADMIN
+}
+
+enum ExchangeProvider {
+  BINANCE
+}
+
+enum ExchangeConnectionStatus {
+  CONNECTED
+  DEGRADED
+  INVALID
+  DISCONNECTED
+}
+
+enum BotStatus {
+  DRAFT
+  READY
+  RUNNING
+  PAUSED
+  STOPPED
+  ERROR
+  RISK_BLOCKED
+  ARCHIVED
+}
+
+enum TradingMode {
+  PAPER
+  LIVE
+}
+
+enum ProposalSide {
+  BUY
+  SELL
+}
+
+enum ProposalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  EXPIRED
+  EXECUTED
+}
+
+enum OrderType {
+  MARKET
+  LIMIT
+}
+
+enum OrderSide {
+  BUY
+  SELL
+}
+
+enum OrderStatus {
+  CREATED
+  SUBMITTED
+  PARTIALLY_FILLED
+  FILLED
+  CANCELED
+  REJECTED
+  UNKNOWN
+}
+
+enum PositionStatus {
+  OPEN
+  CLOSED
+}
+
+enum RiskDecision {
+  APPROVED
+  REJECTED
+}
+
+enum BacktestStatus {
+  QUEUED
+  RUNNING
+  COMPLETED
+  FAILED
+  CANCELED
+}
+
+enum NotificationChannel {
+  IN_APP
+  EMAIL
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  READ
+  FAILED
+}
+
+enum AuditEventType {
+  USER_ACTION
+  BOT_ACTION
+  STRATEGY_SIGNAL
+  TRADE_PROPOSAL
+  RISK_DECISION
+  ORDER_REQUEST
+  ORDER_RESULT
+  EXCHANGE_EVENT
+  SYSTEM_EVENT
+  ADMIN_ACTION
+}
+
+enum SubscriptionStatus {
+  INCOMPLETE
+  TRIALING
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  UNPAID
+}
+
+model User {
+  id                  String               @id @default(uuid()) @db.Uuid
+  externalAuthId      String               @unique @db.VarChar(128)
+  email               String               @unique @db.VarChar(320)
+  role                UserRole             @default(USER)
+  emailVerifiedAt     DateTime?            @db.Timestamptz(3)
+  createdAt           DateTime             @default(now()) @db.Timestamptz(3)
+  updatedAt           DateTime             @updatedAt @db.Timestamptz(3)
+  deletedAt           DateTime?            @db.Timestamptz(3)
+  profile             UserProfile?
+  exchangeConnections ExchangeConnection[]
+  bots                Bot[]
+  riskProfiles        RiskProfile[]
+  notifications       Notification[]
+  auditLogs           AuditLog[]
+  backtests           Backtest[]
+  billingCustomer     BillingCustomer?
+  subscriptions       Subscription[]
+  usages              Usage[]
+
+  @@index([createdAt])
+  @@index([deletedAt])
+}
+
+model UserProfile {
+  id                String   @id @default(uuid()) @db.Uuid
+  userId            String   @unique @db.Uuid
+  displayName       String?  @db.VarChar(120)
+  locale            String   @default("en") @db.VarChar(16)
+  timezone          String   @default("UTC") @db.VarChar(64)
+  referenceCurrency String   @default("USD") @db.Char(3)
+  createdAt         DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt         DateTime @updatedAt @db.Timestamptz(3)
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model ExchangeConnection {
+  id                   String                   @id @default(uuid()) @db.Uuid
+  userId               String                   @db.Uuid
+  provider             ExchangeProvider
+  label                String                   @db.VarChar(80)
+  status               ExchangeConnectionStatus @default(DISCONNECTED)
+  maskedApiKey         String                   @db.VarChar(64)
+  apiKeyCiphertext     Bytes
+  apiSecretCiphertext  Bytes
+  encryptionKeyVersion Int
+  permissions          Json?
+  lastCheckedAt        DateTime?                @db.Timestamptz(3)
+  revokedAt            DateTime?                @db.Timestamptz(3)
+  createdAt            DateTime                 @default(now()) @db.Timestamptz(3)
+  updatedAt            DateTime                 @updatedAt @db.Timestamptz(3)
+  user                 User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bots                 Bot[]
+  orders               Order[]
+
+  @@unique([userId, provider, label])
+  @@index([userId, status])
+}
+
+model StrategyDefinition {
+  id          String            @id @default(uuid()) @db.Uuid
+  key         String            @unique @db.VarChar(80)
+  name        String            @db.VarChar(120)
+  description String            @db.Text
+  active      Boolean           @default(true)
+  createdAt   DateTime          @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime          @updatedAt @db.Timestamptz(3)
+  versions    StrategyVersion[]
+}
+
+model StrategyVersion {
+  id                   String             @id @default(uuid()) @db.Uuid
+  strategyDefinitionId String             @db.Uuid
+  version              Int
+  parameterSchema      Json
+  implementationKey    String             @db.VarChar(160)
+  active               Boolean            @default(false)
+  createdAt            DateTime           @default(now()) @db.Timestamptz(3)
+  definition           StrategyDefinition @relation(fields: [strategyDefinitionId], references: [id], onDelete: Restrict)
+  bots                 Bot[]
+  proposals            TradeProposal[]
+  backtests            Backtest[]
+
+  @@unique([strategyDefinitionId, version])
+  @@index([strategyDefinitionId, active])
+}
+
+model Bot {
+  id                   String              @id @default(uuid()) @db.Uuid
+  userId               String              @db.Uuid
+  exchangeConnectionId String?             @db.Uuid
+  strategyVersionId    String              @db.Uuid
+  name                 String              @db.VarChar(120)
+  status               BotStatus           @default(DRAFT)
+  tradingMode          TradingMode         @default(PAPER)
+  createdAt            DateTime            @default(now()) @db.Timestamptz(3)
+  updatedAt            DateTime            @updatedAt @db.Timestamptz(3)
+  archivedAt           DateTime?           @db.Timestamptz(3)
+  user                 User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exchangeConnection   ExchangeConnection? @relation(fields: [exchangeConnectionId], references: [id], onDelete: Restrict)
+  strategyVersion      StrategyVersion     @relation(fields: [strategyVersionId], references: [id], onDelete: Restrict)
+  configuration        BotConfiguration?
+  proposals            TradeProposal[]
+  orders               Order[]
+  positions            Position[]
+  riskProfile          RiskProfile?
+  riskEvents           RiskEvent[]
+  events               BotEvent[]
+  backtests            Backtest[]
+  auditLogs            AuditLog[]
+
+  @@unique([userId, name])
+  @@index([userId, status])
+  @@index([status, tradingMode])
+}
+
+model BotConfiguration {
+  id                String   @id @default(uuid()) @db.Uuid
+  botId             String   @unique @db.Uuid
+  parameters        Json
+  allowedSymbols    String[]
+  authorizedCapital Decimal  @db.Decimal(38, 18)
+  quoteCurrency     String   @db.VarChar(16)
+  revision          Int      @default(1)
+  createdAt         DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt         DateTime @updatedAt @db.Timestamptz(3)
+  bot               Bot      @relation(fields: [botId], references: [id], onDelete: Cascade)
+}
+
+model TradeProposal {
+  id                String          @id @default(uuid()) @db.Uuid
+  botId             String          @db.Uuid
+  strategyVersionId String          @db.Uuid
+  correlationId     String          @db.Uuid
+  symbol            String          @db.VarChar(32)
+  side              ProposalSide
+  orderType         OrderType
+  quantity          Decimal?        @db.Decimal(38, 18)
+  quoteAmount       Decimal?        @db.Decimal(38, 18)
+  limitPrice        Decimal?        @db.Decimal(38, 18)
+  rationale         Json
+  status            ProposalStatus  @default(PENDING)
+  expiresAt         DateTime?       @db.Timestamptz(3)
+  createdAt         DateTime        @default(now()) @db.Timestamptz(3)
+  decidedAt         DateTime?       @db.Timestamptz(3)
+  bot               Bot             @relation(fields: [botId], references: [id], onDelete: Cascade)
+  strategyVersion   StrategyVersion @relation(fields: [strategyVersionId], references: [id], onDelete: Restrict)
+  order             Order?
+  riskEvents        RiskEvent[]
+
+  @@unique([botId, correlationId])
+  @@index([botId, status, createdAt])
+  @@index([symbol, createdAt])
+}
+
+model Order {
+  id                   String              @id @default(uuid()) @db.Uuid
+  botId                String              @db.Uuid
+  exchangeConnectionId String?             @db.Uuid
+  tradeProposalId      String              @unique @db.Uuid
+  idempotencyKey       String              @unique @db.VarChar(128)
+  clientOrderId        String              @unique @db.VarChar(64)
+  externalOrderId      String?             @db.VarChar(128)
+  tradingMode          TradingMode
+  symbol               String              @db.VarChar(32)
+  side                 OrderSide
+  type                 OrderType
+  status               OrderStatus         @default(CREATED)
+  requestedQuantity    Decimal?            @db.Decimal(38, 18)
+  requestedQuoteAmount Decimal?            @db.Decimal(38, 18)
+  limitPrice           Decimal?            @db.Decimal(38, 18)
+  filledQuantity       Decimal             @default(0) @db.Decimal(38, 18)
+  averageFillPrice     Decimal?            @db.Decimal(38, 18)
+  submittedAt          DateTime?           @db.Timestamptz(3)
+  completedAt          DateTime?           @db.Timestamptz(3)
+  createdAt            DateTime            @default(now()) @db.Timestamptz(3)
+  updatedAt            DateTime            @updatedAt @db.Timestamptz(3)
+  bot                  Bot                 @relation(fields: [botId], references: [id], onDelete: Restrict)
+  exchangeConnection   ExchangeConnection? @relation(fields: [exchangeConnectionId], references: [id], onDelete: Restrict)
+  proposal             TradeProposal       @relation(fields: [tradeProposalId], references: [id], onDelete: Restrict)
+  trades               Trade[]
+
+  @@unique([exchangeConnectionId, externalOrderId])
+  @@index([botId, status, createdAt])
+}
+
+model Trade {
+  id              String   @id @default(uuid()) @db.Uuid
+  orderId         String   @db.Uuid
+  externalTradeId String?  @db.VarChar(128)
+  quantity        Decimal  @db.Decimal(38, 18)
+  price           Decimal  @db.Decimal(38, 18)
+  fee             Decimal  @default(0) @db.Decimal(38, 18)
+  feeAsset        String?  @db.VarChar(16)
+  executedAt      DateTime @db.Timestamptz(3)
+  createdAt       DateTime @default(now()) @db.Timestamptz(3)
+  order           Order    @relation(fields: [orderId], references: [id], onDelete: Restrict)
+
+  @@unique([orderId, externalTradeId])
+  @@index([orderId, executedAt])
+}
+
+model Position {
+  id           String         @id @default(uuid()) @db.Uuid
+  botId        String         @db.Uuid
+  tradingMode  TradingMode
+  symbol       String         @db.VarChar(32)
+  status       PositionStatus @default(OPEN)
+  quantity     Decimal        @db.Decimal(38, 18)
+  averagePrice Decimal        @db.Decimal(38, 18)
+  realizedPnl  Decimal        @default(0) @db.Decimal(38, 18)
+  openedAt     DateTime       @db.Timestamptz(3)
+  closedAt     DateTime?      @db.Timestamptz(3)
+  createdAt    DateTime       @default(now()) @db.Timestamptz(3)
+  updatedAt    DateTime       @updatedAt @db.Timestamptz(3)
+  bot          Bot            @relation(fields: [botId], references: [id], onDelete: Restrict)
+
+  @@index([botId, status, tradingMode])
+  @@index([symbol, status])
+}
+
+model RiskProfile {
+  id                  String      @id @default(uuid()) @db.Uuid
+  userId              String      @db.Uuid
+  botId               String?     @unique @db.Uuid
+  name                String      @db.VarChar(100)
+  maxAllocatedCapital Decimal     @db.Decimal(38, 18)
+  maxTradeAmount      Decimal     @db.Decimal(38, 18)
+  maxExposurePercent  Decimal     @db.Decimal(8, 4)
+  maxPositionPercent  Decimal     @db.Decimal(8, 4)
+  maxPositions        Int
+  maxDailyLossPercent Decimal     @db.Decimal(8, 4)
+  maxDrawdownPercent  Decimal     @db.Decimal(8, 4)
+  allowedSymbols      String[]
+  cooldownSeconds     Int         @default(0)
+  createdAt           DateTime    @default(now()) @db.Timestamptz(3)
+  updatedAt           DateTime    @updatedAt @db.Timestamptz(3)
+  user                User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bot                 Bot?        @relation(fields: [botId], references: [id], onDelete: Cascade)
+  riskEvents          RiskEvent[]
+
+  @@unique([userId, name])
+}
+
+model RiskEvent {
+  id              String         @id @default(uuid()) @db.Uuid
+  botId           String         @db.Uuid
+  riskProfileId   String?        @db.Uuid
+  tradeProposalId String?        @db.Uuid
+  decision        RiskDecision
+  reasonCode      String         @db.VarChar(80)
+  reason          String         @db.Text
+  riskSnapshot    Json
+  createdAt       DateTime       @default(now()) @db.Timestamptz(3)
+  bot             Bot            @relation(fields: [botId], references: [id], onDelete: Restrict)
+  riskProfile     RiskProfile?   @relation(fields: [riskProfileId], references: [id], onDelete: SetNull)
+  proposal        TradeProposal? @relation(fields: [tradeProposalId], references: [id], onDelete: SetNull)
+
+  @@index([botId, createdAt])
+  @@index([decision, reasonCode, createdAt])
+}
+
+model BotEvent {
+  id        String   @id @default(uuid()) @db.Uuid
+  botId     String   @db.Uuid
+  type      String   @db.VarChar(80)
+  payload   Json?
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  bot       Bot      @relation(fields: [botId], references: [id], onDelete: Cascade)
+
+  @@index([botId, createdAt])
+}
+
+model MarketSnapshot {
+  id        String           @id @default(uuid()) @db.Uuid
+  provider  ExchangeProvider
+  symbol    String           @db.VarChar(32)
+  interval  String           @db.VarChar(16)
+  openTime  DateTime         @db.Timestamptz(3)
+  closeTime DateTime         @db.Timestamptz(3)
+  open      Decimal          @db.Decimal(38, 18)
+  high      Decimal          @db.Decimal(38, 18)
+  low       Decimal          @db.Decimal(38, 18)
+  close     Decimal          @db.Decimal(38, 18)
+  volume    Decimal          @db.Decimal(38, 18)
+  trades    Int?
+  createdAt DateTime         @default(now()) @db.Timestamptz(3)
+
+  @@unique([provider, symbol, interval, openTime])
+  @@index([symbol, interval, openTime])
+}
+
+model Backtest {
+  id                String          @id @default(uuid()) @db.Uuid
+  userId            String          @db.Uuid
+  botId             String?         @db.Uuid
+  strategyVersionId String          @db.Uuid
+  status            BacktestStatus  @default(QUEUED)
+  symbol            String          @db.VarChar(32)
+  parameters        Json
+  initialCapital    Decimal         @db.Decimal(38, 18)
+  periodStart       DateTime        @db.Timestamptz(3)
+  periodEnd         DateTime        @db.Timestamptz(3)
+  startedAt         DateTime?       @db.Timestamptz(3)
+  completedAt       DateTime?       @db.Timestamptz(3)
+  createdAt         DateTime        @default(now()) @db.Timestamptz(3)
+  user              User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bot               Bot?            @relation(fields: [botId], references: [id], onDelete: SetNull)
+  strategyVersion   StrategyVersion @relation(fields: [strategyVersionId], references: [id], onDelete: Restrict)
+  result            BacktestResult?
+
+  @@index([userId, status, createdAt])
+}
+
+model BacktestResult {
+  id             String   @id @default(uuid()) @db.Uuid
+  backtestId     String   @unique @db.Uuid
+  absoluteReturn Decimal  @db.Decimal(38, 18)
+  returnPercent  Decimal  @db.Decimal(12, 6)
+  maxDrawdown    Decimal  @db.Decimal(12, 6)
+  winRate        Decimal  @db.Decimal(12, 6)
+  profitFactor   Decimal? @db.Decimal(18, 8)
+  sharpeRatio    Decimal? @db.Decimal(18, 8)
+  tradeCount     Int
+  estimatedFees  Decimal  @db.Decimal(38, 18)
+  metrics        Json
+  createdAt      DateTime @default(now()) @db.Timestamptz(3)
+  backtest       Backtest @relation(fields: [backtestId], references: [id], onDelete: Cascade)
+}
+
+model Notification {
+  id        String              @id @default(uuid()) @db.Uuid
+  userId    String              @db.Uuid
+  channel   NotificationChannel
+  status    NotificationStatus  @default(PENDING)
+  type      String              @db.VarChar(80)
+  title     String              @db.VarChar(180)
+  body      String              @db.Text
+  data      Json?
+  readAt    DateTime?           @db.Timestamptz(3)
+  sentAt    DateTime?           @db.Timestamptz(3)
+  createdAt DateTime            @default(now()) @db.Timestamptz(3)
+  user      User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status, createdAt])
+}
+
+model AuditLog {
+  id            String         @id @default(uuid()) @db.Uuid
+  userId        String?        @db.Uuid
+  botId         String?        @db.Uuid
+  eventType     AuditEventType
+  correlationId String         @db.Uuid
+  actorId       String?        @db.VarChar(128)
+  ipAddress     String?        @db.Inet
+  userAgent     String?        @db.VarChar(512)
+  payload       Json
+  createdAt     DateTime       @default(now()) @db.Timestamptz(3)
+  user          User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
+  bot           Bot?           @relation(fields: [botId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@index([botId, createdAt])
+  @@index([correlationId])
+  @@index([eventType, createdAt])
+}
+
+model Plan {
+  id            String         @id @default(uuid()) @db.Uuid
+  key           String         @unique @db.VarChar(64)
+  name          String         @db.VarChar(100)
+  description   String         @db.Text
+  active        Boolean        @default(true)
+  createdAt     DateTime       @default(now()) @db.Timestamptz(3)
+  updatedAt     DateTime       @updatedAt @db.Timestamptz(3)
+  entitlements  Entitlement[]
+  subscriptions Subscription[]
+}
+
+model Entitlement {
+  id        String   @id @default(uuid()) @db.Uuid
+  planId    String   @db.Uuid
+  key       String   @db.VarChar(80)
+  value     Json
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+  plan      Plan     @relation(fields: [planId], references: [id], onDelete: Cascade)
+
+  @@unique([planId, key])
+}
+
+model BillingCustomer {
+  id                 String   @id @default(uuid()) @db.Uuid
+  userId             String   @unique @db.Uuid
+  providerCustomerId String   @unique @db.VarChar(128)
+  createdAt          DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt          DateTime @updatedAt @db.Timestamptz(3)
+  user               User     @relation(fields: [userId], references: [id], onDelete: Restrict)
+}
+
+model Subscription {
+  id                     String             @id @default(uuid()) @db.Uuid
+  userId                 String             @db.Uuid
+  planId                 String             @db.Uuid
+  providerSubscriptionId String?            @unique @db.VarChar(128)
+  status                 SubscriptionStatus @default(INCOMPLETE)
+  currentPeriodStart     DateTime?          @db.Timestamptz(3)
+  currentPeriodEnd       DateTime?          @db.Timestamptz(3)
+  cancelAtPeriodEnd      Boolean            @default(false)
+  canceledAt             DateTime?          @db.Timestamptz(3)
+  createdAt              DateTime           @default(now()) @db.Timestamptz(3)
+  updatedAt              DateTime           @updatedAt @db.Timestamptz(3)
+  user                   User               @relation(fields: [userId], references: [id], onDelete: Restrict)
+  plan                   Plan               @relation(fields: [planId], references: [id], onDelete: Restrict)
+  usages                 Usage[]
+
+  @@index([userId, status])
+}
+
+model Usage {
+  id             String        @id @default(uuid()) @db.Uuid
+  userId         String        @db.Uuid
+  subscriptionId String?       @db.Uuid
+  metric         String        @db.VarChar(80)
+  quantity       Decimal       @db.Decimal(38, 8)
+  periodStart    DateTime      @db.Timestamptz(3)
+  periodEnd      DateTime      @db.Timestamptz(3)
+  createdAt      DateTime      @default(now()) @db.Timestamptz(3)
+  updatedAt      DateTime      @updatedAt @db.Timestamptz(3)
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subscription   Subscription? @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
+
+  @@unique([userId, metric, periodStart, periodEnd])
+  @@index([subscriptionId, metric])
+}

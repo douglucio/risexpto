@@ -13,6 +13,7 @@ dist/
 coverage/
 .turbo/
 *.tsbuildinfo
+packages/database/generated/
 
 # Local tooling
 .DS_Store
