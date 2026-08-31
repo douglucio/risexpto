@@ -2024,7 +2024,7 @@ Branch:
 feature/09-risk-engine
 
 Commit:
-<hash>
+df21433
 
 Resumo:
 - Risk Engine puro e determinístico implementado com limites de capital, trade, exposição e posições;
