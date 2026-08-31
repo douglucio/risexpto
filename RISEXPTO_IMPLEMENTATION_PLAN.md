@@ -1773,7 +1773,7 @@ Atualizar esta seção conforme o projeto avançar.
 | 08 | Paper Trading | ✅ Concluído |
 | 09 | Risk Engine | ✅ Concluído |
 | 10 | Strategy Engine | ✅ Concluído |
-| 11 | DCA | ⬜ Pendente |
+| 11 | DCA | 🟨 Em andamento |
 | 12 | Grid | ⬜ Pendente |
 | 13 | Trend Following | ⬜ Pendente |
 | 14 | Bot Manager | ⬜ Pendente |
