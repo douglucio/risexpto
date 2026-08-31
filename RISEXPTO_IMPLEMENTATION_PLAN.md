@@ -888,15 +888,15 @@ Paper Trading deve existir antes de LIVE Trading.
 
 Simular:
 
-- [ ] saldo.
-- [ ] ordens.
-- [ ] fills.
-- [ ] compra.
-- [ ] venda.
-- [ ] fees.
-- [ ] posições.
-- [ ] realized P&L.
-- [ ] unrealized P&L.
+- [x] saldo.
+- [x] ordens.
+- [x] fills.
+- [x] compra.
+- [x] venda.
+- [x] fees.
+- [x] posições.
+- [x] realized P&L.
+- [x] unrealized P&L.
 
 Usar dados reais do Market Data Engine.
 
@@ -912,8 +912,8 @@ Execution
 PaperExecution | LiveExecution
 ```
 
-- [ ] Testes determinísticos.
-- [ ] Feature integrada à `develop`.
+- [x] Testes determinísticos.
+- [x] Feature integrada à `develop`.
 
 ---
 
@@ -1770,7 +1770,7 @@ Atualizar esta seção conforme o projeto avançar.
 | 05 | Domain Model | ✅ Concluído |
 | 06 | Market Data | ✅ Concluído |
 | 07 | Binance Connection | ✅ Concluído |
-| 08 | Paper Trading | ⬜ Pendente |
+| 08 | Paper Trading | ✅ Concluído |
 | 09 | Risk Engine | ⬜ Pendente |
 | 10 | Strategy Engine | ⬜ Pendente |
 | 11 | DCA | ⬜ Pendente |
@@ -1988,6 +1988,32 @@ Validações:
 
 Merge:
 feature/07-binance-connection → develop
+
+Status:
+✅ concluído
+
+## 2026-08-31 — Feature 08
+
+Branch:
+feature/08-paper-trading
+
+Commit:
+d2666ef
+
+Resumo:
+- motor PAPER determinístico implementado com saldos, ordens preenchidas/rejeitadas, fills e fees;
+- posições, preço médio, realized P&L e unrealized P&L calculados sem dependência de execução LIVE;
+- invariantes de saldo e posição cobertas por testes determinísticos.
+
+Validações:
+- lint: OK
+- tests: OK (28 testes no monorepo; 2 de paper trading)
+- typecheck: OK
+- build: OK
+- format: OK
+
+Merge:
+feature/08-paper-trading → develop
 
 Status:
 ✅ concluído
