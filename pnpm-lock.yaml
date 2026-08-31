@@ -151,6 +151,8 @@ importers:
 
   packages/strategy-engine: {}
 
+  packages/strategy-grid: {}
+
   packages/ui:
     devDependencies:
       '@testing-library/jest-dom':
