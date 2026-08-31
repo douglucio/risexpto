@@ -1,0 +1,12 @@
+{
+  "name": "@risexpto/config",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./brand": "./brand/tokens.css"
+  },
+  "files": [
+    "brand"
+  ]
+}

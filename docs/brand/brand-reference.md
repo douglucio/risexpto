@@ -36,17 +36,17 @@ The SVGs are provisional and deliberately decoupled so a future commissioned mar
 
 The product uses deep navy neutrals and an electric indigo-blue accent. Green and red are semantic only.
 
-| Role | Light | Dark | Notes |
-|---|---:|---:|---|
-| Canvas | `#F7F9FC` | `#080D18` | Primary background |
-| Surface | `#FFFFFF` | `#101827` | Cards and panels |
-| Text | `#101828` | `#F1F5F9` | Primary copy |
-| Muted text | `#526077` | `#9AA8BC` | Meets AA on its canvas |
-| Brand | `#3657D6` | `#6F8CFF` | Actions, focus, active navigation |
-| Brand strong | `#263FA6` | `#9AADFF` | Hover/emphasis |
-| Positive | `#087A55` | `#38C793` | Gains and success only |
-| Negative | `#C9364F` | `#FF667D` | Losses and destructive errors only |
-| Warning | `#A65F00` | `#F2B84B` | Risk warnings and attention |
+| Role         |     Light |      Dark | Notes                              |
+| ------------ | --------: | --------: | ---------------------------------- |
+| Canvas       | `#F7F9FC` | `#080D18` | Primary background                 |
+| Surface      | `#FFFFFF` | `#101827` | Cards and panels                   |
+| Text         | `#101828` | `#F1F5F9` | Primary copy                       |
+| Muted text   | `#526077` | `#9AA8BC` | Meets AA on its canvas             |
+| Brand        | `#3657D6` | `#6F8CFF` | Actions, focus, active navigation  |
+| Brand strong | `#263FA6` | `#9AADFF` | Hover/emphasis                     |
+| Positive     | `#087A55` | `#38C793` | Gains and success only             |
+| Negative     | `#C9364F` | `#FF667D` | Losses and destructive errors only |
+| Warning      | `#A65F00` | `#F2B84B` | Risk warnings and attention        |
 
 Never communicate P&L or risk using color alone; pair it with a sign, label, and where useful an icon. Core text/background pairs are selected for WCAG AA contrast. Component states must be rechecked when composed.
 

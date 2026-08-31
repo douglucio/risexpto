@@ -608,22 +608,22 @@ infra/
 
 Checklist:
 
-- [ ] Stack analisada.
-- [ ] ADR da stack criado.
-- [ ] Monorepo criado.
-- [ ] TypeScript configurado.
-- [ ] Lint configurado.
-- [ ] Formatter configurado.
-- [ ] Test runner configurado.
-- [ ] PostgreSQL configurado.
-- [ ] Redis configurado.
-- [ ] Docker Compose funcionando.
-- [ ] `.env.example` criado.
-- [ ] `.gitignore` revisado.
-- [ ] README inicial criado.
-- [ ] CI básico criado.
-- [ ] Build completo funcionando.
-- [ ] Feature integrada à `develop`.
+- [x] Stack analisada.
+- [x] ADR da stack criado.
+- [x] Monorepo criado.
+- [x] TypeScript configurado.
+- [x] Lint configurado.
+- [x] Formatter configurado.
+- [x] Test runner configurado.
+- [x] PostgreSQL configurado.
+- [x] Redis configurado.
+- [x] Docker Compose funcionando.
+- [x] `.env.example` criado.
+- [x] `.gitignore` revisado.
+- [x] README inicial criado.
+- [x] CI básico criado.
+- [x] Build completo funcionando.
+- [x] Feature integrada à `develop`.
 
 ---
 
@@ -1764,7 +1764,7 @@ Atualizar esta seção conforme o projeto avançar.
 | Fase | Feature | Status |
 |---|---|---|
 | 01 | Brand Foundation | ✅ Concluído |
-| 02 | Technical Foundation | ⬜ Pendente |
+| 02 | Technical Foundation | ✅ Concluído |
 | 03 | Design System | ⬜ Pendente |
 | 04 | Authentication | ⬜ Pendente |
 | 05 | Domain Model | ⬜ Pendente |
@@ -1831,6 +1831,32 @@ Validações:
 
 Merge:
 feature/01-brand-foundation → develop
+
+Status:
+✅ concluído
+
+## 2026-08-30 — Feature 02
+
+Branch:
+feature/02-technical-foundation
+
+Commit:
+91c49e3
+
+Resumo:
+- monorepo pnpm/Turborepo com web, API, worker e pacotes compartilhados criado;
+- stack TypeScript, Next.js, NestJS, PostgreSQL, Redis e Keycloak analisada e documentada em ADRs;
+- lint, formatter, Vitest, CI, ambiente, Compose, health endpoint e documentação configurados.
+
+Validações:
+- lint: OK
+- tests: OK (1 teste)
+- typecheck: OK
+- build: OK (web, API, worker e shared)
+- Docker Compose: configuração válida; daemon local indisponível para subir containers
+
+Merge:
+feature/02-technical-foundation → develop
 
 Status:
 ✅ concluído
