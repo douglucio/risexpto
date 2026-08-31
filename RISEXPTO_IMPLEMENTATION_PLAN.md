@@ -1998,7 +1998,7 @@ Branch:
 feature/08-paper-trading
 
 Commit:
-<hash>
+d2666ef
 
 Resumo:
 - motor PAPER determinístico implementado com saldos, ordens preenchidas/rejeitadas, fills e fees;
