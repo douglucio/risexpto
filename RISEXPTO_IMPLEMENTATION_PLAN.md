@@ -1774,7 +1774,7 @@ Atualizar esta seção conforme o projeto avançar.
 | 09 | Risk Engine | ✅ Concluído |
 | 10 | Strategy Engine | ✅ Concluído |
 | 11 | DCA | ✅ Concluído |
-| 12 | Grid | ⬜ Pendente |
+| 12 | Grid | 🟨 Em andamento |
 | 13 | Trend Following | ⬜ Pendente |
 | 14 | Bot Manager | ⬜ Pendente |
 | 15 | Worker Runtime | ⬜ Pendente |
