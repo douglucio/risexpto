@@ -2,6 +2,7 @@
 dist
 coverage
 node_modules
+packages/database/generated
 pnpm-lock.yaml
 RISEXPTO_IMPLEMENTATION_PLAN.md
 apps/web/next-env.d.ts

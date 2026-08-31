@@ -1767,7 +1767,7 @@ Atualizar esta seção conforme o projeto avançar.
 | 02 | Technical Foundation | ✅ Concluído |
 | 03 | Design System | ✅ Concluído |
 | 04 | Authentication | ✅ Concluído |
-| 05 | Domain Model | ⬜ Pendente |
+| 05 | Domain Model | 🟨 Em andamento |
 | 06 | Market Data | ⬜ Pendente |
 | 07 | Binance Connection | ⬜ Pendente |
 | 08 | Paper Trading | ⬜ Pendente |
