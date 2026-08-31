@@ -2050,7 +2050,7 @@ Branch:
 feature/10-strategy-engine
 
 Commit:
-<hash>
+9fce142
 
 Resumo:
 - contrato padronizado de Strategy com StrategyDefinition, StrategyVersion e TradeProposal;
