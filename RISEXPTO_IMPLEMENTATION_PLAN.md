@@ -1764,7 +1764,7 @@ Atualizar esta seção conforme o projeto avançar.
 | Fase | Feature | Status |
 |---|---|---|
 | 01 | Brand Foundation | ✅ Concluído |
-| 02 | Technical Foundation | ⬜ Pendente |
+| 02 | Technical Foundation | 🟨 Em andamento |
 | 03 | Design System | ⬜ Pendente |
 | 04 | Authentication | ⬜ Pendente |
 | 05 | Domain Model | ⬜ Pendente |

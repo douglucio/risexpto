@@ -1,0 +1,22 @@
+@import '../../../docs/brand/tokens.css';
+
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  background: var(--rx-color-canvas);
+  color: var(--rx-color-text);
+  font-family: var(--rx-font-sans);
+}
+
+.rx-page {
+  max-width: 64rem;
+  margin-inline: auto;
+  padding: var(--rx-space-8);
+}
+
+.rx-title {
+  font-size: var(--rx-text-display);
+  font-weight: var(--rx-weight-semibold);
+}
