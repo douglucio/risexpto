@@ -147,6 +147,8 @@ importers:
 
   packages/shared: {}
 
+  packages/strategy-dca: {}
+
   packages/strategy-engine: {}
 
   packages/ui:

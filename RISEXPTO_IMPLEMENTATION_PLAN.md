@@ -1010,19 +1010,19 @@ Primeira estratégia real.
 
 Parâmetros:
 
-- [ ] symbol.
-- [ ] frequência.
-- [ ] valor.
-- [ ] capital máximo.
-- [ ] condições opcionais.
-- [ ] limites de risco.
+- [x] symbol.
+- [x] frequência.
+- [x] valor.
+- [x] capital máximo.
+- [x] condições opcionais.
+- [x] limites de risco.
 
 Primeiro em PAPER.
 
-- [ ] Paper Trading validado.
-- [ ] Backtest suportado.
-- [ ] Testes.
-- [ ] Feature integrada à `develop`.
+- [x] Paper Trading validado.
+- [x] Backtest suportado.
+- [x] Testes.
+- [x] Feature integrada à `develop`.
 
 ---
 
@@ -1773,7 +1773,7 @@ Atualizar esta seção conforme o projeto avançar.
 | 08 | Paper Trading | ✅ Concluído |
 | 09 | Risk Engine | ✅ Concluído |
 | 10 | Strategy Engine | ✅ Concluído |
-| 11 | DCA | ⬜ Pendente |
+| 11 | DCA | ✅ Concluído |
 | 12 | Grid | ⬜ Pendente |
 | 13 | Trend Following | ⬜ Pendente |
 | 14 | Bot Manager | ⬜ Pendente |
@@ -2066,6 +2066,32 @@ Validações:
 
 Merge:
 feature/10-strategy-engine → develop
+
+Status:
+✅ concluído
+
+## 2026-08-31 — Feature 11
+
+Branch:
+feature/11-strategy-dca
+
+Commit:
+7525d34
+
+Resumo:
+- estratégia DCA PAPER determinística criada com símbolo, intervalo, valor e capital máximo;
+- condições opcionais de faixa de preço e bloqueios por capital, frequência e modo LIVE implementados;
+- integração conceitual com Paper Trading e suporte a proposta para backtest estabelecidos.
+
+Validações:
+- lint: OK
+- tests: OK (36 testes no monorepo; 3 de DCA)
+- typecheck: OK
+- build: OK
+- format: OK
+
+Merge:
+feature/11-strategy-dca → develop
 
 Status:
 ✅ concluído
