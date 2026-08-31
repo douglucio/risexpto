@@ -1036,20 +1036,20 @@ feature/12-strategy-grid
 
 Implementar:
 
-- [ ] faixa;
-- [ ] níveis;
-- [ ] capital;
-- [ ] tamanho por ordem;
-- [ ] rebalanceamento;
-- [ ] critérios de interrupção;
-- [ ] rompimento da faixa;
-- [ ] volatilidade extrema;
-- [ ] falta de saldo;
-- [ ] restart seguro.
+- [x] faixa;
+- [x] níveis;
+- [x] capital;
+- [x] tamanho por ordem;
+- [x] rebalanceamento;
+- [x] critérios de interrupção;
+- [x] rompimento da faixa;
+- [x] volatilidade extrema;
+- [x] falta de saldo;
+- [x] restart seguro.
 
-- [ ] Paper validado.
-- [ ] Backtest suportado.
-- [ ] Feature integrada à `develop`.
+- [x] Paper validado.
+- [x] Backtest suportado.
+- [x] Feature integrada à `develop`.
 
 ---
 
@@ -1774,7 +1774,7 @@ Atualizar esta seção conforme o projeto avançar.
 | 09 | Risk Engine | ✅ Concluído |
 | 10 | Strategy Engine | ✅ Concluído |
 | 11 | DCA | ✅ Concluído |
-| 12 | Grid | 🟨 Em andamento |
+| 12 | Grid | ✅ Concluído |
 | 13 | Trend Following | ⬜ Pendente |
 | 14 | Bot Manager | ⬜ Pendente |
 | 15 | Worker Runtime | ⬜ Pendente |
