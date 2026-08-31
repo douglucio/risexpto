@@ -712,19 +712,19 @@ Implementar autenticação de produção.
 
 Funcionalidades:
 
-- [ ] Cadastro.
-- [ ] Login.
-- [ ] Logout.
-- [ ] Recuperação de senha.
-- [ ] Verificação de e-mail.
-- [ ] Sessão segura.
-- [ ] Refresh token.
-- [ ] Rotas protegidas.
-- [ ] Perfil.
-- [ ] Preferências.
-- [ ] Locale.
-- [ ] Timezone.
-- [ ] Moeda de referência.
+- [x] Cadastro.
+- [x] Login.
+- [x] Logout.
+- [x] Recuperação de senha.
+- [x] Verificação de e-mail.
+- [x] Sessão segura.
+- [x] Refresh token.
+- [x] Rotas protegidas.
+- [x] Perfil.
+- [x] Preferências.
+- [x] Locale.
+- [x] Timezone.
+- [x] Moeda de referência.
 
 Roles iniciais:
 
@@ -734,10 +734,10 @@ SUPPORT
 ADMIN
 ```
 
-- [ ] Keycloak configurado ou alternativa documentada.
-- [ ] ADR criado.
-- [ ] Testes implementados.
-- [ ] Feature integrada à `develop`.
+- [x] Keycloak configurado ou alternativa documentada.
+- [x] ADR criado.
+- [x] Testes implementados.
+- [x] Feature integrada à `develop`.
 
 ---
 
@@ -1766,7 +1766,7 @@ Atualizar esta seção conforme o projeto avançar.
 | 01 | Brand Foundation | ✅ Concluído |
 | 02 | Technical Foundation | ✅ Concluído |
 | 03 | Design System | ✅ Concluído |
-| 04 | Authentication | ⬜ Pendente |
+| 04 | Authentication | ✅ Concluído |
 | 05 | Domain Model | ⬜ Pendente |
 | 06 | Market Data | ⬜ Pendente |
 | 07 | Binance Connection | ⬜ Pendente |
@@ -1883,6 +1883,33 @@ Validações:
 
 Merge:
 feature/03-design-system → develop
+
+Status:
+✅ concluído
+
+## 2026-08-30 — Feature 04
+
+Branch:
+feature/04-authentication
+
+Commit:
+dfdfa81
+
+Resumo:
+- Keycloak OIDC Authorization Code + PKCE com cadastro, recuperação e verificação de e-mail configurado;
+- sessão BFF criptografada, refresh, logout, proteção de rotas e preferências regionais implementados;
+- validação JWT/JWKS, RBAC global e perfil seguro implementados na API.
+
+Validações:
+- lint: OK
+- tests: OK (13 testes)
+- typecheck: OK
+- build: OK
+- funcional: login público 200 e rota privada redirecionada 307 sem sessão
+- Keycloak: realm e Compose válidos; SMTP real depende do ambiente de implantação
+
+Merge:
+feature/04-authentication → develop
 
 Status:
 ✅ concluído

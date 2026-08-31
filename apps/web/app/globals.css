@@ -252,6 +252,52 @@ p {
 .sidebar-scrim {
   display: none;
 }
+.auth-page {
+  display: grid;
+  place-items: center;
+  min-height: 100vh;
+  padding: var(--rx-space-5);
+  background:
+    radial-gradient(
+      circle at 50% 0,
+      color-mix(in srgb, var(--rx-color-brand) 20%, transparent),
+      transparent 42%
+    ),
+    var(--rx-color-canvas);
+}
+.auth-card {
+  display: grid;
+  gap: var(--rx-space-4);
+  width: min(28rem, 100%);
+  padding: var(--rx-space-8);
+  text-align: center;
+}
+.auth-card p,
+.auth-card small {
+  color: var(--rx-color-text-muted);
+}
+.auth-mark {
+  display: grid;
+  place-items: center;
+  width: 3rem;
+  height: 3rem;
+  margin: auto;
+  border-radius: var(--rx-radius-lg);
+  background: var(--rx-color-brand);
+  color: #fff;
+  font-size: 1.35rem;
+  font-weight: 700;
+}
+.auth-action {
+  display: grid;
+  place-items: center;
+  text-decoration: none;
+}
+.auth-link {
+  color: var(--rx-color-brand);
+  font-size: var(--rx-text-sm);
+  font-weight: 600;
+}
 @media (max-width: 64rem) {
   .kpi-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -314,4 +360,23 @@ p {
   .topbar-actions button:nth-child(2) {
     display: none;
   }
+}
+.profile-list {
+  display: grid;
+  gap: var(--rx-space-3);
+  margin: 0;
+}
+.profile-list > div {
+  display: grid;
+  gap: 0.2rem;
+}
+.profile-list dt {
+  color: var(--rx-color-text-muted);
+  font-size: var(--rx-text-xs);
+}
+.profile-list dd {
+  margin: 0;
+  font-size: var(--rx-text-sm);
+  font-weight: 600;
+  overflow-wrap: anywhere;
 }

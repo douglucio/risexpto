@@ -22,12 +22,22 @@ export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [theme, setTheme] = useState<'light' | 'dark'>('dark');
+  const [user, setUser] = useState<{ name: string; email: string } | null>(null);
   useEffect(() => {
     const saved = localStorage.getItem('rx-theme');
     const next = saved === 'light' || saved === 'dark' ? saved : 'dark';
     setTheme(next);
     document.documentElement.dataset.theme = next;
   }, []);
+  useEffect(() => {
+    if (pathname === '/login') return;
+    void fetch('/auth/session', { cache: 'no-store' }).then(async (response) => {
+      if (response.ok) {
+        const body = (await response.json()) as { user: { name: string; email: string } };
+        setUser(body.user);
+      }
+    });
+  }, [pathname]);
   const toggleTheme = () => {
     const next = theme === 'dark' ? 'light' : 'dark';
     setTheme(next);
@@ -35,6 +45,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     document.documentElement.dataset.theme = next;
   };
   const activeLabel = navigation.find(([, href]) => href === pathname)?.[0] ?? 'Dashboard';
+  if (pathname === '/login') return <>{children}</>;
   return (
     <div className="app-shell">
       <aside
@@ -93,11 +104,28 @@ export function AppShell({ children }: { children: ReactNode }) {
               {theme === 'dark' ? '☀' : '☾'}
             </button>
             <button aria-label="Open notifications">●</button>
-            <span className="avatar">RR</span>
+            <span className="avatar" title={user?.email}>
+              {user ? initials(user.name) : 'RX'}
+            </span>
+            <form action="/auth/logout" method="post">
+              <button type="submit" aria-label="Sign out">
+                ↪
+              </button>
+            </form>
           </div>
         </header>
         <main className="app-content">{children}</main>
       </div>
     </div>
+  );
+}
+
+function initials(name: string): string {
+  return (
+    name
+      .split(/\s+/)
+      .slice(0, 2)
+      .map((part) => part[0]?.toUpperCase() ?? '')
+      .join('') || 'RX'
   );
 }
