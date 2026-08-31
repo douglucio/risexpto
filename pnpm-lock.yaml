@@ -147,6 +147,8 @@ importers:
 
   packages/shared: {}
 
+  packages/strategy-engine: {}
+
   packages/ui:
     devDependencies:
       '@testing-library/jest-dom':

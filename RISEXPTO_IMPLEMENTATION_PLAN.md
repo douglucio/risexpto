@@ -984,17 +984,17 @@ interface TradingStrategy {
 
 Implementar:
 
-- [ ] StrategyDefinition.
-- [ ] StrategyVersion.
-- [ ] parâmetros tipados.
-- [ ] schemas.
-- [ ] lifecycle.
-- [ ] logs funcionais.
-- [ ] métricas.
-- [ ] versionamento.
-- [ ] ativação/desativação.
+- [x] StrategyDefinition.
+- [x] StrategyVersion.
+- [x] parâmetros tipados.
+- [x] schemas.
+- [x] lifecycle.
+- [x] logs funcionais.
+- [x] métricas.
+- [x] versionamento.
+- [x] ativação/desativação.
 
-- [ ] Feature integrada à `develop`.
+- [x] Feature integrada à `develop`.
 
 ---
 
@@ -1772,7 +1772,7 @@ Atualizar esta seção conforme o projeto avançar.
 | 07 | Binance Connection | ✅ Concluído |
 | 08 | Paper Trading | ✅ Concluído |
 | 09 | Risk Engine | ✅ Concluído |
-| 10 | Strategy Engine | ⬜ Pendente |
+| 10 | Strategy Engine | ✅ Concluído |
 | 11 | DCA | ⬜ Pendente |
 | 12 | Grid | ⬜ Pendente |
 | 13 | Trend Following | ⬜ Pendente |
@@ -2040,6 +2040,32 @@ Validações:
 
 Merge:
 feature/09-risk-engine → develop
+
+Status:
+✅ concluído
+
+## 2026-08-31 — Feature 10
+
+Branch:
+feature/10-strategy-engine
+
+Commit:
+<hash>
+
+Resumo:
+- contrato padronizado de Strategy com StrategyDefinition, StrategyVersion e TradeProposal;
+- parâmetros tipados, schemas, lifecycle, ativação/desativação e versionamento implementados;
+- logs funcionais e métricas adicionados sem acesso a execução ou credenciais.
+
+Validações:
+- lint: OK
+- tests: OK (33 testes no monorepo; 2 de Strategy Engine)
+- typecheck: OK
+- build: OK
+- format: OK
+
+Merge:
+feature/10-strategy-engine → develop
 
 Status:
 ✅ concluído
