@@ -1766,7 +1766,7 @@ Atualizar esta seção conforme o projeto avançar.
 | 01 | Brand Foundation | ✅ Concluído |
 | 02 | Technical Foundation | ✅ Concluído |
 | 03 | Design System | ✅ Concluído |
-| 04 | Authentication | ⬜ Pendente |
+| 04 | Authentication | 🟨 Em andamento |
 | 05 | Domain Model | ⬜ Pendente |
 | 06 | Market Data | ⬜ Pendente |
 | 07 | Binance Connection | ⬜ Pendente |

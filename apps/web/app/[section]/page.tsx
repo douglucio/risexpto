@@ -14,12 +14,12 @@ import {
   Progress,
   Radio,
   RiskIndicator,
-  Select,
   Switch,
   Tabs,
 } from '@risexpto/ui';
 import { notFound } from 'next/navigation';
 import { PageHeader } from '../../components/page-header';
+import { PreferencesForm } from '../../components/preferences-form';
 
 const pages = {
   bots: ['Automation', 'Bots', 'Create, monitor, and control automated strategy instances.'],
@@ -252,34 +252,7 @@ function SectionContent({ section }: { section: string }) {
         </Card>
       </div>
     );
-  if (section === 'settings')
-    return (
-      <div className="settings-grid">
-        <Card>
-          <h2>Regional preferences</h2>
-          <FormField label="Language">
-            <Select defaultValue="en">
-              <option value="en">English</option>
-              <option value="pt-BR">Português (Brasil)</option>
-            </Select>
-          </FormField>
-          <FormField label="Reference currency">
-            <Select>
-              <option>USD</option>
-              <option>BRL</option>
-            </Select>
-          </FormField>
-          <Switch label="Dark theme" defaultChecked />
-        </Card>
-        <Card>
-          <h2>Notifications</h2>
-          <Checkbox label="Critical risk alerts" defaultChecked disabled />
-          <Checkbox label="Bot lifecycle events" defaultChecked />
-          <Checkbox label="Weekly performance summary" />
-          <Button>Save preferences</Button>
-        </Card>
-      </div>
-    );
+  if (section === 'settings') return <PreferencesForm />;
   return (
     <>
       <Alert tone="warning" title="Restricted area">

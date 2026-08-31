@@ -1,0 +1,84 @@
+{
+  "realm": "risexpto",
+  "enabled": true,
+  "displayName": "RiseXPTO",
+  "registrationAllowed": true,
+  "registrationEmailAsUsername": true,
+  "resetPasswordAllowed": true,
+  "verifyEmail": true,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "bruteForceProtected": true,
+  "failureFactor": 5,
+  "waitIncrementSeconds": 60,
+  "maxFailureWaitSeconds": 900,
+  "sslRequired": "external",
+  "roles": {
+    "realm": [
+      { "name": "USER", "description": "Standard RiseXPTO user" },
+      { "name": "SUPPORT", "description": "Support operator without secret access" },
+      { "name": "ADMIN", "description": "Privileged and audited administrator" }
+    ]
+  },
+  "defaultRole": {
+    "name": "default-roles-risexpto",
+    "composite": true,
+    "composites": { "realm": ["USER"] }
+  },
+  "clientScopes": [
+    {
+      "name": "risexpto-api-audience",
+      "protocol": "openid-connect",
+      "attributes": { "include.in.token.scope": "false", "display.on.consent.screen": "false" },
+      "protocolMappers": [
+        {
+          "name": "RiseXPTO API audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.client.audience": "risexpto-api",
+            "id.token.claim": "false",
+            "access.token.claim": "true"
+          }
+        }
+      ]
+    }
+  ],
+  "clients": [
+    {
+      "clientId": "risexpto-web",
+      "name": "RiseXPTO Web BFF",
+      "enabled": true,
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "protocol": "openid-connect",
+      "redirectUris": ["http://localhost:3000/auth/callback"],
+      "webOrigins": ["http://localhost:3000"],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "http://localhost:3000/*"
+      },
+      "defaultClientScopes": [
+        "web-origins",
+        "acr",
+        "roles",
+        "profile",
+        "email",
+        "risexpto-api-audience"
+      ]
+    },
+    {
+      "clientId": "risexpto-api",
+      "name": "RiseXPTO API",
+      "enabled": true,
+      "publicClient": true,
+      "bearerOnly": true,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "protocol": "openid-connect"
+    }
+  ]
+}
