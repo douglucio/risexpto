@@ -19,3 +19,5 @@ Strategies never import execution or connector packages and never receive creden
 ADRs record binding choices. A new ADR supersedes an accepted decision; history is not rewritten.
 
 The PostgreSQL entities, aggregate relationships, and financial invariants are documented in [`domain-model.md`](./domain-model.md).
+
+Public exchange ingestion and its resilience boundary are documented in [`ADR-004-market-data.md`](./ADR-004-market-data.md).
