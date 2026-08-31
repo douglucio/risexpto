@@ -850,17 +850,17 @@ feature/07-binance-connection
 
 Implementar conexão privada.
 
-- [ ] Cadastro de API Key.
-- [ ] Cadastro de API Secret.
-- [ ] Criptografia.
-- [ ] Mascaramento.
-- [ ] Teste de conexão.
-- [ ] Validação de permissões.
-- [ ] Bloqueio se houver configuração insegura.
-- [ ] Health status.
-- [ ] Revogação local.
-- [ ] Auditoria.
-- [ ] API Secret nunca retornado.
+- [x] Cadastro de API Key.
+- [x] Cadastro de API Secret.
+- [x] Criptografia.
+- [x] Mascaramento.
+- [x] Teste de conexão.
+- [x] Validação de permissões.
+- [x] Bloqueio se houver configuração insegura.
+- [x] Health status.
+- [x] Revogação local.
+- [x] Auditoria.
+- [x] API Secret nunca retornado.
 
 Estados:
 
@@ -871,8 +871,8 @@ INVALID
 DISCONNECTED
 ```
 
-- [ ] Testes com mocks.
-- [ ] Feature integrada à `develop`.
+- [x] Testes com mocks.
+- [x] Feature integrada à `develop`.
 
 ---
 
@@ -1769,7 +1769,7 @@ Atualizar esta seção conforme o projeto avançar.
 | 04 | Authentication | ✅ Concluído |
 | 05 | Domain Model | ✅ Concluído |
 | 06 | Market Data | ✅ Concluído |
-| 07 | Binance Connection | ⬜ Pendente |
+| 07 | Binance Connection | ✅ Concluído |
 | 08 | Paper Trading | ⬜ Pendente |
 | 09 | Risk Engine | ⬜ Pendente |
 | 10 | Strategy Engine | ⬜ Pendente |
@@ -1962,6 +1962,32 @@ Validações:
 
 Merge:
 feature/06-market-data → develop
+
+Status:
+✅ concluído
+
+## 2026-08-31 — Feature 07
+
+Branch:
+feature/07-binance-connection
+
+Commit:
+<hash>
+
+Resumo:
+- vault AES-256-GCM com ciphertext versionado e nenhuma credencial em texto puro persistida;
+- cliente de conta Binance com assinatura HMAC, teste de permissões, estados de saúde e mascaramento;
+- revogação local e eventos de auditoria implementados, com testes exclusivamente mockados.
+
+Validações:
+- lint: OK
+- tests: OK (26 testes no monorepo; 2 de conexão Binance)
+- typecheck: OK
+- build: OK
+- format: OK
+
+Merge:
+feature/07-binance-connection → develop
 
 Status:
 ✅ concluído
