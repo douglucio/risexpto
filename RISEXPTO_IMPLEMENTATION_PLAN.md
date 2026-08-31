@@ -1972,7 +1972,7 @@ Branch:
 feature/07-binance-connection
 
 Commit:
-<hash>
+996beb3
 
 Resumo:
 - vault AES-256-GCM com ciphertext versionado e nenhuma credencial em texto puro persistida;
