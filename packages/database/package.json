@@ -7,7 +7,7 @@
   "types": "./dist/index.d.ts",
   "scripts": {
     "build": "prisma generate && tsc -p tsconfig.json",
-    "lint": "eslint src prisma.config.ts",
+    "lint": "prisma generate && eslint src prisma.config.ts",
     "test": "vitest run",
     "typecheck": "prisma generate && tsc --noEmit",
     "db:validate": "prisma validate",
