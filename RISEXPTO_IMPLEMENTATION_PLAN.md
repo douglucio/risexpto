@@ -639,64 +639,64 @@ Implementar o design system baseado no Brand Reference Kit.
 
 ## Componentes
 
-- [ ] Button.
-- [ ] Input.
-- [ ] Select.
-- [ ] Checkbox.
-- [ ] Radio.
-- [ ] Switch.
-- [ ] Form Field.
-- [ ] Card.
-- [ ] Dialog.
-- [ ] Drawer.
-- [ ] Tooltip.
-- [ ] Popover.
-- [ ] Dropdown.
-- [ ] Badge.
-- [ ] Alert.
-- [ ] Toast.
-- [ ] Skeleton.
-- [ ] Empty State.
-- [ ] Error State.
-- [ ] Data Table.
-- [ ] Pagination.
-- [ ] Tabs.
-- [ ] Progress.
-- [ ] KPI Card.
-- [ ] Currency Display.
-- [ ] Percentage Display.
-- [ ] P&L Indicator.
-- [ ] Risk Indicator.
-- [ ] Bot Status Indicator.
+- [x] Button.
+- [x] Input.
+- [x] Select.
+- [x] Checkbox.
+- [x] Radio.
+- [x] Switch.
+- [x] Form Field.
+- [x] Card.
+- [x] Dialog.
+- [x] Drawer.
+- [x] Tooltip.
+- [x] Popover.
+- [x] Dropdown.
+- [x] Badge.
+- [x] Alert.
+- [x] Toast.
+- [x] Skeleton.
+- [x] Empty State.
+- [x] Error State.
+- [x] Data Table.
+- [x] Pagination.
+- [x] Tabs.
+- [x] Progress.
+- [x] KPI Card.
+- [x] Currency Display.
+- [x] Percentage Display.
+- [x] P&L Indicator.
+- [x] Risk Indicator.
+- [x] Bot Status Indicator.
 
 ## App Shell
 
-- [ ] Sidebar.
-- [ ] Topbar.
-- [ ] Breadcrumbs.
-- [ ] Navegação mobile.
-- [ ] Layout desktop.
-- [ ] Layout tablet.
-- [ ] Layout mobile.
-- [ ] Dark Mode.
-- [ ] Light Mode.
-- [ ] Persistência de preferência.
+- [x] Sidebar.
+- [x] Topbar.
+- [x] Breadcrumbs.
+- [x] Navegação mobile.
+- [x] Layout desktop.
+- [x] Layout tablet.
+- [x] Layout mobile.
+- [x] Dark Mode.
+- [x] Light Mode.
+- [x] Persistência de preferência.
 
 ## Páginas mockadas
 
-- [ ] Dashboard.
-- [ ] Bots.
-- [ ] Strategies.
-- [ ] Exchange Connections.
-- [ ] Backtests.
-- [ ] Trades.
-- [ ] Risk.
-- [ ] Notifications.
-- [ ] Billing.
-- [ ] Settings.
-- [ ] Admin placeholder.
+- [x] Dashboard.
+- [x] Bots.
+- [x] Strategies.
+- [x] Exchange Connections.
+- [x] Backtests.
+- [x] Trades.
+- [x] Risk.
+- [x] Notifications.
+- [x] Billing.
+- [x] Settings.
+- [x] Admin placeholder.
 
-- [ ] Feature integrada à `develop`.
+- [x] Feature integrada à `develop`.
 
 ---
 
@@ -1765,7 +1765,7 @@ Atualizar esta seção conforme o projeto avançar.
 |---|---|---|
 | 01 | Brand Foundation | ✅ Concluído |
 | 02 | Technical Foundation | ✅ Concluído |
-| 03 | Design System | ⬜ Pendente |
+| 03 | Design System | ✅ Concluído |
 | 04 | Authentication | ⬜ Pendente |
 | 05 | Domain Model | ⬜ Pendente |
 | 06 | Market Data | ⬜ Pendente |
@@ -1857,6 +1857,32 @@ Validações:
 
 Merge:
 feature/02-technical-foundation → develop
+
+Status:
+✅ concluído
+
+## 2026-08-30 — Feature 03
+
+Branch:
+feature/03-design-system
+
+Commit:
+69e7c39
+
+Resumo:
+- pacote UI acessível com componentes gerais e financeiros criado;
+- App Shell responsivo com navegação, PAPER guard e temas persistentes implementado;
+- dashboard e dez áreas mockadas integradas aos tokens reais da marca.
+
+Validações:
+- lint: OK
+- tests: OK (4 testes)
+- typecheck: OK
+- build: OK (13 páginas estáticas)
+- funcional: todas as rotas geradas por SSG; smoke HTTP limitado pelo isolamento de rede do executor
+
+Merge:
+feature/03-design-system → develop
 
 Status:
 ✅ concluído
