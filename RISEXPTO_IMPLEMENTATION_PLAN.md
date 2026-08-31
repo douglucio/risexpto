@@ -796,14 +796,14 @@ LIVE
 
 Checklist:
 
-- [ ] Prisma Schema.
-- [ ] Migrations.
-- [ ] Seeds seguros.
-- [ ] Constraints.
-- [ ] Índices.
-- [ ] Relacionamentos documentados.
-- [ ] Testes de persistência.
-- [ ] Feature integrada à `develop`.
+- [x] Prisma Schema.
+- [x] Migrations.
+- [x] Seeds seguros.
+- [x] Constraints.
+- [x] Índices.
+- [x] Relacionamentos documentados.
+- [x] Testes de persistência.
+- [x] Feature integrada à `develop`.
 
 ---
 
@@ -1767,7 +1767,7 @@ Atualizar esta seção conforme o projeto avançar.
 | 02 | Technical Foundation | ✅ Concluído |
 | 03 | Design System | ✅ Concluído |
 | 04 | Authentication | ✅ Concluído |
-| 05 | Domain Model | 🟨 Em andamento |
+| 05 | Domain Model | ✅ Concluído |
 | 06 | Market Data | ⬜ Pendente |
 | 07 | Binance Connection | ⬜ Pendente |
 | 08 | Paper Trading | ⬜ Pendente |
@@ -1910,6 +1910,32 @@ Validações:
 
 Merge:
 feature/04-authentication → develop
+
+Status:
+✅ concluído
+
+## 2026-08-30 — Feature 05
+
+Branch:
+feature/05-domain-model
+
+Commit:
+c7f3716
+
+Resumo:
+- modelo relacional completo do MVP criado com Prisma 7 e PostgreSQL;
+- migration inicial, seed idempotente e documentação de relacionamentos adicionados;
+- constraints financeiros, índices de idempotência e proteção de credenciais persistidos no banco.
+
+Validações:
+- lint: OK
+- tests: OK (20 testes no monorepo; 4 de banco e migration)
+- typecheck: OK
+- build: OK
+- persistência: migration aplicada integralmente em PostgreSQL embutido compatível e invariantes exercitadas
+
+Merge:
+feature/05-domain-model → develop
 
 Status:
 ✅ concluído
