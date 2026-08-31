@@ -929,18 +929,18 @@ Componente crítico.
 
 Implementar:
 
-- [ ] capital máximo alocado;
-- [ ] máximo por trade;
-- [ ] exposição máxima;
-- [ ] percentual máximo por posição;
-- [ ] máximo de posições;
-- [ ] perda máxima diária;
-- [ ] drawdown máximo;
-- [ ] symbols permitidos;
-- [ ] saldo disponível;
-- [ ] cooldown;
-- [ ] status do bot;
-- [ ] trading mode.
+- [x] capital máximo alocado;
+- [x] máximo por trade;
+- [x] exposição máxima;
+- [x] percentual máximo por posição;
+- [x] máximo de posições;
+- [x] perda máxima diária;
+- [x] drawdown máximo;
+- [x] symbols permitidos;
+- [x] saldo disponível;
+- [x] cooldown;
+- [x] status do bot;
+- [x] trading mode.
 
 Resultado:
 
@@ -958,9 +958,9 @@ riskSnapshot
 timestamp
 ```
 
-- [ ] Testes unitários abrangentes.
-- [ ] Edge cases.
-- [ ] Feature integrada à `develop`.
+- [x] Testes unitários abrangentes.
+- [x] Edge cases.
+- [x] Feature integrada à `develop`.
 
 ---
 
@@ -1771,7 +1771,7 @@ Atualizar esta seção conforme o projeto avançar.
 | 06 | Market Data | ✅ Concluído |
 | 07 | Binance Connection | ✅ Concluído |
 | 08 | Paper Trading | ✅ Concluído |
-| 09 | Risk Engine | ⬜ Pendente |
+| 09 | Risk Engine | ✅ Concluído |
 | 10 | Strategy Engine | ⬜ Pendente |
 | 11 | DCA | ⬜ Pendente |
 | 12 | Grid | ⬜ Pendente |
@@ -2014,6 +2014,32 @@ Validações:
 
 Merge:
 feature/08-paper-trading → develop
+
+Status:
+✅ concluído
+
+## 2026-08-31 — Feature 09
+
+Branch:
+feature/09-risk-engine
+
+Commit:
+<hash>
+
+Resumo:
+- Risk Engine puro e determinístico implementado com limites de capital, trade, exposição e posições;
+- validações de perda diária, drawdown, símbolos, saldo, cooldown, status e bloqueio LIVE;
+- decisões auditáveis com `reasonCode`, `reason`, `riskSnapshot` e timestamp.
+
+Validações:
+- lint: OK
+- tests: OK (31 testes no monorepo; 3 de Risk Engine)
+- typecheck: OK
+- build: OK
+- format: OK
+
+Merge:
+feature/09-risk-engine → develop
 
 Status:
 ✅ concluído
