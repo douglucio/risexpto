@@ -141,6 +141,8 @@ importers:
 
   packages/market-data: {}
 
+  packages/paper-trading: {}
+
   packages/shared: {}
 
   packages/ui:
