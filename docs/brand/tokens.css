@@ -1,0 +1,102 @@
+:root {
+  color-scheme: light;
+  --rx-color-canvas: #f7f9fc;
+  --rx-color-surface: #ffffff;
+  --rx-color-surface-raised: #ffffff;
+  --rx-color-text: #101828;
+  --rx-color-text-muted: #526077;
+  --rx-color-border: #d8dfeb;
+  --rx-color-brand: #3657d6;
+  --rx-color-brand-strong: #263fa6;
+  --rx-color-brand-soft: #e9edff;
+  --rx-color-positive: #087a55;
+  --rx-color-negative: #c9364f;
+  --rx-color-warning: #a65f00;
+  --rx-color-info: #1665b5;
+  --rx-shadow-sm: 0 1px 2px rgb(16 24 40 / 0.06);
+  --rx-shadow-md: 0 8px 24px rgb(16 24 40 / 0.1);
+  --rx-focus-ring: 0 0 0 3px rgb(54 87 214 / 0.28);
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+  --rx-color-canvas: #080d18;
+  --rx-color-surface: #101827;
+  --rx-color-surface-raised: #172235;
+  --rx-color-text: #f1f5f9;
+  --rx-color-text-muted: #9aa8bc;
+  --rx-color-border: #28364b;
+  --rx-color-brand: #6f8cff;
+  --rx-color-brand-strong: #9aadff;
+  --rx-color-brand-soft: #172553;
+  --rx-color-positive: #38c793;
+  --rx-color-negative: #ff667d;
+  --rx-color-warning: #f2b84b;
+  --rx-color-info: #62aef2;
+  --rx-shadow-sm: 0 1px 2px rgb(0 0 0 / 0.28);
+  --rx-shadow-md: 0 12px 32px rgb(0 0 0 / 0.36);
+  --rx-focus-ring: 0 0 0 3px rgb(111 140 255 / 0.34);
+}
+
+:root {
+  --rx-font-sans: "Inter Variable", Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --rx-font-mono: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
+  --rx-text-xs: 0.75rem;
+  --rx-text-sm: 0.875rem;
+  --rx-text-md: 1rem;
+  --rx-text-lg: 1.25rem;
+  --rx-text-xl: 1.5rem;
+  --rx-text-2xl: 2rem;
+  --rx-text-display: 2.5rem;
+  --rx-leading-tight: 1.2;
+  --rx-leading-normal: 1.5;
+  --rx-weight-regular: 400;
+  --rx-weight-medium: 500;
+  --rx-weight-semibold: 600;
+  --rx-space-0: 0;
+  --rx-space-1: 0.25rem;
+  --rx-space-2: 0.5rem;
+  --rx-space-3: 0.75rem;
+  --rx-space-4: 1rem;
+  --rx-space-5: 1.25rem;
+  --rx-space-6: 1.5rem;
+  --rx-space-8: 2rem;
+  --rx-space-10: 2.5rem;
+  --rx-space-12: 3rem;
+  --rx-space-16: 4rem;
+  --rx-radius-sm: 0.375rem;
+  --rx-radius-md: 0.625rem;
+  --rx-radius-lg: 0.875rem;
+  --rx-radius-xl: 1.25rem;
+  --rx-radius-full: 9999px;
+  --rx-control-sm: 2rem;
+  --rx-control-md: 2.5rem;
+  --rx-control-lg: 3rem;
+  --rx-duration-fast: 100ms;
+  --rx-duration-normal: 160ms;
+  --rx-duration-slow: 240ms;
+  --rx-ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --rx-breakpoint-sm: 40rem;
+  --rx-breakpoint-md: 48rem;
+  --rx-breakpoint-lg: 64rem;
+  --rx-breakpoint-xl: 80rem;
+  --rx-z-base: 0;
+  --rx-z-sticky: 20;
+  --rx-z-dropdown: 40;
+  --rx-z-overlay: 60;
+  --rx-z-modal: 80;
+  --rx-z-toast: 100;
+}
+
+.rx-financial-value {
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
