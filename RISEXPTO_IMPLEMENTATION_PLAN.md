@@ -1946,7 +1946,7 @@ Branch:
 feature/06-market-data
 
 Commit:
-<hash>
+ff00783
 
 Resumo:
 - cliente público Binance Spot para symbols, price, ticker, candles, volume, book ticker e exchange info criado;
