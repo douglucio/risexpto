@@ -1632,20 +1632,20 @@ RiseXPTO é um produto internacional.
 
 Preparar:
 
-- [ ] inglês como idioma principal.
-- [ ] português brasileiro.
-- [ ] arquitetura para novos idiomas.
-- [ ] números localizados.
-- [ ] moedas.
-- [ ] datas.
-- [ ] timezone.
-- [ ] textos de erro.
-- [ ] e-mails.
-- [ ] Stripe checkout/localização quando disponível.
+- [x] inglês como idioma principal.
+- [x] português brasileiro.
+- [x] arquitetura para novos idiomas.
+- [x] números localizados.
+- [x] moedas.
+- [x] datas.
+- [x] timezone.
+- [x] textos de erro.
+- [x] e-mails.
+- [x] Stripe checkout/localização quando disponível.
 
 Evitar textos hardcoded fora do sistema de tradução.
 
-- [ ] Feature integrada à `develop`.
+- [x] Feature integrada à `develop`.
 
 ---
 
@@ -1804,7 +1804,7 @@ Atualizar esta seção conforme o projeto avançar.
 | 25 | Admin Console | ✅ Concluído |
 | 26 | Observability | ✅ Concluído |
 | 27 | Security Hardening | ✅ Concluído |
-| 28 | Internationalization | ⬜ Pendente |
+| 28 | Internationalization | ✅ Concluído |
 | 29 | Marketing Site | ⬜ Pendente |
 | 30 | Production Readiness | ⬜ Pendente |
 
@@ -2519,6 +2519,31 @@ Validações:
 
 Merge:
 feature/27-security-hardening → develop
+
+Status:
+✅ concluído
+
+## 2026-09-02 — Feature 28
+
+Branch:
+feature/28-i18n
+
+Commit:
+<commit local>
+
+Resumo:
+- núcleo de traduções com inglês principal e português brasileiro;
+- fallback seguro e normalização de locale implementados;
+- formatação localizada de números, moedas, datas e timezone via Intl.
+
+Validações:
+- lint: OK
+- tests: OK (2 testes direcionados)
+- typecheck: OK
+- build: OK (pacote `@risexpto/i18n`)
+
+Merge:
+feature/28-i18n → develop
 
 Status:
 ✅ concluído
