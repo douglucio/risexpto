@@ -1425,15 +1425,15 @@ ADMIN_ACTION
 
 Logs devem ser:
 
-- [ ] estruturados.
-- [ ] pesquisáveis.
-- [ ] protegidos contra alteração comum.
-- [ ] sem secrets.
-- [ ] vinculados ao usuário.
-- [ ] vinculados ao bot.
-- [ ] vinculados a correlation ID.
+- [x] estruturados.
+- [x] pesquisáveis.
+- [x] protegidos contra alteração comum.
+- [x] sem secrets.
+- [x] vinculados ao usuário.
+- [x] vinculados ao bot.
+- [x] vinculados a correlation ID.
 
-- [ ] Feature integrada à `develop`.
+- [x] Feature integrada à `develop`.
 
 ---
 
@@ -1799,7 +1799,7 @@ Atualizar esta seção conforme o projeto avançar.
 | 20 | Strategy Catalog | ✅ Concluído |
 | 21 | Bot Wizard | ✅ Concluído |
 | 22 | Notifications | ✅ Concluído |
-| 23 | Audit Trail | ⬜ Pendente |
+| 23 | Audit Trail | ✅ Concluído |
 | 24 | Stripe Billing | ⬜ Pendente |
 | 25 | Admin Console | ⬜ Pendente |
 | 26 | Observability | ⬜ Pendente |
@@ -2394,6 +2394,31 @@ Validações:
 
 Merge:
 feature/22-notifications → develop
+
+Status:
+✅ concluído
+
+## 2026-09-01 — Feature 23
+
+Branch:
+feature/23-audit-trail
+
+Commit:
+<commit local>
+
+Resumo:
+- trilha estruturada e pesquisável por usuário, bot, tipo, ação e correlation ID;
+- sanitização remove secrets de payloads antes do armazenamento;
+- hash chain e verificação de integridade protegem contra alteração comum.
+
+Validações:
+- lint: OK
+- tests: OK (2 testes direcionados)
+- typecheck: OK
+- build: OK (pacote `@risexpto/audit-trail`)
+
+Merge:
+feature/23-audit-trail → develop
 
 Status:
 ✅ concluído
