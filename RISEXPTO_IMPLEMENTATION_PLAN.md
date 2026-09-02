@@ -1528,22 +1528,22 @@ feature/25-admin
 
 Admin deve permitir:
 
-- [ ] usuários.
-- [ ] subscriptions.
-- [ ] planos.
-- [ ] bots.
-- [ ] estratégias.
-- [ ] versões.
-- [ ] exchange connections sem secrets.
-- [ ] workers.
-- [ ] queues.
-- [ ] erros.
-- [ ] risk events.
-- [ ] kill switch.
-- [ ] audit logs.
-- [ ] health status.
+- [x] usuários.
+- [x] subscriptions.
+- [x] planos.
+- [x] bots.
+- [x] estratégias.
+- [x] versões.
+- [x] exchange connections sem secrets.
+- [x] workers.
+- [x] queues.
+- [x] erros.
+- [x] risk events.
+- [x] kill switch.
+- [x] audit logs.
+- [x] health status.
 
-- [ ] Feature integrada à `develop`.
+- [x] Feature integrada à `develop`.
 
 ---
 
@@ -1801,7 +1801,7 @@ Atualizar esta seção conforme o projeto avançar.
 | 22 | Notifications | ✅ Concluído |
 | 23 | Audit Trail | ✅ Concluído |
 | 24 | Stripe Billing | ✅ Concluído |
-| 25 | Admin Console | ⬜ Pendente |
+| 25 | Admin Console | ✅ Concluído |
 | 26 | Observability | ⬜ Pendente |
 | 27 | Security Hardening | ⬜ Pendente |
 | 28 | Internationalization | ⬜ Pendente |
@@ -2444,6 +2444,31 @@ Validações:
 
 Merge:
 feature/24-stripe-billing → develop
+
+Status:
+✅ concluído
+
+## 2026-09-01 — Feature 25
+
+Branch:
+feature/25-admin
+
+Commit:
+<commit local>
+
+Resumo:
+- console administrativo com RBAC para ADMIN/SUPPORT;
+- visão agregada de usuários, billing, bots, estratégias, workers, filas, erros, risco, kill switch, auditoria e saúde;
+- exchange connections retornam somente campos mascarados e nunca secrets.
+
+Validações:
+- lint: OK
+- tests: OK (2 testes direcionados)
+- typecheck: OK
+- build: OK (pacote `@risexpto/admin-console`)
+
+Merge:
+feature/25-admin → develop
 
 Status:
 ✅ concluído
