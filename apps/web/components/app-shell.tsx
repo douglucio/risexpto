@@ -45,7 +45,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     document.documentElement.dataset.theme = next;
   };
   const activeLabel = navigation.find(([, href]) => href === pathname)?.[0] ?? 'Dashboard';
-  if (pathname === '/login') return <>{children}</>;
+  if (pathname === '/' || pathname === '/login') return <>{children}</>;
   return (
     <div className="app-shell">
       <aside

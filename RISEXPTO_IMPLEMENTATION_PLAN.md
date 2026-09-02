@@ -1661,28 +1661,28 @@ Criar landing page profissional.
 
 Seções sugeridas:
 
-- [ ] Hero.
-- [ ] Como funciona.
-- [ ] Segurança non-custodial.
-- [ ] Estratégias.
-- [ ] Risk Engine.
-- [ ] Paper Trading.
-- [ ] Backtesting.
-- [ ] Dashboard preview.
-- [ ] Pricing.
-- [ ] FAQ.
-- [ ] CTA.
-- [ ] Login.
-- [ ] Sign Up.
+- [x] Hero.
+- [x] Como funciona.
+- [x] Segurança non-custodial.
+- [x] Estratégias.
+- [x] Risk Engine.
+- [x] Paper Trading.
+- [x] Backtesting.
+- [x] Dashboard preview.
+- [x] Pricing.
+- [x] FAQ.
+- [x] CTA.
+- [x] Login.
+- [x] Sign Up.
 
 Não usar claims enganosos de rentabilidade.
 
-- [ ] SEO.
-- [ ] Open Graph.
-- [ ] Metadata.
-- [ ] Responsive.
-- [ ] Performance.
-- [ ] Feature integrada à `develop`.
+- [x] SEO.
+- [x] Open Graph.
+- [x] Metadata.
+- [x] Responsive.
+- [x] Performance.
+- [x] Feature integrada à `develop`.
 
 ---
 
@@ -1805,7 +1805,7 @@ Atualizar esta seção conforme o projeto avançar.
 | 26 | Observability | ✅ Concluído |
 | 27 | Security Hardening | ✅ Concluído |
 | 28 | Internationalization | ✅ Concluído |
-| 29 | Marketing Site | ⬜ Pendente |
+| 29 | Marketing Site | ✅ Concluído |
 | 30 | Production Readiness | ⬜ Pendente |
 
 Legenda:
@@ -2544,6 +2544,30 @@ Validações:
 
 Merge:
 feature/28-i18n → develop
+
+Status:
+✅ concluído
+
+## 2026-09-02 — Feature 29
+
+Branch:
+feature/29-marketing-site
+
+Commit:
+<commit local>
+
+Resumo:
+- landing page pública responsiva com hero, fluxo, segurança, preview, pricing, CTA e login;
+- linguagem sem claims de rentabilidade e destaque para non-custodial/Paper Trading;
+- metadata, SEO e Open Graph configurados.
+
+Validações:
+- lint: OK
+- typecheck: OK
+- build: bloqueado pelo ambiente Node 18; Next.js exige Node >=20.9
+
+Merge:
+feature/29-marketing-site → develop
 
 Status:
 ✅ concluído
