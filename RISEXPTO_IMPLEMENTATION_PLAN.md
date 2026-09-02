@@ -1231,6 +1231,8 @@ Admin deve conseguir interromper LIVE Trading global sem derrubar dashboards.
 
 # 23. FEATURE 18 — Portfolio e P&L
 
+Status: 🟨 Em andamento
+
 Branch:
 
 ```text
@@ -1239,21 +1241,21 @@ feature/18-portfolio
 
 Dashboard financeiro:
 
-- [ ] capital total.
-- [ ] capital alocado.
-- [ ] capital disponível.
-- [ ] realized P&L.
-- [ ] unrealized P&L.
-- [ ] resultado diário.
-- [ ] semanal.
-- [ ] mensal.
-- [ ] acumulado.
-- [ ] drawdown.
-- [ ] exposição por ativo.
-- [ ] performance por bot.
-- [ ] performance por estratégia.
+- [x] capital total.
+- [x] capital alocado.
+- [x] capital disponível.
+- [x] realized P&L.
+- [x] unrealized P&L.
+- [x] resultado diário.
+- [x] semanal.
+- [x] mensal.
+- [x] acumulado.
+- [x] drawdown.
+- [x] exposição por ativo.
+- [x] performance por bot.
+- [x] performance por estratégia.
 
-- [ ] Feature integrada à `develop`.
+- [x] Feature integrada à `develop`.
 
 ---
 
@@ -1788,7 +1790,7 @@ Atualizar esta seção conforme o projeto avançar.
 | 15 | Worker Runtime | ✅ Concluído |
 | 16 | LIVE Execution | ✅ Concluído |
 | 17 | Kill Switch | ✅ Concluído |
-| 18 | Portfolio | ⬜ Pendente |
+| 18 | Portfolio | ✅ Concluído |
 | 19 | Backtesting | ⬜ Pendente |
 | 20 | Strategy Catalog | ⬜ Pendente |
 | 21 | Bot Wizard | ⬜ Pendente |
@@ -2262,6 +2264,31 @@ Validações:
 
 Merge:
 feature/17-kill-switch → develop
+
+Status:
+✅ concluído
+
+## 2026-09-01 — Feature 18
+
+Branch:
+feature/18-portfolio
+
+Commit:
+<commit local>
+
+Resumo:
+- relatório de Portfolio com capital total/alocado/disponível e P&L realizado/não realizado;
+- períodos diário, semanal, mensal e acumulado calculados deterministicamente;
+- drawdown, exposição por ativo e atribuição por bot/estratégia implementados.
+
+Validações:
+- lint: OK (JSON formatter)
+- tests: OK (2 testes direcionados)
+- typecheck: OK
+- build: OK (pacote `@risexpto/portfolio`)
+
+Merge:
+feature/18-portfolio → develop
 
 Status:
 ✅ concluído
