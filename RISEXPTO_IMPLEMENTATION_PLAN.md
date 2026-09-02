@@ -1195,6 +1195,8 @@ Nunca reenviar ordem automaticamente sem saber se a tentativa anterior chegou à
 
 # 22. FEATURE 17 — Kill Switch
 
+Status: 🟨 Em andamento
+
 Branch:
 
 ```text
@@ -1211,19 +1213,19 @@ SYSTEM_KILL_SWITCH
 
 Triggers:
 
-- [ ] perda diária excedida.
-- [ ] drawdown excedido.
-- [ ] exchange indisponível.
-- [ ] dados inconsistentes.
-- [ ] divergência de posição.
-- [ ] autenticação inválida.
-- [ ] erros repetitivos.
-- [ ] risco de execução duplicada.
-- [ ] comportamento anômalo.
+- [x] perda diária excedida.
+- [x] drawdown excedido.
+- [x] exchange indisponível.
+- [x] dados inconsistentes.
+- [x] divergência de posição.
+- [x] autenticação inválida.
+- [x] erros repetitivos.
+- [x] risco de execução duplicada.
+- [x] comportamento anômalo.
 
 Admin deve conseguir interromper LIVE Trading global sem derrubar dashboards.
 
-- [ ] Feature integrada à `develop`.
+- [x] Feature integrada à `develop`.
 
 ---
 
@@ -1785,7 +1787,7 @@ Atualizar esta seção conforme o projeto avançar.
 | 14 | Bot Manager | ✅ Concluído |
 | 15 | Worker Runtime | ✅ Concluído |
 | 16 | LIVE Execution | ✅ Concluído |
-| 17 | Kill Switch | ⬜ Pendente |
+| 17 | Kill Switch | ✅ Concluído |
 | 18 | Portfolio | ⬜ Pendente |
 | 19 | Backtesting | ⬜ Pendente |
 | 20 | Strategy Catalog | ⬜ Pendente |
@@ -2235,6 +2237,31 @@ Validações:
 
 Merge:
 feature/16-live-execution → develop
+
+Status:
+✅ concluído
+
+## 2026-09-01 — Feature 17
+
+Branch:
+feature/17-kill-switch
+
+Commit:
+<commit local>
+
+Resumo:
+- Kill Switch hierárquico USER/BOT/SYSTEM implementado com bloqueio efetivo e desativação por escopo;
+- motivos, ator, timestamp, eventos e listeners preparados para auditoria e atualização de dashboards;
+- ADR-009 documenta propagação futura distribuída e comportamento fail-closed.
+
+Validações:
+- lint: OK (JSON formatter)
+- tests: OK (2 testes direcionados)
+- typecheck: OK
+- build: OK (pacote `@risexpto/kill-switch`)
+
+Merge:
+feature/17-kill-switch → develop
 
 Status:
 ✅ concluído
