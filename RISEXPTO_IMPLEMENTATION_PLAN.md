@@ -1070,11 +1070,11 @@ Indicadores possíveis:
 
 Evitar overfitting.
 
-- [ ] Strategy implementada.
-- [ ] Parâmetros versionados.
-- [ ] Paper validado.
-- [ ] Backtest suportado.
-- [ ] Feature integrada à `develop`.
+- [x] Strategy implementada.
+- [x] Parâmetros versionados.
+- [x] Paper validado.
+- [x] Backtest suportado.
+- [x] Feature integrada à `develop`.
 
 ---
 
@@ -1775,7 +1775,7 @@ Atualizar esta seção conforme o projeto avançar.
 | 10 | Strategy Engine | ✅ Concluído |
 | 11 | DCA | ✅ Concluído |
 | 12 | Grid | ✅ Concluído |
-| 13 | Trend Following | ⬜ Pendente |
+| 13 | Trend Following | ✅ Concluído |
 | 14 | Bot Manager | ⬜ Pendente |
 | 15 | Worker Runtime | ⬜ Pendente |
 | 16 | LIVE Execution | ⬜ Pendente |
@@ -2125,6 +2125,33 @@ Status:
 ```
 
 Não apagar registros anteriores.
+
+## 2026-09-01 — Feature 13
+
+Branch:
+feature/13-strategy-trend
+
+Commit:
+<commit local>
+
+Resumo:
+- estratégia Trend Following determinística criada em pacote isolado;
+- EMA rápida/lenta, ATR, momentum e volume relativo usados como sinais e filtros;
+- propostas PAPER de entrada/saída, validação de parâmetros e análise reutilizável para backtest;
+- ADR-005 registra a separação entre Strategy, Risk e Execution e os limites da estratégia.
+
+Validações:
+- lint: OK
+- tests: OK (4 testes direcionados)
+- typecheck: OK
+- build: OK (pacote `@risexpto/strategy-trend`)
+- suíte monorepo: parcialmente executada; falhas preexistentes de ambiente Node 18/crypto, integração `jwks-rsa`/`jose` e migration gerada foram registradas para correção nas fases de hardening/production readiness.
+
+Merge:
+feature/13-strategy-trend → develop
+
+Status:
+✅ concluído
 
 ---
 
