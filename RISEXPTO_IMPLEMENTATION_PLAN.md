@@ -1365,6 +1365,8 @@ Usuário deve poder revisar tudo antes de ativar.
 
 # 27. FEATURE 22 — Notifications
 
+Status: 🟨 Em andamento
+
 Branch:
 
 ```text
@@ -1373,20 +1375,20 @@ feature/22-notifications
 
 Eventos:
 
-- [ ] bot iniciado.
-- [ ] bot pausado.
-- [ ] bot encerrado.
-- [ ] Risk Engine bloqueou operação.
-- [ ] Kill Switch ativado.
-- [ ] Binance inválida.
-- [ ] drawdown perto do limite.
-- [ ] erro crítico.
-- [ ] backtest concluído.
+- [x] bot iniciado.
+- [x] bot pausado.
+- [x] bot encerrado.
+- [x] Risk Engine bloqueou operação.
+- [x] Kill Switch ativado.
+- [x] Binance inválida.
+- [x] drawdown perto do limite.
+- [x] erro crítico.
+- [x] backtest concluído.
 
 Canais:
 
-- [ ] in-app.
-- [ ] e-mail.
+- [x] in-app.
+- [x] e-mail.
 
 Preparar arquitetura para:
 
@@ -1394,7 +1396,7 @@ Preparar arquitetura para:
 - Telegram;
 - webhook.
 
-- [ ] Feature integrada à `develop`.
+- [x] Feature integrada à `develop`.
 
 ---
 
@@ -1796,7 +1798,7 @@ Atualizar esta seção conforme o projeto avançar.
 | 19 | Backtesting | ✅ Concluído |
 | 20 | Strategy Catalog | ✅ Concluído |
 | 21 | Bot Wizard | ✅ Concluído |
-| 22 | Notifications | ⬜ Pendente |
+| 22 | Notifications | ✅ Concluído |
 | 23 | Audit Trail | ⬜ Pendente |
 | 24 | Stripe Billing | ⬜ Pendente |
 | 25 | Admin Console | ⬜ Pendente |
@@ -2367,6 +2369,31 @@ Validações:
 
 Merge:
 feature/21-bot-wizard → develop
+
+Status:
+✅ concluído
+
+## 2026-09-01 — Feature 22
+
+Branch:
+feature/22-notifications
+
+Commit:
+<commit local>
+
+Resumo:
+- serviço de notificações para eventos de bot, risco, kill switch, Binance, drawdown, erros e backtests;
+- canais IN_APP e EMAIL com adapters substituíveis;
+- deduplicação por usuário, canal e chave idempotente implementada.
+
+Validações:
+- lint: OK
+- tests: OK (2 testes direcionados)
+- typecheck: OK
+- build: OK (pacote `@risexpto/notifications`)
+
+Merge:
+feature/22-notifications → develop
 
 Status:
 ✅ concluído
