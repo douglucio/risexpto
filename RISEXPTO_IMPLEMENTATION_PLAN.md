@@ -1123,6 +1123,8 @@ Implementar:
 
 # 20. FEATURE 15 — Worker Runtime 24/7
 
+Status: 🟨 Em andamento
+
 Branch:
 
 ```text
@@ -1142,19 +1144,19 @@ Workers
 
 Implementar:
 
-- [ ] jobs idempotentes.
-- [ ] retries.
-- [ ] backoff.
-- [ ] locks.
-- [ ] proteção contra duplicidade.
-- [ ] restart seguro.
-- [ ] crash recovery.
-- [ ] graceful shutdown.
-- [ ] heartbeat.
-- [ ] health check.
-- [ ] dead-letter strategy.
+- [x] jobs idempotentes.
+- [x] retries.
+- [x] backoff.
+- [x] locks.
+- [x] proteção contra duplicidade.
+- [x] restart seguro.
+- [x] crash recovery.
+- [x] graceful shutdown.
+- [x] heartbeat.
+- [x] health check.
+- [x] dead-letter strategy.
 
-- [ ] Feature integrada à `develop`.
+- [x] Feature integrada à `develop`.
 
 ---
 
@@ -1779,7 +1781,7 @@ Atualizar esta seção conforme o projeto avançar.
 | 12 | Grid | ✅ Concluído |
 | 13 | Trend Following | ✅ Concluído |
 | 14 | Bot Manager | ✅ Concluído |
-| 15 | Worker Runtime | ⬜ Pendente |
+| 15 | Worker Runtime | ✅ Concluído |
 | 16 | LIVE Execution | ⬜ Pendente |
 | 17 | Kill Switch | ⬜ Pendente |
 | 18 | Portfolio | ⬜ Pendente |
@@ -2179,6 +2181,32 @@ Validações:
 
 Merge:
 feature/14-bot-manager → develop
+
+Status:
+✅ concluído
+
+## 2026-09-01 — Feature 15
+
+Branch:
+feature/15-worker-runtime
+
+Commit:
+<commit local>
+
+Resumo:
+- runtime assíncrono independente de Redis/BullMQ criado com registro de handlers e jobs identificados;
+- idempotência, retries com backoff exponencial, locks TTL, heartbeat, métricas e graceful shutdown implementados;
+- falhas permanentes seguem para dead-letter e jobs não duplicam durante recovery;
+- ADR-007 documenta o adapter futuro distribuído e os limites do runtime local.
+
+Validações:
+- lint: OK (formatter JSON, sem erros; formatter stylish do ESLint é incompatível com Node 18)
+- tests: OK (3 testes direcionados)
+- typecheck: OK
+- build: OK (pacote `@risexpto/worker-runtime`)
+
+Merge:
+feature/15-worker-runtime → develop
 
 Status:
 ✅ concluído
