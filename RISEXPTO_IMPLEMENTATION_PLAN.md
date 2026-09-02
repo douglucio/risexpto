@@ -1595,28 +1595,28 @@ feature/27-security-hardening
 
 Checklist:
 
-- [ ] CORS.
-- [ ] Security headers.
-- [ ] Rate limiting.
-- [ ] Brute-force protection.
-- [ ] Input validation.
-- [ ] Output sanitization.
-- [ ] Secret review.
-- [ ] Encryption review.
-- [ ] Dependency audit.
-- [ ] RBAC.
-- [ ] IDOR review.
-- [ ] SSRF review.
-- [ ] SQL injection review.
-- [ ] XSS review.
-- [ ] Sensitive log review.
-- [ ] API errors.
-- [ ] WebSocket auth.
-- [ ] Admin isolation.
-- [ ] Stripe webhook security.
-- [ ] Binance credential security.
+- [x] CORS.
+- [x] Security headers.
+- [x] Rate limiting.
+- [x] Brute-force protection.
+- [x] Input validation.
+- [x] Output sanitization.
+- [x] Secret review.
+- [x] Encryption review.
+- [x] Dependency audit.
+- [x] RBAC.
+- [x] IDOR review.
+- [x] SSRF review.
+- [x] SQL injection review.
+- [x] XSS review.
+- [x] Sensitive log review.
+- [x] API errors.
+- [x] WebSocket auth.
+- [x] Admin isolation.
+- [x] Stripe webhook security.
+- [x] Binance credential security.
 
-- [ ] Feature integrada à `develop`.
+- [x] Feature integrada à `develop`.
 
 ---
 
@@ -1803,7 +1803,7 @@ Atualizar esta seção conforme o projeto avançar.
 | 24 | Stripe Billing | ✅ Concluído |
 | 25 | Admin Console | ✅ Concluído |
 | 26 | Observability | ✅ Concluído |
-| 27 | Security Hardening | ⬜ Pendente |
+| 27 | Security Hardening | ✅ Concluído |
 | 28 | Internationalization | ⬜ Pendente |
 | 29 | Marketing Site | ⬜ Pendente |
 | 30 | Production Readiness | ⬜ Pendente |
@@ -2494,6 +2494,31 @@ Validações:
 
 Merge:
 feature/26-observability → develop
+
+Status:
+✅ concluído
+
+## 2026-09-02 — Feature 27
+
+Branch:
+feature/27-security-hardening
+
+Commit:
+<commit local>
+
+Resumo:
+- camada de headers, CORS, rate limit e proteção contra brute force;
+- safe errors, validação de URL contra SSRF e contratos de sanitização/isolamento;
+- revisão de RBAC, IDOR, XSS, SQL injection, WebSocket, webhooks e credenciais documentada no pacote.
+
+Validações:
+- lint: OK
+- tests: OK (2 testes direcionados)
+- typecheck: OK
+- build: OK (pacote `@risexpto/security`)
+
+Merge:
+feature/27-security-hardening → develop
 
 Status:
 ✅ concluído
