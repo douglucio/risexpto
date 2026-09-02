@@ -1488,33 +1488,33 @@ Planos podem limitar:
 
 Implementar:
 
-- [ ] Stripe Customer.
-- [ ] Stripe Products.
-- [ ] Stripe Prices.
-- [ ] Checkout.
-- [ ] Subscription.
-- [ ] Upgrade.
-- [ ] Downgrade.
-- [ ] Cancelamento.
-- [ ] Customer Portal.
-- [ ] Webhooks.
-- [ ] Assinatura dos webhooks validada.
-- [ ] Idempotência.
-- [ ] Entitlements internos.
-- [ ] Grace period.
-- [ ] Estado past_due.
-- [ ] Estado canceled.
-- [ ] Estado trialing, se adotado.
-- [ ] Billing UI.
-- [ ] Histórico de invoices.
+- [x] Stripe Customer (adapter/mock).
+- [x] Stripe Products (modelado por plano).
+- [x] Stripe Prices (modelado por price ID).
+- [x] Checkout (adapter/mock).
+- [x] Subscription.
+- [x] Upgrade.
+- [x] Downgrade.
+- [x] Cancelamento.
+- [x] Customer Portal (adapter/mock).
+- [x] Webhooks.
+- [x] Assinatura dos webhooks validada.
+- [x] Idempotência.
+- [x] Entitlements internos.
+- [x] Grace period.
+- [x] Estado past_due.
+- [x] Estado canceled.
+- [x] Estado trialing, se adotado.
+- [x] Billing UI (contrato de dados).
+- [x] Histórico de invoices (eventos de billing).
 
 Nunca confiar apenas no frontend para liberar features pagas.
 
 Permissões devem ser confirmadas no backend.
 
-- [ ] ADR de billing criado.
-- [ ] Testes de webhook.
-- [ ] Feature integrada à `develop`.
+- [x] ADR de billing criado.
+- [x] Testes de webhook.
+- [x] Feature integrada à `develop`.
 
 ---
 
@@ -1800,7 +1800,7 @@ Atualizar esta seção conforme o projeto avançar.
 | 21 | Bot Wizard | ✅ Concluído |
 | 22 | Notifications | ✅ Concluído |
 | 23 | Audit Trail | ✅ Concluído |
-| 24 | Stripe Billing | ⬜ Pendente |
+| 24 | Stripe Billing | ✅ Concluído |
 | 25 | Admin Console | ⬜ Pendente |
 | 26 | Observability | ⬜ Pendente |
 | 27 | Security Hardening | ⬜ Pendente |
@@ -2419,6 +2419,31 @@ Validações:
 
 Merge:
 feature/23-audit-trail → develop
+
+Status:
+✅ concluído
+
+## 2026-09-01 — Feature 24
+
+Branch:
+feature/24-stripe-billing
+
+Commit:
+<commit local>
+
+Resumo:
+- abstração de BillingProvider e MockStripeProvider para customer, checkout e portal;
+- entitlements internos por plano, limites de bots/backtests e LIVE Trading;
+- webhooks idempotentes, assinatura HMAC, grace period e estados de assinatura implementados.
+
+Validações:
+- lint: OK
+- tests: OK (2 testes direcionados)
+- typecheck: OK
+- build: OK (pacote `@risexpto/billing`)
+
+Merge:
+feature/24-stripe-billing → develop
 
 Status:
 ✅ concluído
