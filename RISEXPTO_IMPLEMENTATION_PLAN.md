@@ -1271,18 +1271,18 @@ Reutilizar as mesmas Strategies do runtime real.
 
 Métricas:
 
-- [ ] retorno absoluto.
-- [ ] retorno percentual.
-- [ ] max drawdown.
-- [ ] win rate.
-- [ ] loss rate.
-- [ ] profit factor.
-- [ ] Sharpe.
-- [ ] número de trades.
-- [ ] média por trade.
-- [ ] melhor trade.
-- [ ] pior trade.
-- [ ] fees estimadas.
+- [x] retorno absoluto.
+- [x] retorno percentual.
+- [x] max drawdown.
+- [x] win rate.
+- [x] loss rate.
+- [x] profit factor.
+- [x] Sharpe.
+- [x] número de trades.
+- [x] média por trade.
+- [x] melhor trade.
+- [x] pior trade.
+- [x] fees estimadas.
 
 Períodos:
 
@@ -1294,8 +1294,8 @@ Períodos:
 CUSTOM
 ```
 
-- [ ] Disclaimer de performance histórica.
-- [ ] Feature integrada à `develop`.
+- [x] Disclaimer de performance histórica.
+- [x] Feature integrada à `develop`.
 
 ---
 
@@ -1791,7 +1791,7 @@ Atualizar esta seção conforme o projeto avançar.
 | 16 | LIVE Execution | ✅ Concluído |
 | 17 | Kill Switch | ✅ Concluído |
 | 18 | Portfolio | ✅ Concluído |
-| 19 | Backtesting | ⬜ Pendente |
+| 19 | Backtesting | ✅ Concluído |
 | 20 | Strategy Catalog | ⬜ Pendente |
 | 21 | Bot Wizard | ⬜ Pendente |
 | 22 | Notifications | ⬜ Pendente |
@@ -2289,6 +2289,32 @@ Validações:
 
 Merge:
 feature/18-portfolio → develop
+
+Status:
+✅ concluído
+
+## 2026-09-01 — Feature 19
+
+Branch:
+feature/19-backtesting
+
+Commit:
+<commit local>
+
+Resumo:
+- engine determinístico reutilizável por adapters das mesmas Strategies do runtime;
+- simulação com fees, capital, posições e sinais BUY/SELL;
+- retorno, drawdown, win/loss rate, profit factor, Sharpe, trades e atribuição de resultados calculados;
+- disclaimer histórico incluído em todo resultado.
+
+Validações:
+- lint: OK (JSON formatter)
+- tests: OK (2 testes direcionados)
+- typecheck: OK
+- build: OK (pacote `@risexpto/backtesting`)
+
+Merge:
+feature/19-backtesting → develop
 
 Status:
 ✅ concluído
