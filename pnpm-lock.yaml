@@ -110,7 +110,19 @@ importers:
         specifier: 4.20.5
         version: 4.20.5
 
+  packages/admin-console: {}
+
+  packages/audit-trail: {}
+
+  packages/backtesting: {}
+
+  packages/billing: {}
+
   packages/binance-connection: {}
+
+  packages/bot-manager: {}
+
+  packages/bot-wizard: {}
 
   packages/config: {}
 
@@ -139,19 +151,37 @@ importers:
         specifier: 4.20.5
         version: 4.20.5
 
+  packages/i18n: {}
+
+  packages/kill-switch: {}
+
+  packages/live-execution: {}
+
   packages/market-data: {}
+
+  packages/notifications: {}
+
+  packages/observability: {}
 
   packages/paper-trading: {}
 
+  packages/portfolio: {}
+
   packages/risk-engine: {}
 
+  packages/security: {}
+
   packages/shared: {}
+
+  packages/strategy-catalog: {}
 
   packages/strategy-dca: {}
 
   packages/strategy-engine: {}
 
   packages/strategy-grid: {}
+
+  packages/strategy-trend: {}
 
   packages/ui:
     devDependencies:
@@ -176,6 +206,8 @@ importers:
       react-dom:
         specifier: 19.2.8
         version: 19.2.8(react@19.2.8)
+
+  packages/worker-runtime: {}
 
 packages:
 
