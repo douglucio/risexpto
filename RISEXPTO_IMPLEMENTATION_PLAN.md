@@ -1326,6 +1326,8 @@ Cada estratégia deve apresentar:
 
 # 26. FEATURE 21 — Bot Creation Wizard
 
+Status: 🟨 Em andamento
+
 Branch:
 
 ```text
@@ -1357,7 +1359,7 @@ Preset apenas preenche parâmetros.
 
 Usuário deve poder revisar tudo antes de ativar.
 
-- [ ] Feature integrada à `develop`.
+- [x] Feature integrada à `develop`.
 
 ---
 
@@ -1793,7 +1795,7 @@ Atualizar esta seção conforme o projeto avançar.
 | 18 | Portfolio | ✅ Concluído |
 | 19 | Backtesting | ✅ Concluído |
 | 20 | Strategy Catalog | ✅ Concluído |
-| 21 | Bot Wizard | ⬜ Pendente |
+| 21 | Bot Wizard | ✅ Concluído |
 | 22 | Notifications | ⬜ Pendente |
 | 23 | Audit Trail | ⬜ Pendente |
 | 24 | Stripe Billing | ⬜ Pendente |
@@ -2340,6 +2342,31 @@ Validações:
 
 Merge:
 feature/20-strategy-catalog → develop
+
+Status:
+✅ concluído
+
+## 2026-09-01 — Feature 21
+
+Branch:
+feature/21-bot-wizard
+
+Commit:
+<commit local>
+
+Resumo:
+- wizard tipado com etapas Strategy, Exchange, Market, Capital, Risk, Review e Start;
+- presets Conservative, Balanced, Aggressive e Custom implementados;
+- revisão obrigatória antes de iniciar e validação por etapa adicionadas.
+
+Validações:
+- lint: OK
+- tests: OK (2 testes direcionados)
+- typecheck: OK
+- build: OK (pacote `@risexpto/bot-wizard`)
+
+Merge:
+feature/21-bot-wizard → develop
 
 Status:
 ✅ concluído
