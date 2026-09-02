@@ -1080,6 +1080,8 @@ Evitar overfitting.
 
 # 19. FEATURE 14 — Bot Manager
 
+Status: 🟨 Em andamento
+
 Branch:
 
 ```text
@@ -1103,19 +1105,19 @@ Archive
 
 Implementar:
 
-- [ ] criação.
-- [ ] edição.
-- [ ] validação.
-- [ ] start.
-- [ ] pause.
-- [ ] resume.
-- [ ] stop.
-- [ ] duplicação.
-- [ ] histórico.
-- [ ] eventos.
-- [ ] status em tempo real.
+- [x] criação.
+- [x] edição.
+- [x] validação.
+- [x] start.
+- [x] pause.
+- [x] resume.
+- [x] stop.
+- [x] duplicação.
+- [x] histórico.
+- [x] eventos.
+- [x] status em tempo real.
 
-- [ ] Feature integrada à `develop`.
+- [x] Feature integrada à `develop`.
 
 ---
 
@@ -1776,7 +1778,7 @@ Atualizar esta seção conforme o projeto avançar.
 | 11 | DCA | ✅ Concluído |
 | 12 | Grid | ✅ Concluído |
 | 13 | Trend Following | ✅ Concluído |
-| 14 | Bot Manager | ⬜ Pendente |
+| 14 | Bot Manager | ✅ Concluído |
 | 15 | Worker Runtime | ⬜ Pendente |
 | 16 | LIVE Execution | ⬜ Pendente |
 | 17 | Kill Switch | ⬜ Pendente |
@@ -2154,6 +2156,32 @@ Status:
 ✅ concluído
 
 ---
+
+## 2026-09-01 — Feature 14
+
+Branch:
+feature/14-bot-manager
+
+Commit:
+<commit local>
+
+Resumo:
+- manager de bots isolado com criação, edição, validação, start, pause, resume, stop, archive e duplicação;
+- máquina de estados rejeita transições inválidas e impede edição de bots em execução;
+- ownership checks, validação de configuração, histórico de eventos e listeners de status em tempo real implementados;
+- ADR-006 documenta o contrato de lifecycle e a separação futura com persistência/worker.
+
+Validações:
+- lint: OK
+- tests: OK (3 testes direcionados)
+- typecheck: OK
+- build: OK (pacote `@risexpto/bot-manager`)
+
+Merge:
+feature/14-bot-manager → develop
+
+Status:
+✅ concluído
 
 # 40. Ordem de Execução
 
