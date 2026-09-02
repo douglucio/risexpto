@@ -1557,19 +1557,19 @@ feature/26-observability
 
 Implementar:
 
-- [ ] structured logging.
-- [ ] correlation ID.
-- [ ] metrics.
-- [ ] traces.
-- [ ] liveness.
-- [ ] readiness.
-- [ ] health endpoints.
-- [ ] queue metrics.
-- [ ] exchange latency.
-- [ ] order latency.
-- [ ] strategy runtime.
-- [ ] risk rejection metrics.
-- [ ] error rates.
+- [x] structured logging.
+- [x] correlation ID.
+- [x] metrics.
+- [x] traces.
+- [x] liveness.
+- [x] readiness.
+- [x] health endpoints.
+- [x] queue metrics.
+- [x] exchange latency.
+- [x] order latency.
+- [x] strategy runtime.
+- [x] risk rejection metrics.
+- [x] error rates.
 
 Avaliar:
 
@@ -1581,7 +1581,7 @@ Loki
 Sentry
 ```
 
-- [ ] Feature integrada à `develop`.
+- [x] Feature integrada à `develop`.
 
 ---
 
@@ -1802,7 +1802,7 @@ Atualizar esta seção conforme o projeto avançar.
 | 23 | Audit Trail | ✅ Concluído |
 | 24 | Stripe Billing | ✅ Concluído |
 | 25 | Admin Console | ✅ Concluído |
-| 26 | Observability | ⬜ Pendente |
+| 26 | Observability | ✅ Concluído |
 | 27 | Security Hardening | ⬜ Pendente |
 | 28 | Internationalization | ⬜ Pendente |
 | 29 | Marketing Site | ⬜ Pendente |
@@ -2469,6 +2469,31 @@ Validações:
 
 Merge:
 feature/25-admin → develop
+
+Status:
+✅ concluído
+
+## 2026-09-02 — Feature 26
+
+Branch:
+feature/26-observability
+
+Commit:
+<commit local>
+
+Resumo:
+- logging estruturado com correlation ID e contexto isolado;
+- métricas operacionais de filas, latências, runtime de estratégias, rejeições de risco e erros;
+- liveness/readiness e checks de saúde implementados sem acoplamento a fornecedor.
+
+Validações:
+- lint: OK
+- tests: OK (2 testes direcionados)
+- typecheck: OK
+- build: OK (pacote `@risexpto/observability`)
+
+Merge:
+feature/26-observability → develop
 
 Status:
 ✅ concluído
