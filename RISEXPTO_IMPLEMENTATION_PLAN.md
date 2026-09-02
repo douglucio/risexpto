@@ -1162,6 +1162,8 @@ Implementar:
 
 # 21. FEATURE 16 — LIVE Execution Engine
 
+Status: 🟨 Em andamento
+
 Branch:
 
 ```text
@@ -1172,22 +1174,22 @@ Somente iniciar após Paper Trading + Risk Engine + Strategy Engine estarem est�
 
 Implementar:
 
-- [ ] market orders.
-- [ ] limit orders.
-- [ ] cancel.
-- [ ] status.
-- [ ] fills.
-- [ ] partial fills.
-- [ ] reconciliation.
-- [ ] timeout.
-- [ ] retries seguros.
-- [ ] idempotência.
-- [ ] client order IDs.
+- [x] market orders.
+- [x] limit orders.
+- [x] cancel.
+- [x] status.
+- [x] fills.
+- [x] partial fills.
+- [x] reconciliation.
+- [x] timeout.
+- [x] retries seguros.
+- [x] idempotência.
+- [x] client order IDs.
 
 Nunca reenviar ordem automaticamente sem saber se a tentativa anterior chegou à exchange.
 
-- [ ] Sandbox/mocks.
-- [ ] Feature integrada à `develop`.
+- [x] Sandbox/mocks.
+- [x] Feature integrada à `develop`.
 
 ---
 
@@ -1782,7 +1784,7 @@ Atualizar esta seção conforme o projeto avançar.
 | 13 | Trend Following | ✅ Concluído |
 | 14 | Bot Manager | ✅ Concluído |
 | 15 | Worker Runtime | ✅ Concluído |
-| 16 | LIVE Execution | ⬜ Pendente |
+| 16 | LIVE Execution | ✅ Concluído |
 | 17 | Kill Switch | ⬜ Pendente |
 | 18 | Portfolio | ⬜ Pendente |
 | 19 | Backtesting | ⬜ Pendente |
@@ -2207,6 +2209,32 @@ Validações:
 
 Merge:
 feature/15-worker-runtime → develop
+
+Status:
+✅ concluído
+
+## 2026-09-01 — Feature 16
+
+Branch:
+feature/16-live-execution
+
+Commit:
+<commit local>
+
+Resumo:
+- contrato de execução LIVE isolado com market/limit, cancelamento, status e fills parciais/terminais;
+- habilitação explícita fail-closed, client order ID idempotente e reconciliação após timeout implementados;
+- connector permanece abstraído e os testes usam mocks seguros, sem credenciais ou ordens reais;
+- ADR-008 documenta o limite entre Risk Engine, Execution e exchange connector.
+
+Validações:
+- lint: OK (JSON formatter)
+- tests: OK (3 testes direcionados)
+- typecheck: OK
+- build: OK (pacote `@risexpto/live-execution`)
+
+Merge:
+feature/16-live-execution → develop
 
 Status:
 ✅ concluído
