@@ -1309,18 +1309,18 @@ feature/20-strategy-catalog
 
 Cada estratégia deve apresentar:
 
-- [ ] nome;
-- [ ] descrição;
-- [ ] risco;
-- [ ] mercados indicados;
-- [ ] métricas;
-- [ ] drawdown;
-- [ ] versão;
-- [ ] parâmetros;
-- [ ] compatibilidade PAPER/LIVE;
-- [ ] status.
+- [x] nome;
+- [x] descrição;
+- [x] risco;
+- [x] mercados indicados;
+- [x] métricas;
+- [x] drawdown;
+- [x] versão;
+- [x] parâmetros;
+- [x] compatibilidade PAPER/LIVE;
+- [x] status.
 
-- [ ] Feature integrada à `develop`.
+- [x] Feature integrada à `develop`.
 
 ---
 
@@ -1792,7 +1792,7 @@ Atualizar esta seção conforme o projeto avançar.
 | 17 | Kill Switch | ✅ Concluído |
 | 18 | Portfolio | ✅ Concluído |
 | 19 | Backtesting | ✅ Concluído |
-| 20 | Strategy Catalog | ⬜ Pendente |
+| 20 | Strategy Catalog | ✅ Concluído |
 | 21 | Bot Wizard | ⬜ Pendente |
 | 22 | Notifications | ⬜ Pendente |
 | 23 | Audit Trail | ⬜ Pendente |
@@ -2315,6 +2315,31 @@ Validações:
 
 Merge:
 feature/19-backtesting → develop
+
+Status:
+✅ concluído
+
+## 2026-09-01 — Feature 20
+
+Branch:
+feature/20-strategy-catalog
+
+Commit:
+<commit local>
+
+Resumo:
+- catálogo versionado de estratégias com nome, descrição, risco, mercados e métricas;
+- drawdown, parâmetros, compatibilidade PAPER/LIVE e status publicados por entrada;
+- validação de identidade/versionamento, duplicidade e isolamento de estado implementados.
+
+Validações:
+- lint: OK
+- tests: OK (2 testes direcionados)
+- typecheck: OK
+- build: OK (pacote `@risexpto/strategy-catalog`)
+
+Merge:
+feature/20-strategy-catalog → develop
 
 Status:
 ✅ concluído
