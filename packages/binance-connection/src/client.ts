@@ -82,7 +82,12 @@ export class BinanceAccountConnection {
       const checkedAt = new Date(this.now()).toISOString();
       this.summary = {
         ...this.summary,
-        status: body.canTrade === true ? 'CONNECTED' : 'DEGRADED',
+        status:
+          body.canWithdraw === true
+            ? 'UNSAFE_PERMISSIONS'
+            : body.canTrade === true
+              ? 'CONNECTED'
+              : 'DEGRADED',
         permissions,
         lastCheckedAt: checkedAt,
       };

@@ -21,6 +21,7 @@ enum ExchangeConnectionStatus {
   CONNECTED
   DEGRADED
   INVALID
+  UNSAFE_PERMISSIONS
   DISCONNECTED
 }
 
