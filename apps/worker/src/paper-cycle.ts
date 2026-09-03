@@ -104,18 +104,35 @@ async function executePaperOrder(
       where: { botId_asset: { botId, asset: quoteCurrency } },
       create: { botId, asset: quoteCurrency, free: initialCapital }, update: {},
     });
-    const total = quoteAmount * 1.001;
-    const spent = await tx.paperBalance.updateMany({
-      where: { botId, asset: quoteCurrency, free: { gte: total } },
-      data: { free: { decrement: total } },
-    });
-    if (spent.count !== 1) throw new Error('PAPER_INSUFFICIENT_BALANCE');
     const base = baseAsset(symbol, quoteCurrency);
-    await tx.paperBalance.upsert({
-      where: { botId_asset: { botId, asset: base } },
-      create: { botId, asset: base, free: quantity },
-      update: { free: { increment: quantity } },
-    });
+    const fee = quoteAmount * 0.001;
+    if (side === 'BUY') {
+      const spent = await tx.paperBalance.updateMany({
+        where: { botId, asset: quoteCurrency, free: { gte: quoteAmount + fee } },
+        data: { free: { decrement: quoteAmount + fee } },
+      });
+      if (spent.count !== 1) throw new Error('PAPER_INSUFFICIENT_BALANCE');
+      await tx.paperBalance.upsert({
+        where: { botId_asset: { botId, asset: base } },
+        create: { botId, asset: base, free: quantity }, update: { free: { increment: quantity } },
+      });
+    } else {
+      const position = await tx.position.findFirst({ where: { botId, symbol, tradingMode: 'PAPER', status: 'OPEN' } });
+      if (!position || Number(position.quantity) < quantity) throw new Error('PAPER_INSUFFICIENT_POSITION');
+      const sold = await tx.paperBalance.updateMany({
+        where: { botId, asset: base, free: { gte: quantity } }, data: { free: { decrement: quantity } },
+      });
+      if (sold.count !== 1) throw new Error('PAPER_INSUFFICIENT_BALANCE');
+      await tx.paperBalance.upsert({
+        where: { botId_asset: { botId, asset: quoteCurrency } },
+        create: { botId, asset: quoteCurrency, free: quoteAmount - fee }, update: { free: { increment: quoteAmount - fee } },
+      });
+      const remaining = Number(position.quantity) - quantity;
+      await tx.position.update({ where: { id: position.id }, data: {
+        quantity: remaining, realizedPnl: { increment: (price - Number(position.averagePrice)) * quantity - fee },
+        status: remaining === 0 ? 'CLOSED' : 'OPEN', closedAt: remaining === 0 ? new Date() : null,
+      } });
+    }
     const order = await tx.order.create({ data: {
       botId, tradeProposalId: proposalId, idempotencyKey: `paper:${proposalId}`,
       clientOrderId: `paper-${proposalId}`, tradingMode: 'PAPER', symbol, side, type: 'MARKET',
