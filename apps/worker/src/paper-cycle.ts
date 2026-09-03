@@ -77,11 +77,44 @@ export async function processPaperCycle(database: PrismaClient, job: Job<WorkerJ
     await database.tradeProposal.update({ where: { id: storedProposal.id }, data: {
       status: risk.decision === 'APPROVED' ? 'APPROVED' : 'REJECTED', decidedAt: new Date(),
     } });
+    if (risk.decision === 'APPROVED') {
+      await executePaperOrder(database, bot.id, storedProposal.id, proposal.symbol, proposal.side, Number(proposal.quoteAmount), Number(market.close));
+      await database.tradeProposal.update({ where: { id: storedProposal.id }, data: { status: 'EXECUTED' } });
+    }
     await complete(database, bot.id, job, risk.decision === 'APPROVED' ? 'RISK_APPROVED' : 'RISK_REJECTED');
   } catch (error) {
     await database.botEvent.create({ data: { botId: bot.id, type: 'CYCLE_FAILED', payload: { jobId: job.id, error: safeError(error) } } });
     throw error;
   }
+}
+
+async function executePaperOrder(
+  database: PrismaClient, botId: string, proposalId: string, symbol: string, side: 'BUY' | 'SELL', quoteAmount: number, price: number,
+): Promise<void> {
+  const quantity = quoteAmount / price;
+  await database.$transaction(async (tx) => {
+    const existing = await tx.order.findUnique({ where: { tradeProposalId: proposalId }, select: { id: true } });
+    if (existing) return;
+    const order = await tx.order.create({ data: {
+      botId, tradeProposalId: proposalId, idempotencyKey: `paper:${proposalId}`,
+      clientOrderId: `paper-${proposalId}`, tradingMode: 'PAPER', symbol, side, type: 'MARKET',
+      status: 'FILLED', requestedQuantity: quantity, requestedQuoteAmount: quoteAmount,
+      filledQuantity: quantity, averageFillPrice: price, submittedAt: new Date(), completedAt: new Date(),
+    } });
+    await tx.trade.create({ data: { orderId: order.id, quantity, price, executedAt: new Date() } });
+    const position = await tx.position.findFirst({ where: { botId, symbol, tradingMode: 'PAPER', status: 'OPEN' } });
+    if (position && side === 'BUY') {
+      const nextQuantity = Number(position.quantity) + quantity;
+      await tx.position.update({ where: { id: position.id }, data: {
+        quantity: nextQuantity, averagePrice: (Number(position.averagePrice) * Number(position.quantity) + quoteAmount) / nextQuantity,
+      } });
+    } else if (!position && side === 'BUY') {
+      await tx.position.create({ data: {
+        botId, tradingMode: 'PAPER', symbol, status: 'OPEN', quantity, averagePrice: price,
+        realizedPnl: 0, openedAt: new Date(),
+      } });
+    }
+  });
 }
 
 async function complete(database: PrismaClient, botId: string, job: Job<WorkerJob>, reason: string) {

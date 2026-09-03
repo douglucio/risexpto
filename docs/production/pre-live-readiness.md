@@ -34,7 +34,7 @@ Status usados neste documento:
 | Database                       | `PARTIALLY_IMPLEMENTED`        | Persistência e migration existem, mas sem repositórios/casos de uso integrados à API.                                                                  |
 | Market data                    | `PARTIALLY_IMPLEMENTED`        | Cliente Binance público, filtros e resiliência existem; não há endpoint nem worker consumindo-o.                                                       |
 | Binance connection/vault       | `PARTIALLY_IMPLEMENTED`        | Assinatura, health, mascaramento e AES-GCM têm testes mockados; não há CRUD persistido, rotação/revogação integrada nem connector Testnet operacional. |
-| Paper trading                  | `MOCK_ONLY` / `NOT_INTEGRATED` | Motor usa `Map` e `number`; não há ciclo iniciado pela API/worker nem persistência de ordens, trades ou posições.                                      |
+| Paper trading                  | `PARTIALLY_IMPLEMENTED`        | Worker gera proposals, avalia risco e persiste Order/Trade/Position em PAPER; balances, sell/partial fill, decimal seguro e E2E da UI ainda pendentes.             |
 | Risk engine                    | `PARTIALLY_IMPLEMENTED`        | Worker avalia proposals Paper e persiste `RiskEvent`; reservas transacionais, decimal seguro, kill switch e execução ainda pendentes.                         |
 | Strategies/catalog/backtesting | `PARTIALLY_IMPLEMENTED`        | `GET /strategies` lê definições/versões ativas do PostgreSQL; execução de estratégias e backtesting ainda não possuem casos de uso/jobs.                 |
 | Bot manager/wizard             | `PARTIALLY_IMPLEMENTED`        | CRUD/lifecycle inicial persistido na API com ownership; o package manager/wizard em memória e scheduler ainda não estão integrados.                       |
@@ -82,7 +82,7 @@ Classificação: `PARTIALLY_IMPLEMENTED`, `BLOCKED_EXTERNAL`; não é `PRODUCTIO
 1. Ainda não existe fluxo executável Web → API → PostgreSQL para execução de trading; strategies/bots possuem apenas o slice de leitura/criação.
 2. Não existe worker real; `Map`, `Set` e timers são fontes de estado em vários packages.
 3. Não há isolamento multi-tenant implementado em controllers/repositories, porque os recursos ainda não possuem endpoints.
-4. Paper Trading, Risk Engine, Kill Switch, portfolio e reconciliação ainda não formam um fluxo E2E completo; proposals e RiskEvents agora são persistidos.
+4. Paper Trading, Risk Engine, Kill Switch, portfolio e reconciliação ainda não formam um fluxo E2E completo; proposals, RiskEvents, orders, trades e posições Paper agora são persistidos.
 5. `number` é usado em Paper Trading e Risk Engine para valores financeiros.
 6. Live execution não possui connector Binance real, persistência de Order, `clientOrderId` persistido ou reconciliação após crash.
 7. Binance connection possui CRUD/test/revoke persistidos e vault AES-GCM, mas rotação de master key e validação contra Testnet ainda estão pendentes.
