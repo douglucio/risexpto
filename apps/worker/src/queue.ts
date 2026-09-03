@@ -1,6 +1,6 @@
 import { Queue, QueueEvents, Worker, type Job } from 'bullmq';
 
-export type WorkerJob = { type: 'bot-cycle' | 'reconcile'; botId?: string };
+export type WorkerJob = { type: 'bot-cycle' | 'reconcile' | 'paper-fill'; botId?: string; orderId?: string; fill?: { externalTradeId: string; quantity: number; price: number; fee?: number } };
 export type PersistentWorker = Readonly<{
   queue: Queue<WorkerJob>;
   worker: Worker<WorkerJob>;

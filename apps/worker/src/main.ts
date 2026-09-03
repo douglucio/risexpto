@@ -2,6 +2,7 @@ import { createPersistentWorker } from './queue.js';
 import { createDatabaseClient } from '@risexpto/database';
 import { processPaperCycle } from './paper-cycle.js';
 import { reconcilePaperOrders } from './reconciliation.js';
+import { applyPaperFill } from './paper-fills.js';
 
 export const workerIdentity = Object.freeze({ service: 'worker', status: 'ready' });
 
@@ -14,9 +15,12 @@ async function bootstrap(): Promise<void> {
   const infrastructure = await createPersistentWorker(
     redisUrl,
     process.env.WORKER_QUEUE_NAME,
-    async (job) => job.data.type === 'reconcile'
-      ? void await reconcilePaperOrders(database)
-      : processPaperCycle(database, job),
+    async (job) => {
+      if (job.data.type === 'reconcile') await reconcilePaperOrders(database);
+      else if (job.data.type === 'paper-fill' && job.data.orderId && job.data.fill)
+        await applyPaperFill(database, { orderId: job.data.orderId, ...job.data.fill });
+      else await processPaperCycle(database, job);
+    },
   );
   await infrastructure.queue.upsertJobScheduler(
     'paper-reconciliation',
