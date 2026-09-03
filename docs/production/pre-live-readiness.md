@@ -68,7 +68,7 @@ Achados:
 
 - `issuer`, `client_id`, redirect URI, state e PKCE estão implementados.
 - O access token deve ser validado com `KEYCLOAK_API_AUDIENCE` (`risexpto-api`); o ID token, com `KEYCLOAK_CLIENT_ID` (`risexpto-web`). Esta separação foi corrigida e não deve ser revertida.
-- O callback rejeita corretamente `email_verified !== true`, mas converte todas as causas em `authentication_failed`; falta diagnóstico operacional seguro e mensagens específicas.
+- O callback rejeita corretamente `email_verified !== true` e possui códigos seguros para audiência, issuer, expiração, claims ausentes, state/PKCE e erros do provedor.
 - O cookie selado contém access token e refresh token. Não há revogação server-side nem sessão opaca em Redis/database.
 - API e Web têm parsing de roles `USER`, `SUPPORT`, `ADMIN`; a rota Web `/admin` atualmente exige apenas `ADMIN`.
 - Provisioning inicial por `externalAuthId` agora existe na API; integração E2E, conflito de e-mail e teste contra PostgreSQL real continuam pendentes.
@@ -85,7 +85,7 @@ Classificação: `PARTIALLY_IMPLEMENTED`, `BLOCKED_EXTERNAL`; não é `PRODUCTIO
 4. Paper Trading, Risk Engine, Kill Switch, portfolio e reconciliação não formam um fluxo E2E.
 5. `number` é usado em Paper Trading e Risk Engine para valores financeiros.
 6. Live execution não possui connector Binance real, persistência de Order, `clientOrderId` persistido ou reconciliação após crash.
-7. Binance connection não possui endpoints, persistência criptografada, rotação de master key ou bloqueio operacional integrado para `canWithdraw=true`.
+7. Binance connection possui CRUD/test/revoke persistidos e vault AES-GCM, mas rotação de master key e validação contra Testnet ainda estão pendentes.
 8. Billing é mock-only e não pode liberar acesso comercial; Stripe Test Mode ainda não está integrado.
 9. Admin, notifications, audit e observability não estão ligados a endpoints/runtime.
 10. As páginas autenticadas em `apps/web/app/[section]/page.tsx` ainda contêm dados e controles demonstrativos/hardcoded nos domínios não integrados (conexões, trades, risco, notificações, billing e admin).
@@ -96,7 +96,7 @@ Classificação: `PARTIALLY_IMPLEMENTED`, `BLOCKED_EXTERNAL`; não é `PRODUCTIO
 
 | Gate                            | Estado                                | Bloqueios atuais                                                                                    |
 | ------------------------------- | ------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| A — Authentication              | `PARTIALLY_IMPLEMENTED`               | Diagnóstico callback, provisioning, refresh/logout E2E e testes reais pendentes.                    |
+| A — Authentication              | `PARTIALLY_IMPLEMENTED`               | Diagnóstico e provisioning iniciais existem; refresh/logout E2E, sessão server-side e testes reais pendentes. |
 | B — Paper Trading               | `NOT_INTEGRATED`                      | API, banco, worker, risk, execução e dashboard não conectados.                                      |
 | C — Binance Spot Testnet        | `NOT_INTEGRATED` / `BLOCKED_EXTERNAL` | Connector, filters, credentials persistidas, idempotência e reconciliação pendentes.                |
 | D — Stripe Test Mode            | `MOCK_ONLY`                           | SDK, checkout, portal, webhook e idempotência persistida pendentes.                                 |
@@ -105,7 +105,7 @@ Classificação: `PARTIALLY_IMPLEMENTED`, `BLOCKED_EXTERNAL`; não é `PRODUCTIO
 
 ## Próxima ordem de implementação
 
-1. Diagnóstico e observabilidade segura do callback OIDC; testes de audience, claims, email verification, state/PKCE, expiry, refresh e logout.
+1. Sessão server-side e testes reais de audience, claims, email verification, state/PKCE, expiry, refresh e logout.
 2. User provisioning e sessão server-side.
 3. API NestJS com módulos, DTOs, ownership e repositories Prisma.
 4. Binance vault/connections e ambiente Spot Testnet, sem produção.
@@ -133,5 +133,7 @@ Nenhuma ordem Binance foi enviada, nenhuma credencial real foi usada e Stripe Li
 - Typecheck do Web: OK.
 - Bots e strategies no Web: leitura real da API, sem dados hardcoded nesses dois domínios; a URL da API é configurável por `API_BASE_URL`.
 - Kill switch persistente: migration, serviço e endpoints ADMIN adicionados; testes do serviço cobrem scopes SYSTEM/USER/BOT. O gate permanece bloqueado enquanto o worker não consultar esse estado e não houver teste de restart.
+- Hardening API: ValidationPipe global, CORS configurável, exception filter seguro e correlation ID; Helmet, rate limit e revisão completa ainda pendentes.
+- Commercial readiness: checklist criado em `docs/production/commercial-readiness.md`; status permanece `NOT_READY`.
 - Suíte Turbo: 16 tarefas passaram; os testes HTTP da API falharam neste executor com `listen EPERM: operation not permitted 0.0.0.0`, impedindo a abertura do servidor usado pelo Supertest. O resultado global não é considerado verde.
 - Criação da branch `feature/pre-live-audit`: bloqueada pelo ambiente porque `.git/refs` está somente leitura; nenhum commit ou push foi realizado.
