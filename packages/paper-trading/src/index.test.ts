@@ -19,4 +19,11 @@ describe('PaperTradingEngine', () => {
     expect(engine.execute('BTCUSDT', 'SELL', 1, 100).status).toBe('REJECTED');
     expect(engine.snapshot().balances.find((balance) => balance.asset === 'USDT')?.free).toBe(1);
   });
+
+  it('keeps fractional quote arithmetic precise internally', () => {
+    const engine = new PaperTradingEngine({ USDT: 0.03, BTC: 0 });
+    const order = engine.execute('BTCUSDT', 'BUY', 0.1, 0.2);
+    expect(order.status).toBe('FILLED');
+    expect(engine.snapshot().balances.find((balance) => balance.asset === 'USDT')?.free).toBe(0.00998);
+  });
 });
