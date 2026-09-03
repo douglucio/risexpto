@@ -1,7 +1,6 @@
 import {
   Alert,
   Badge,
-  BotStatusIndicator,
   Button,
   Card,
   Checkbox,
@@ -10,16 +9,15 @@ import {
   EmptyState,
   FormField,
   Input,
-  Pagination,
   Progress,
   Radio,
-  RiskIndicator,
   Switch,
   Tabs,
 } from '@risexpto/ui';
 import { notFound } from 'next/navigation';
 import { PageHeader } from '../../components/page-header';
 import { PreferencesForm } from '../../components/preferences-form';
+import { readSession } from '../../lib/auth/session';
 
 const pages = {
   bots: ['Automation', 'Bots', 'Create, monitor, and control automated strategy instances.'],
@@ -50,6 +48,8 @@ export default async function SectionPage({ params }: { params: Promise<{ sectio
   const { section } = await params;
   const page = pages[section as keyof typeof pages];
   if (!page) notFound();
+  const data =
+    section === 'bots' || section === 'strategies' ? await loadSectionData(section) : null;
   return (
     <>
       <PageHeader
@@ -58,12 +58,53 @@ export default async function SectionPage({ params }: { params: Promise<{ sectio
         description={page[2]}
         action={<Button>{section === 'bots' ? 'Create bot' : 'Primary action'}</Button>}
       />
-      <SectionContent section={section} />
+      <SectionContent section={section} data={data} />
     </>
   );
 }
 
-function SectionContent({ section }: { section: string }) {
+type SectionData =
+  | { kind: 'bots'; value: BotRecord[] }
+  | { kind: 'strategies'; value: StrategyRecord[] }
+  | { kind: 'error'; message: string };
+type BotRecord = {
+  id: string;
+  name: string;
+  status: string;
+  tradingMode: string;
+  configuration?: { authorizedCapital?: string; quoteCurrency?: string } | null;
+};
+type StrategyRecord = {
+  id: string;
+  key: string;
+  name: string;
+  description: string;
+  versions: Array<{ id: string; version: number; implementationKey: string }>;
+};
+
+async function loadSectionData(section: 'bots' | 'strategies'): Promise<SectionData> {
+  const session = await readSession(false);
+  if (!session)
+    return { kind: 'error', message: 'Your session is no longer available. Sign in again.' };
+  try {
+    const apiBaseUrl =
+      process.env.API_BASE_URL ?? `http://localhost:${process.env.API_PORT ?? '3001'}`;
+    const response = await fetch(`${apiBaseUrl.replace(/\/$/, '')}/${section}`, {
+      headers: { authorization: `Bearer ${session.accessToken}` },
+      cache: 'no-store',
+    });
+    if (!response.ok)
+      return { kind: 'error', message: `Could not load ${section}. Try again shortly.` };
+    const payload: unknown = await response.json();
+    return section === 'bots'
+      ? { kind: 'bots', value: payload as BotRecord[] }
+      : { kind: 'strategies', value: payload as StrategyRecord[] };
+  } catch {
+    return { kind: 'error', message: `Could not connect to the API. Try again shortly.` };
+  }
+}
+
+function SectionContent({ section, data }: { section: string; data: SectionData | null }) {
   if (section === 'bots')
     return (
       <>
@@ -75,52 +116,62 @@ function SectionContent({ section }: { section: string }) {
             { id: 'archived', label: 'Archived' },
           ]}
         />
-        <div className="content-stack">
-          <DataTable
-            columns={['Name', 'Mode', 'Capital', 'Status']}
-            rows={[
-              [
-                <b key="1">Steady BTC</b>,
-                <Badge key="2" tone="brand">
-                  PAPER
-                </Badge>,
-                <CurrencyDisplay key="3" value={12000} />,
-                <BotStatusIndicator key="4" status="RUNNING" />,
-              ],
-              [
-                <b key="5">Range ETH</b>,
-                <Badge key="6" tone="brand">
-                  PAPER
-                </Badge>,
-                <CurrencyDisplay key="7" value={8000} />,
-                <BotStatusIndicator key="8" status="PAUSED" />,
-              ],
-            ]}
+        {data?.kind === 'error' ? (
+          <Alert tone="negative" title="Unable to load bots">
+            {data.message}
+          </Alert>
+        ) : null}
+        {data?.kind === 'bots' && data.value.length === 0 ? (
+          <EmptyState
+            title="No bots yet"
+            description="Create a bot after selecting an active strategy."
           />
-          <Pagination page={1} pages={3} />
-        </div>
+        ) : null}
+        {data?.kind === 'bots' && data.value.length > 0 ? (
+          <div className="content-stack">
+            <DataTable
+              columns={['Name', 'Mode', 'Capital', 'Status']}
+              rows={data.value.map((bot) => [
+                <b key={`${bot.id}-name`}>{bot.name}</b>,
+                <Badge key={`${bot.id}-mode`} tone="brand">
+                  {bot.tradingMode}
+                </Badge>,
+                <CurrencyDisplay
+                  key={`${bot.id}-capital`}
+                  value={Number(bot.configuration?.authorizedCapital ?? 0)}
+                  currency={bot.configuration?.quoteCurrency ?? 'USD'}
+                />,
+                <Badge key={`${bot.id}-status`}>{bot.status}</Badge>,
+              ])}
+            />
+          </div>
+        ) : null}
       </>
     );
   if (section === 'strategies')
-    return (
+    return data?.kind === 'error' ? (
+      <Alert tone="negative" title="Unable to load strategies">
+        {data.message}
+      </Alert>
+    ) : data?.kind === 'strategies' && data.value.length === 0 ? (
+      <EmptyState
+        title="No active strategies"
+        description="Strategies will appear here when enabled by the platform."
+      />
+    ) : (
       <div className="card-grid">
-        <Card>
-          <Badge tone="positive">LOW RISK</Badge>
-          <h2>Dollar Cost Averaging</h2>
-          <p>Recurring proposals with capital and frequency limits.</p>
-          <RiskIndicator level="LOW" />
-        </Card>
-        <Card>
-          <Badge tone="warning">MEDIUM RISK</Badge>
-          <h2>Grid</h2>
-          <p>Range-based proposal generation with controlled levels.</p>
-          <RiskIndicator level="MEDIUM" />
-        </Card>
-        <Card>
-          <Badge>COMING NEXT</Badge>
-          <h2>Trend Following</h2>
-          <p>Momentum-aware proposals with volatility controls.</p>
-        </Card>
+        {data?.kind === 'strategies'
+          ? data.value.map((strategy) => (
+              <Card key={strategy.id}>
+                <Badge tone="brand">{strategy.key}</Badge>
+                <h2>{strategy.name}</h2>
+                <p>{strategy.description}</p>
+                {strategy.versions[0] ? (
+                  <small>Version {strategy.versions[0].version}</small>
+                ) : null}
+              </Card>
+            ))
+          : null}
       </div>
     );
   if (section === 'exchange-connections')
