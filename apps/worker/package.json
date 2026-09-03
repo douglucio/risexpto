@@ -19,5 +19,6 @@
     "@risexpto/risk-engine": "workspace:*",
     "@risexpto/strategy-dca": "workspace:*",
     "bullmq": "5.63.0"
+    ,"decimal.js": "10.6.0"
   }
 }

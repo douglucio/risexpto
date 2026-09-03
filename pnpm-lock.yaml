@@ -127,6 +127,9 @@ importers:
       bullmq:
         specifier: 5.63.0
         version: 5.63.0
+      decimal.js:
+        specifier: 10.6.0
+        version: 10.6.0
     devDependencies:
       tsx:
         specifier: 4.20.5
