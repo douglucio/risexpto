@@ -1,5 +1,6 @@
 import { createPersistentWorker } from './queue.js';
 import { createDatabaseClient } from '@risexpto/database';
+import { processPaperCycle } from './paper-cycle.js';
 
 export const workerIdentity = Object.freeze({ service: 'worker', status: 'ready' });
 
@@ -12,20 +13,7 @@ async function bootstrap(): Promise<void> {
   const infrastructure = await createPersistentWorker(
     redisUrl,
     process.env.WORKER_QUEUE_NAME,
-    async (job) => {
-      if (job.data.type !== 'bot-cycle' || !job.data.botId) return;
-      const bot = await database.bot.findFirst({
-        where: { id: job.data.botId, tradingMode: 'PAPER', status: 'RUNNING', archivedAt: null },
-        select: { id: true },
-      });
-      if (!bot) return;
-      await database.botEvent.create({
-        data: { botId: bot.id, type: 'CYCLE_STARTED', payload: { jobId: job.id } },
-      });
-      await database.botEvent.create({
-        data: { botId: bot.id, type: 'CYCLE_COMPLETED', payload: { jobId: job.id } },
-      });
-    },
+    (job) => processPaperCycle(database, job),
   );
   console.info(JSON.stringify({ event: 'worker_started', service: 'worker', queue: process.env.WORKER_QUEUE_NAME ?? 'risexpto' }));
   const shutdown = async (signal: string) => {

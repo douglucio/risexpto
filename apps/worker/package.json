@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "@risexpto/database": "workspace:*",
+    "@risexpto/strategy-dca": "workspace:*",
     "bullmq": "5.63.0"
   }
 }
