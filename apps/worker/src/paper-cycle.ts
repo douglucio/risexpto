@@ -168,6 +168,9 @@ async function executePaperOrder(
     await tx.paperCapitalAllocation.updateMany({
       where: { botId, allocated: { gte: quoteAmount } }, data: { allocated: { decrement: quoteAmount } },
     });
+    await tx.paperGlobalCapitalAllocation.updateMany({
+      where: { id: 'global', allocated: { gte: quoteAmount } }, data: { allocated: { decrement: quoteAmount } },
+    });
     await tx.paperCapitalReservation.updateMany({
       where: { proposalId, status: 'ACTIVE' }, data: { status: 'CONSUMED' },
     });
@@ -197,6 +200,24 @@ async function reserveCapital(database: PrismaClient, botId: string, proposalId:
       where: { botId, allocated: { lte: limit - amount } }, data: { allocated: { increment: amount } },
     });
     if (available.count !== 1) return false;
+    const activePaperBots = await tx.botConfiguration.aggregate({
+      where: { bot: { status: 'RUNNING', tradingMode: 'PAPER', archivedAt: null } },
+      _sum: { authorizedCapital: true },
+    });
+    const globalLimit = Number(activePaperBots._sum.authorizedCapital ?? 0);
+    await tx.paperGlobalCapitalAllocation.upsert({
+      where: { id: 'global' }, create: { id: 'global', allocated: 0 }, update: {},
+    });
+    const globalAvailable = await tx.paperGlobalCapitalAllocation.updateMany({
+      where: { id: 'global', allocated: { lte: globalLimit - amount } },
+      data: { allocated: { increment: amount } },
+    });
+    if (globalAvailable.count !== 1) {
+      await tx.paperCapitalAllocation.updateMany({
+        where: { botId, allocated: { gte: amount } }, data: { allocated: { decrement: amount } },
+      });
+      return false;
+    }
     await tx.paperCapitalReservation.create({ data: { botId, proposalId, amount } });
     return true;
   });
