@@ -12,11 +12,12 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@risexpto/binance-connection": "workspace:*",
-    "@risexpto/database": "workspace:*",
     "@nestjs/common": "12.0.1",
     "@nestjs/core": "12.0.1",
     "@nestjs/platform-express": "12.0.1",
+    "@risexpto/binance-connection": "workspace:*",
+    "@risexpto/database": "workspace:*",
+    "bullmq": "5.63.0",
     "jsonwebtoken": "9.0.3",
     "jwks-rsa": "4.1.0",
     "reflect-metadata": "0.2.2",
@@ -26,7 +27,7 @@
     "@nestjs/cli": "11.0.10",
     "@nestjs/testing": "12.0.1",
     "@types/jsonwebtoken": "9.0.10",
-    "supertest": "7.1.4",
-    "@types/supertest": "6.0.3"
+    "@types/supertest": "6.0.3",
+    "supertest": "7.1.4"
   }
 }

@@ -7,6 +7,7 @@ import { createDatabaseClient } from '@risexpto/database';
 import { StrategiesModule } from './strategies/strategies.module';
 import { BotsModule } from './bots/bots.module';
 import { ExchangeConnectionsModule } from './exchange-connections/exchange-connections.module';
+import { QueueModule } from './queue/queue.module';
 import { AdminModule } from './admin/admin.module';
 
 const database = createDatabaseClient(
@@ -20,6 +21,7 @@ const database = createDatabaseClient(
     StrategiesModule,
     BotsModule,
     ExchangeConnectionsModule,
+    QueueModule,
     AdminModule.withDatabase(database),
   ],
   controllers: [AppController, ProfileController],
