@@ -48,6 +48,17 @@ export class BinanceAccountConnection {
     return this.summary;
   }
 
+  restore(stored: StoredCredentials, apiKeyMasked: string): ConnectionSummary {
+    this.credentials = { ...stored };
+    this.summary = {
+      apiKeyMasked,
+      status: stored.revokedAt ? 'DISCONNECTED' : 'DISCONNECTED',
+      lastCheckedAt: null,
+      permissions: [],
+    };
+    return this.status();
+  }
+
   async testConnection(): Promise<ConnectionSummary> {
     if (!this.credentials) throw new BinanceConnectionError('No Binance connection configured');
     try {

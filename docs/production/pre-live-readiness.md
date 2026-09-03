@@ -126,6 +126,7 @@ Nenhuma ordem Binance foi enviada, nenhuma credencial real foi usada e Stripe Li
 - Testes OIDC direcionados: 5 testes passaram.
 - API provisioning/auth guard unitário: 10 testes passaram; API lint e typecheck passaram.
 - API strategies/bots: 12 testes direcionados passaram; ownership é aplicado por `User.id` interno e criação LIVE é rejeitada.
+- Binance safety foundation: 4 testes do adapter passaram; `canWithdraw=true` resulta em `UNSAFE_PERMISSIONS` e a migration foi aplicada no PostgreSQL local.
 - O pacote `@risexpto/database` foi ligado à API; seu export foi corrigido de `dist/index.js` para o caminho efetivamente gerado `dist/src/index.js`.
 - PostgreSQL local: containers healthy; migration inicial aplicada e seed executado.
 - API runtime: build passou; smoke `GET http://127.0.0.1:3001/health` retornou `{"service":"api","status":"ok"}`.
