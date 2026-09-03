@@ -78,7 +78,11 @@ export async function processPaperCycle(database: PrismaClient, job: Job<WorkerJ
       status: risk.decision === 'APPROVED' ? 'APPROVED' : 'REJECTED', decidedAt: new Date(),
     } });
     if (risk.decision === 'APPROVED') {
-      await executePaperOrder(database, bot.id, storedProposal.id, proposal.symbol, proposal.side, Number(proposal.quoteAmount), Number(market.close));
+      await executePaperOrder(
+        database, bot.id, storedProposal.id, proposal.symbol, proposal.side,
+        Number(proposal.quoteAmount), Number(market.close), bot.configuration.quoteCurrency,
+        Number(bot.configuration.authorizedCapital),
+      );
       await database.tradeProposal.update({ where: { id: storedProposal.id }, data: { status: 'EXECUTED' } });
     }
     await complete(database, bot.id, job, risk.decision === 'APPROVED' ? 'RISK_APPROVED' : 'RISK_REJECTED');
@@ -89,12 +93,29 @@ export async function processPaperCycle(database: PrismaClient, job: Job<WorkerJ
 }
 
 async function executePaperOrder(
-  database: PrismaClient, botId: string, proposalId: string, symbol: string, side: 'BUY' | 'SELL', quoteAmount: number, price: number,
+  database: PrismaClient, botId: string, proposalId: string, symbol: string, side: 'BUY' | 'SELL',
+  quoteAmount: number, price: number, quoteCurrency: string, initialCapital: number,
 ): Promise<void> {
   const quantity = quoteAmount / price;
   await database.$transaction(async (tx) => {
     const existing = await tx.order.findUnique({ where: { tradeProposalId: proposalId }, select: { id: true } });
     if (existing) return;
+    await tx.paperBalance.upsert({
+      where: { botId_asset: { botId, asset: quoteCurrency } },
+      create: { botId, asset: quoteCurrency, free: initialCapital }, update: {},
+    });
+    const total = quoteAmount * 1.001;
+    const spent = await tx.paperBalance.updateMany({
+      where: { botId, asset: quoteCurrency, free: { gte: total } },
+      data: { free: { decrement: total } },
+    });
+    if (spent.count !== 1) throw new Error('PAPER_INSUFFICIENT_BALANCE');
+    const base = baseAsset(symbol, quoteCurrency);
+    await tx.paperBalance.upsert({
+      where: { botId_asset: { botId, asset: base } },
+      create: { botId, asset: base, free: quantity },
+      update: { free: { increment: quantity } },
+    });
     const order = await tx.order.create({ data: {
       botId, tradeProposalId: proposalId, idempotencyKey: `paper:${proposalId}`,
       clientOrderId: `paper-${proposalId}`, tradingMode: 'PAPER', symbol, side, type: 'MARKET',
@@ -115,6 +136,10 @@ async function executePaperOrder(
       } });
     }
   });
+}
+function baseAsset(symbol: string, quoteCurrency: string): string {
+  if (!symbol.endsWith(quoteCurrency)) throw new Error('PAPER_SYMBOL_QUOTE_MISMATCH');
+  return symbol.slice(0, -quoteCurrency.length);
 }
 
 async function complete(database: PrismaClient, botId: string, job: Job<WorkerJob>, reason: string) {
