@@ -118,6 +118,9 @@ importers:
       '@risexpto/database':
         specifier: workspace:*
         version: link:../../packages/database
+      '@risexpto/strategy-dca':
+        specifier: workspace:*
+        version: link:../../packages/strategy-dca
       bullmq:
         specifier: 5.63.0
         version: 5.63.0
