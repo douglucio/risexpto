@@ -132,6 +132,12 @@ enum KillSwitchScope {
   SYSTEM
 }
 
+enum PaperReservationStatus {
+  ACTIVE
+  CONSUMED
+  RELEASED
+}
+
 model User {
   id                  String               @id @default(uuid()) @db.Uuid
   externalAuthId      String               @unique @db.VarChar(128)
@@ -239,6 +245,7 @@ model Bot {
   positions            Position[]
   paperBalances        PaperBalance[]
   paperCapitalAllocation PaperCapitalAllocation?
+  paperReservations    PaperCapitalReservation[]
   riskProfile          RiskProfile?
   riskEvents           RiskEvent[]
   events               BotEvent[]
@@ -282,6 +289,7 @@ model TradeProposal {
   bot               Bot             @relation(fields: [botId], references: [id], onDelete: Cascade)
   strategyVersion   StrategyVersion @relation(fields: [strategyVersionId], references: [id], onDelete: Restrict)
   order             Order?
+  paperReservation  PaperCapitalReservation?
   riskEvents        RiskEvent[]
 
   @@unique([botId, correlationId])
@@ -376,6 +384,21 @@ model PaperCapitalAllocation {
   createdAt DateTime @default(now()) @db.Timestamptz(3)
   updatedAt DateTime @updatedAt @db.Timestamptz(3)
   bot       Bot      @relation(fields: [botId], references: [id], onDelete: Cascade)
+}
+
+model PaperCapitalReservation {
+  id          String                  @id @default(uuid()) @db.Uuid
+  botId       String                  @db.Uuid
+  proposalId  String                  @unique @db.Uuid
+  amount      Decimal                 @db.Decimal(38, 18)
+  status      PaperReservationStatus  @default(ACTIVE)
+  createdAt   DateTime                @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime                @updatedAt @db.Timestamptz(3)
+  bot         Bot                     @relation(fields: [botId], references: [id], onDelete: Cascade)
+  proposal    TradeProposal           @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+
+  @@index([status, createdAt])
+  @@index([botId, status])
 }
 
 model RiskProfile {

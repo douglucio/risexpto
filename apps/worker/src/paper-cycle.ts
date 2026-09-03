@@ -88,7 +88,7 @@ export async function processPaperCycle(database: PrismaClient, job: Job<WorkerJ
       botStatus: 'RUNNING', tradingMode: bot.tradingMode,
     });
     if (risk.decision === 'APPROVED') {
-      const reserved = await reserveCapital(database, bot.id, Number(profile.maxAllocatedCapital), Number(proposal.quoteAmount));
+      const reserved = await reserveCapital(database, bot.id, storedProposal.id, Number(profile.maxAllocatedCapital), Number(proposal.quoteAmount));
       if (!reserved) {
         risk.decision = 'REJECTED';
         risk.reasonCode = 'CAPITAL_RESERVATION_CONFLICT';
@@ -168,6 +168,9 @@ async function executePaperOrder(
     await tx.paperCapitalAllocation.updateMany({
       where: { botId, allocated: { gte: quoteAmount } }, data: { allocated: { decrement: quoteAmount } },
     });
+    await tx.paperCapitalReservation.updateMany({
+      where: { proposalId, status: 'ACTIVE' }, data: { status: 'CONSUMED' },
+    });
     const position = await tx.position.findFirst({ where: { botId, symbol, tradingMode: 'PAPER', status: 'OPEN' } });
     if (position && side === 'BUY') {
       const nextQuantity = Number(position.quantity) + quantity;
@@ -183,15 +186,19 @@ async function executePaperOrder(
   });
 }
 
-async function reserveCapital(database: PrismaClient, botId: string, limit: number, amount: number): Promise<boolean> {
+async function reserveCapital(database: PrismaClient, botId: string, proposalId: string, limit: number, amount: number): Promise<boolean> {
   return database.$transaction(async (tx) => {
+    const existing = await tx.paperCapitalReservation.findUnique({ where: { proposalId } });
+    if (existing) return existing.status === 'ACTIVE';
     await tx.paperCapitalAllocation.upsert({
       where: { botId }, create: { botId, allocated: 0 }, update: {},
     });
     const available = await tx.paperCapitalAllocation.updateMany({
       where: { botId, allocated: { lte: limit - amount } }, data: { allocated: { increment: amount } },
     });
-    return available.count === 1;
+    if (available.count !== 1) return false;
+    await tx.paperCapitalReservation.create({ data: { botId, proposalId, amount } });
+    return true;
   });
 }
 function baseAsset(symbol: string, quoteCurrency: string): string {
