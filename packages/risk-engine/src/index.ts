@@ -1,3 +1,5 @@
+import { Decimal } from 'decimal.js';
+
 export type Decision = 'APPROVED' | 'REJECTED';
 export type TradingMode = 'PAPER' | 'LIVE';
 export type BotStatus = 'READY' | 'RUNNING' | 'PAUSED' | 'STOPPED' | 'ERROR' | 'RISK_BLOCKED';
@@ -44,14 +46,14 @@ export class RiskEngine {
     private readonly now: () => number = Date.now,
   ) {
     if (
-      limits.maxAllocatedCapital < 0 ||
-      limits.maxTradeAmount <= 0 ||
-      limits.maxExposure <= 0 ||
-      limits.maxPositionPercent <= 0 ||
-      limits.maxPositionPercent > 1 ||
+      new Decimal(limits.maxAllocatedCapital).isNegative() ||
+      !new Decimal(limits.maxTradeAmount).greaterThan(0) ||
+      !new Decimal(limits.maxExposure).greaterThan(0) ||
+      !new Decimal(limits.maxPositionPercent).greaterThan(0) ||
+      new Decimal(limits.maxPositionPercent).greaterThan(1) ||
       limits.maxPositions < 1 ||
-      limits.maxDailyLoss < 0 ||
-      limits.maxDrawdown < 0 ||
+      new Decimal(limits.maxDailyLoss).isNegative() ||
+      new Decimal(limits.maxDrawdown).isNegative() ||
       limits.cooldownMs < 0
     )
       throw new Error('Invalid risk limits');
@@ -59,7 +61,8 @@ export class RiskEngine {
 
   evaluate(context: RiskContext): RiskDecision {
     const timestamp = context.now ?? this.now();
-    const proposedValue = context.amount * context.price;
+    const proposedValueDecimal = new Decimal(context.amount).times(context.price);
+    const proposedValue = proposedValueDecimal.toNumber();
     const snapshot: RiskSnapshot = {
       ...context,
       proposedValue,
@@ -93,27 +96,27 @@ export class RiskEngine {
       [
         'INSUFFICIENT_BALANCE',
         'Available balance is insufficient.',
-        proposedValue <= context.availableBalance,
+        proposedValueDecimal.lte(context.availableBalance),
       ],
       [
         'TRADE_LIMIT',
         'Proposed trade exceeds the per-trade limit.',
-        proposedValue <= this.limits.maxTradeAmount,
+        proposedValueDecimal.lte(this.limits.maxTradeAmount),
       ],
       [
         'ALLOCATED_CAPITAL_LIMIT',
         'Allocated capital limit would be exceeded.',
-        context.allocatedCapital + proposedValue <= this.limits.maxAllocatedCapital,
+        new Decimal(context.allocatedCapital).plus(proposedValueDecimal).lte(this.limits.maxAllocatedCapital),
       ],
       [
         'EXPOSURE_LIMIT',
         'Maximum exposure would be exceeded.',
-        context.currentExposure + proposedValue <= this.limits.maxExposure,
+        new Decimal(context.currentExposure).plus(proposedValueDecimal).lte(this.limits.maxExposure),
       ],
       [
         'POSITION_PERCENT_LIMIT',
         'Position percentage limit would be exceeded.',
-        proposedValue <= this.limits.maxExposure * this.limits.maxPositionPercent,
+        proposedValueDecimal.lte(new Decimal(this.limits.maxExposure).times(this.limits.maxPositionPercent)),
       ],
       [
         'MAX_POSITIONS',

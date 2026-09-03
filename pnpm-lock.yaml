@@ -189,7 +189,11 @@ importers:
 
   packages/portfolio: {}
 
-  packages/risk-engine: {}
+  packages/risk-engine:
+    dependencies:
+      decimal.js:
+        specifier: 10.6.0
+        version: 10.6.0
 
   packages/security: {}
 
