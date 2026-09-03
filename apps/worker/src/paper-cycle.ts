@@ -87,6 +87,14 @@ export async function processPaperCycle(database: PrismaClient, job: Job<WorkerJ
       positionValue: 0, openPositions: 0, dailyLoss: 0, drawdown: 0, lastTradeAt: null,
       botStatus: 'RUNNING', tradingMode: bot.tradingMode,
     });
+    if (risk.decision === 'APPROVED') {
+      const reserved = await reserveCapital(database, bot.id, Number(profile.maxAllocatedCapital), Number(proposal.quoteAmount));
+      if (!reserved) {
+        risk.decision = 'REJECTED';
+        risk.reasonCode = 'CAPITAL_RESERVATION_CONFLICT';
+        risk.reason = 'Capital is already reserved by another concurrent cycle.';
+      }
+    }
     await database.riskEvent.create({ data: {
       botId: bot.id, riskProfileId: profile.id, tradeProposalId: storedProposal.id,
       decision: risk.decision, reasonCode: risk.reasonCode, reason: risk.reason, riskSnapshot: risk.riskSnapshot,
@@ -157,6 +165,9 @@ async function executePaperOrder(
       filledQuantity: quantity, averageFillPrice: price, submittedAt: new Date(), completedAt: new Date(),
     } });
     await tx.trade.create({ data: { orderId: order.id, quantity, price, executedAt: new Date() } });
+    await tx.paperCapitalAllocation.updateMany({
+      where: { botId, allocated: { gte: quoteAmount } }, data: { allocated: { decrement: quoteAmount } },
+    });
     const position = await tx.position.findFirst({ where: { botId, symbol, tradingMode: 'PAPER', status: 'OPEN' } });
     if (position && side === 'BUY') {
       const nextQuantity = Number(position.quantity) + quantity;
@@ -169,6 +180,18 @@ async function executePaperOrder(
         realizedPnl: 0, openedAt: new Date(),
       } });
     }
+  });
+}
+
+async function reserveCapital(database: PrismaClient, botId: string, limit: number, amount: number): Promise<boolean> {
+  return database.$transaction(async (tx) => {
+    await tx.paperCapitalAllocation.upsert({
+      where: { botId }, create: { botId, allocated: 0 }, update: {},
+    });
+    const available = await tx.paperCapitalAllocation.updateMany({
+      where: { botId, allocated: { lte: limit - amount } }, data: { allocated: { increment: amount } },
+    });
+    return available.count === 1;
   });
 }
 function baseAsset(symbol: string, quoteCurrency: string): string {
