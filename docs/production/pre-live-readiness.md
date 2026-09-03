@@ -19,7 +19,7 @@ Status usados neste documento:
 
 | Área       | Estado real                                  | Evidência                                                                                                                                                                |
 | ---------- | -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Web        | `PARTIALLY_IMPLEMENTED`                      | Next.js possui landing, login, sessão e páginas de área autenticada; as páginas de domínio ainda são demonstrativas. Usa `@risexpto/ui`, mas não consome API de negócio. |
+| Web        | `PARTIALLY_IMPLEMENTED`                      | Next.js possui landing, login, sessão e páginas de área autenticada. Bots e strategies agora consomem a API real com estados de erro/vazio; demais domínios ainda são demonstrativos. |
 | API        | `PARTIALLY_IMPLEMENTED`                      | NestJS expõe health/profile e agora strategies/bots persistidos; trades, conexões, risco, billing e admin ainda não possuem módulos/controllers.                             |
 | Worker     | `NOT_INTEGRATED`                             | `apps/worker/src/main.ts` exporta apenas `workerIdentity`; não inicia fila, scheduler, Redis, handlers ou recuperação.                                                   |
 | PostgreSQL | `PARTIALLY_IMPLEMENTED`                      | Prisma schema, migration, seed e cliente são usados pelo provisioning da API; os demais domínios ainda não possuem repositories/casos de uso integrados.                 |
@@ -88,7 +88,7 @@ Classificação: `PARTIALLY_IMPLEMENTED`, `BLOCKED_EXTERNAL`; não é `PRODUCTIO
 7. Binance connection não possui endpoints, persistência criptografada, rotação de master key ou bloqueio operacional integrado para `canWithdraw=true`.
 8. Billing é mock-only e não pode liberar acesso comercial; Stripe Test Mode ainda não está integrado.
 9. Admin, notifications, audit e observability não estão ligados a endpoints/runtime.
-10. As páginas autenticadas em `apps/web/app/[section]/page.tsx` contêm dados e controles demonstrativos/hardcoded.
+10. As páginas autenticadas em `apps/web/app/[section]/page.tsx` ainda contêm dados e controles demonstrativos/hardcoded nos domínios não integrados (conexões, trades, risco, notificações, billing e admin).
 11. Testes existentes são majoritariamente unitários; não há Playwright E2E, integração com Keycloak real, PostgreSQL real ou Redis real.
 12. A configuração local apresentou problemas de carregamento de `.env`, scopes do Keycloak e SMTP; esses caminhos precisam de smoke tests documentados.
 
@@ -131,5 +131,6 @@ Nenhuma ordem Binance foi enviada, nenhuma credencial real foi usada e Stripe Li
 - PostgreSQL local: containers healthy; migration inicial aplicada e seed executado.
 - API runtime: build passou; smoke `GET http://127.0.0.1:3001/health` retornou `{"service":"api","status":"ok"}`.
 - Typecheck do Web: OK.
+- Bots e strategies no Web: leitura real da API, sem dados hardcoded nesses dois domínios; a URL da API é configurável por `API_BASE_URL`.
 - Suíte Turbo: 16 tarefas passaram; os testes HTTP da API falharam neste executor com `listen EPERM: operation not permitted 0.0.0.0`, impedindo a abertura do servidor usado pelo Supertest. O resultado global não é considerado verde.
 - Criação da branch `feature/pre-live-audit`: bloqueada pelo ambiente porque `.git/refs` está somente leitura; nenhum commit ou push foi realizado.
