@@ -62,4 +62,21 @@ describe('BinanceAccountConnection', () => {
     expect(connection.storedCredentialsForPersistence()?.apiSecretCiphertext).toBe('');
     expect(() => new CredentialVault(new Uint8Array(8))).toThrow(BinanceConnectionError);
   });
+
+  it('never reports a key with withdrawal permission as connected', async () => {
+    const fetcher = vi
+      .fn<typeof fetch>()
+      .mockResolvedValue(okResponse({ canTrade: true, canDeposit: false, canWithdraw: true }));
+    const connection = new BinanceAccountConnection(
+      new CredentialVault(key),
+      'https://api.binance.test',
+      { fetch: fetcher },
+    );
+    connection.register('api-key', 'api-secret');
+
+    await expect(connection.testConnection()).resolves.toMatchObject({
+      status: 'UNSAFE_PERMISSIONS',
+      permissions: ['TRADE', 'WITHDRAW'],
+    });
+  });
 });
