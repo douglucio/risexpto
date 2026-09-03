@@ -20,7 +20,7 @@ Status usados neste documento:
 | Área       | Estado real                                  | Evidência                                                                                                                                                                |
 | ---------- | -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Web        | `PARTIALLY_IMPLEMENTED`                      | Next.js possui landing, login, sessão e páginas de área autenticada; as páginas de domínio ainda são demonstrativas. Usa `@risexpto/ui`, mas não consome API de negócio. |
-| API        | `PARTIALLY_IMPLEMENTED`                      | NestJS expõe somente `GET /health` e `GET /profile`; não há módulos/controllers para bots, trades, conexões, risco, billing ou admin.                                    |
+| API        | `PARTIALLY_IMPLEMENTED`                      | NestJS expõe health/profile e agora strategies/bots persistidos; trades, conexões, risco, billing e admin ainda não possuem módulos/controllers.                             |
 | Worker     | `NOT_INTEGRATED`                             | `apps/worker/src/main.ts` exporta apenas `workerIdentity`; não inicia fila, scheduler, Redis, handlers ou recuperação.                                                   |
 | PostgreSQL | `PARTIALLY_IMPLEMENTED`                      | Prisma schema, migration, seed e cliente são usados pelo provisioning da API; os demais domínios ainda não possuem repositories/casos de uso integrados.                 |
 | Redis      | `NOT_INTEGRATED`                             | Serviço existe no Compose, mas não há cliente/queue runtime conectado às aplicações.                                                                                     |
@@ -36,8 +36,8 @@ Status usados neste documento:
 | Binance connection/vault       | `PARTIALLY_IMPLEMENTED`        | Assinatura, health, mascaramento e AES-GCM têm testes mockados; não há CRUD persistido, rotação/revogação integrada nem connector Testnet operacional. |
 | Paper trading                  | `MOCK_ONLY` / `NOT_INTEGRATED` | Motor usa `Map` e `number`; não há ciclo iniciado pela API/worker nem persistência de ordens, trades ou posições.                                      |
 | Risk engine                    | `NOT_INTEGRATED`               | Biblioteca determinística isolada; nenhuma rota ou execução persistida a chama.                                                                        |
-| Strategies/catalog/backtesting | `NOT_INTEGRATED`               | DCA, Grid, Trend, catálogo e backtesting têm contratos/testes isolados; não há casos de uso, jobs ou endpoints.                                        |
-| Bot manager/wizard             | `MOCK_ONLY` / `NOT_INTEGRATED` | Estado de bots fica em `Map`; não há persistência, ownership real ou scheduler.                                                                        |
+| Strategies/catalog/backtesting | `PARTIALLY_IMPLEMENTED`        | `GET /strategies` lê definições/versões ativas do PostgreSQL; execução de estratégias e backtesting ainda não possuem casos de uso/jobs.                 |
+| Bot manager/wizard             | `PARTIALLY_IMPLEMENTED`        | CRUD/lifecycle inicial persistido na API com ownership; o package manager/wizard em memória e scheduler ainda não estão integrados.                       |
 | Worker runtime                 | `MOCK_ONLY`                    | Handlers, locks, timer e dead-letter são locais em memória; ADR-007 já reconhece adapter Redis futuro.                                                 |
 | Live execution                 | `MOCK_ONLY`                    | `Map` é fonte de verdade e o connector Binance real não existe; não executar LIVE.                                                                     |
 | Kill switch                    | `MOCK_ONLY` / `NOT_INTEGRATED` | Estado hierárquico fica em `Map`; não alcança workers nem execução.                                                                                    |
@@ -79,7 +79,7 @@ Classificação: `PARTIALLY_IMPLEMENTED`, `BLOCKED_EXTERNAL`; não é `PRODUCTIO
 
 ## Riscos críticos encontrados
 
-1. Não existe fluxo executável Web → API → PostgreSQL para nenhum domínio de trading.
+1. Ainda não existe fluxo executável Web → API → PostgreSQL para execução de trading; strategies/bots possuem apenas o slice de leitura/criação.
 2. Não existe worker real; `Map`, `Set` e timers são fontes de estado em vários packages.
 3. Não há isolamento multi-tenant implementado em controllers/repositories, porque os recursos ainda não possuem endpoints.
 4. Paper Trading, Risk Engine, Kill Switch, portfolio e reconciliação não formam um fluxo E2E.
@@ -125,6 +125,7 @@ Nenhuma ordem Binance foi enviada, nenhuma credencial real foi usada e Stripe Li
 - JSON do realm e `git diff --check`: OK.
 - Testes OIDC direcionados: 5 testes passaram.
 - API provisioning/auth guard unitário: 10 testes passaram; API lint e typecheck passaram.
+- API strategies/bots: 12 testes direcionados passaram; ownership é aplicado por `User.id` interno e criação LIVE é rejeitada.
 - O pacote `@risexpto/database` foi ligado à API; seu export foi corrigido de `dist/index.js` para o caminho efetivamente gerado `dist/src/index.js`.
 - PostgreSQL local: containers healthy; migration inicial aplicada e seed executado.
 - API runtime: build passou; smoke `GET http://127.0.0.1:3001/health` retornou `{"service":"api","status":"ok"}`.
