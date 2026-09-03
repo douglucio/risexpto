@@ -4,7 +4,8 @@ import type { Server } from 'node:http';
 import request from 'supertest';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AppModule } from '../src/app.module';
-import { TOKEN_VERIFIER, type TokenVerifier } from '../src/auth/auth.types';
+import { TOKEN_VERIFIER, type AuthenticatedUser, type TokenVerifier } from '../src/auth/auth.types';
+import { UserProvisioningService } from '../src/users/user-provisioning.service';
 
 describe('API authentication boundary', () => {
   let app: INestApplication;
@@ -21,9 +22,14 @@ describe('API authentication boundary', () => {
     }),
   };
   beforeEach(async () => {
+    const provisioning = {
+      provision: vi.fn((user: AuthenticatedUser) => Promise.resolve(user)),
+    };
     const module = await Test.createTestingModule({ imports: [AppModule] })
       .overrideProvider(TOKEN_VERIFIER)
       .useValue(verifier)
+      .overrideProvider(UserProvisioningService)
+      .useValue(provisioning)
       .compile();
     app = module.createNestApplication();
     await app.init();

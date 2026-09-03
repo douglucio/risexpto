@@ -1,5 +1,23 @@
 {
   "$schema": "https://turbo.build/schema.json",
+  "globalEnv": [
+    "NODE_ENV",
+    "WEB_PORT",
+    "API_PORT",
+    "DATABASE_URL",
+    "REDIS_URL",
+    "KEYCLOAK_URL",
+    "KEYCLOAK_REALM",
+    "KEYCLOAK_CLIENT_ID",
+    "KEYCLOAK_API_AUDIENCE",
+    "AUTH_BASE_URL",
+    "AUTH_SESSION_SECRET",
+    "POSTGRES_DB",
+    "POSTGRES_USER",
+    "POSTGRES_PASSWORD",
+    "KEYCLOAK_ADMIN",
+    "KEYCLOAK_ADMIN_PASSWORD"
+  ],
   "tasks": {
     "build": { "dependsOn": ["^build"], "outputs": [".next/**", "!.next/cache/**", "dist/**"] },
     "dev": { "cache": false, "persistent": true },

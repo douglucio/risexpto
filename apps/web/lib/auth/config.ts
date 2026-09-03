@@ -1,6 +1,7 @@
 export type AuthConfig = Readonly<{
   issuer: string;
   clientId: string;
+  apiAudience: string;
   baseUrl: string;
   sessionSecret: string;
   secureCookies: boolean;
@@ -17,6 +18,7 @@ export function authConfig(env: NodeJS.ProcessEnv = process.env): AuthConfig {
   return {
     issuer: `${issuerBase}/realms/${encodeURIComponent(realm)}`,
     clientId: required(env.KEYCLOAK_CLIENT_ID, 'KEYCLOAK_CLIENT_ID'),
+    apiAudience: required(env.KEYCLOAK_API_AUDIENCE, 'KEYCLOAK_API_AUDIENCE'),
     baseUrl,
     sessionSecret,
     secureCookies: new URL(baseUrl).protocol === 'https:',
