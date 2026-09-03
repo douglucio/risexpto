@@ -237,6 +237,7 @@ model Bot {
   proposals            TradeProposal[]
   orders               Order[]
   positions            Position[]
+  paperBalances        PaperBalance[]
   riskProfile          RiskProfile?
   riskEvents           RiskEvent[]
   events               BotEvent[]
@@ -351,6 +352,20 @@ model Position {
 
   @@index([botId, status, tradingMode])
   @@index([symbol, status])
+}
+
+model PaperBalance {
+  id        String   @id @default(uuid()) @db.Uuid
+  botId     String   @db.Uuid
+  asset     String   @db.VarChar(16)
+  free      Decimal  @db.Decimal(38, 18)
+  locked    Decimal  @default(0) @db.Decimal(38, 18)
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+  bot       Bot      @relation(fields: [botId], references: [id], onDelete: Cascade)
+
+  @@unique([botId, asset])
+  @@index([botId, updatedAt])
 }
 
 model RiskProfile {
