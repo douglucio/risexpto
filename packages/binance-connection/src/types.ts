@@ -1,4 +1,9 @@
-export type ConnectionStatus = 'CONNECTED' | 'DEGRADED' | 'INVALID' | 'DISCONNECTED';
+export type ConnectionStatus =
+  | 'CONNECTED'
+  | 'DEGRADED'
+  | 'INVALID'
+  | 'UNSAFE_PERMISSIONS'
+  | 'DISCONNECTED';
 export type StoredCredentials = {
   apiKeyCiphertext: string;
   apiSecretCiphertext: string;
