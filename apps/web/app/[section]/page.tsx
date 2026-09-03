@@ -33,6 +33,7 @@ const pages = {
   ],
   backtests: ['Research', 'Backtests', 'Evaluate strategies against historical market data.'],
   trades: ['Activity', 'Trades', 'Inspect proposals, orders, fills, and resulting positions.'],
+  portfolio: ['Activity', 'Portfolio', 'Review persisted PAPER positions and realized results.'],
   risk: ['Controls', 'Risk', 'Define hard portfolio and bot-level execution limits.'],
   notifications: ['Inbox', 'Notifications', 'Review operational and risk-related events.'],
   billing: ['Workspace', 'Billing', 'Manage plan access, usage, and invoices.'],
@@ -49,7 +50,7 @@ export default async function SectionPage({ params }: { params: Promise<{ sectio
   const page = pages[section as keyof typeof pages];
   if (!page) notFound();
   const data =
-    section === 'bots' || section === 'strategies' || section === 'exchange-connections' || section === 'trades'
+    section === 'bots' || section === 'strategies' || section === 'exchange-connections' || section === 'trades' || section === 'portfolio'
       ? await loadSectionData(section)
       : null;
   return (
@@ -70,6 +71,7 @@ type SectionData =
   | { kind: 'strategies'; value: StrategyRecord[] }
   | { kind: 'exchange-connections'; value: ExchangeConnectionRecord[] }
   | { kind: 'trades'; value: TradeRecord[] }
+  | { kind: 'positions'; value: PositionRecord[] }
   | { kind: 'error'; message: string };
 type BotRecord = {
   id: string;
@@ -102,9 +104,18 @@ type TradeRecord = {
   price: string;
   executedAt: string;
 };
+type PositionRecord = {
+  id: string;
+  symbol: string;
+  status: string;
+  tradingMode: string;
+  quantity: string;
+  averagePrice: string;
+  realizedPnl: string;
+};
 
 async function loadSectionData(
-  section: 'bots' | 'strategies' | 'exchange-connections' | 'trades',
+  section: 'bots' | 'strategies' | 'exchange-connections' | 'trades' | 'portfolio',
 ): Promise<SectionData> {
   const session = await readSession(false);
   if (!session)
@@ -122,7 +133,8 @@ async function loadSectionData(
     if (section === 'bots') return { kind: 'bots', value: payload as BotRecord[] };
     if (section === 'strategies') return { kind: 'strategies', value: payload as StrategyRecord[] };
     if (section === 'exchange-connections') return { kind: 'exchange-connections', value: payload as ExchangeConnectionRecord[] };
-    return { kind: 'trades', value: payload as TradeRecord[] };
+    if (section === 'trades') return { kind: 'trades', value: payload as TradeRecord[] };
+    return { kind: 'positions', value: payload as PositionRecord[] };
   } catch {
     return { kind: 'error', message: `Could not connect to the API. Try again shortly.` };
   }
@@ -276,6 +288,24 @@ function SectionContent({ section, data }: { section: string; data: SectionData 
           trade.quantity,
           <CurrencyDisplay key={`${trade.id}-price`} value={Number(trade.price)} />,
           <Badge key={`${trade.id}-mode`} tone="brand">{trade.tradingMode}</Badge>,
+        ]) : []}
+      />
+    );
+  if (section === 'portfolio')
+    return data?.kind === 'error' ? (
+      <Alert tone="negative" title="Unable to load portfolio">{data.message}</Alert>
+    ) : data?.kind === 'positions' && data.value.length === 0 ? (
+      <EmptyState title="No positions yet" description="Persisted Paper positions will appear here." />
+    ) : (
+      <DataTable
+        columns={['Symbol', 'Quantity', 'Average price', 'P&L', 'Status', 'Mode']}
+        rows={data?.kind === 'positions' ? data.value.map((position) => [
+          position.symbol,
+          position.quantity,
+          <CurrencyDisplay key={`${position.id}-price`} value={Number(position.averagePrice)} />,
+          <CurrencyDisplay key={`${position.id}-pnl`} value={Number(position.realizedPnl)} />,
+          <Badge key={`${position.id}-status`}>{position.status}</Badge>,
+          <Badge key={`${position.id}-mode`} tone="brand">{position.tradingMode}</Badge>,
         ]) : []}
       />
     );
