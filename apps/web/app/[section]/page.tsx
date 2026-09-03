@@ -49,7 +49,7 @@ export default async function SectionPage({ params }: { params: Promise<{ sectio
   const page = pages[section as keyof typeof pages];
   if (!page) notFound();
   const data =
-    section === 'bots' || section === 'strategies' || section === 'exchange-connections'
+    section === 'bots' || section === 'strategies' || section === 'exchange-connections' || section === 'trades'
       ? await loadSectionData(section)
       : null;
   return (
@@ -69,6 +69,7 @@ type SectionData =
   | { kind: 'bots'; value: BotRecord[] }
   | { kind: 'strategies'; value: StrategyRecord[] }
   | { kind: 'exchange-connections'; value: ExchangeConnectionRecord[] }
+  | { kind: 'trades'; value: TradeRecord[] }
   | { kind: 'error'; message: string };
 type BotRecord = {
   id: string;
@@ -92,9 +93,18 @@ type ExchangeConnectionRecord = {
   maskedApiKey: string;
   lastCheckedAt?: string | null;
 };
+type TradeRecord = {
+  id: string;
+  symbol: string;
+  side: string;
+  tradingMode: string;
+  quantity: string;
+  price: string;
+  executedAt: string;
+};
 
 async function loadSectionData(
-  section: 'bots' | 'strategies' | 'exchange-connections',
+  section: 'bots' | 'strategies' | 'exchange-connections' | 'trades',
 ): Promise<SectionData> {
   const session = await readSession(false);
   if (!session)
@@ -111,7 +121,8 @@ async function loadSectionData(
     const payload: unknown = await response.json();
     if (section === 'bots') return { kind: 'bots', value: payload as BotRecord[] };
     if (section === 'strategies') return { kind: 'strategies', value: payload as StrategyRecord[] };
-    return { kind: 'exchange-connections', value: payload as ExchangeConnectionRecord[] };
+    if (section === 'exchange-connections') return { kind: 'exchange-connections', value: payload as ExchangeConnectionRecord[] };
+    return { kind: 'trades', value: payload as TradeRecord[] };
   } catch {
     return { kind: 'error', message: `Could not connect to the API. Try again shortly.` };
   }
@@ -251,39 +262,21 @@ function SectionContent({ section, data }: { section: string; data: SectionData 
       </>
     );
   if (section === 'trades')
-    return (
+    return data?.kind === 'error' ? (
+      <Alert tone="negative" title="Unable to load trades">{data.message}</Alert>
+    ) : data?.kind === 'trades' && data.value.length === 0 ? (
+      <EmptyState title="No trades yet" description="Executed Paper trades will appear here." />
+    ) : (
       <DataTable
         columns={['Time', 'Pair', 'Side', 'Quantity', 'Price', 'Mode']}
-        rows={[
-          [
-            <span key="1" className="rx-number">
-              20:42:18
-            </span>,
-            'BTC/USDT',
-            <Badge key="2" tone="positive">
-              BUY
-            </Badge>,
-            '0.0042',
-            <CurrencyDisplay key="3" value={64218.42} />,
-            <Badge key="4" tone="brand">
-              PAPER
-            </Badge>,
-          ],
-          [
-            <span key="5" className="rx-number">
-              18:10:03
-            </span>,
-            'ETH/USDT',
-            <Badge key="6" tone="negative">
-              SELL
-            </Badge>,
-            '0.1200',
-            <CurrencyDisplay key="7" value={3421.2} />,
-            <Badge key="8" tone="brand">
-              PAPER
-            </Badge>,
-          ],
-        ]}
+        rows={data?.kind === 'trades' ? data.value.map((trade) => [
+          <span key={`${trade.id}-time`} className="rx-number">{new Date(trade.executedAt).toLocaleTimeString()}</span>,
+          trade.symbol,
+          <Badge key={`${trade.id}-side`} tone={trade.side === 'BUY' ? 'positive' : 'negative'}>{trade.side}</Badge>,
+          trade.quantity,
+          <CurrencyDisplay key={`${trade.id}-price`} value={Number(trade.price)} />,
+          <Badge key={`${trade.id}-mode`} tone="brand">{trade.tradingMode}</Badge>,
+        ]) : []}
       />
     );
   if (section === 'risk')
