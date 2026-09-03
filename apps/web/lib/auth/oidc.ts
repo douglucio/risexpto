@@ -11,6 +11,24 @@ type TokenResponse = {
   refresh_expires_in: number;
 };
 
+export type OidcFailureCode =
+  | 'TOKEN_EXCHANGE_FAILED'
+  | 'ACCESS_TOKEN_AUDIENCE_INVALID'
+  | 'ACCESS_TOKEN_ISSUER_INVALID'
+  | 'ACCESS_TOKEN_EXPIRED'
+  | 'ID_TOKEN_INVALID'
+  | 'TOKEN_INVALID';
+
+export class OidcFlowError extends Error {
+  constructor(
+    readonly code: OidcFailureCode,
+    cause?: unknown,
+  ) {
+    super(code, { cause });
+    this.name = 'OidcFlowError';
+  }
+}
+
 export function createLoginTransaction(returnTo: string): LoginTransaction {
   return {
     state: randomBytes(24).toString('base64url'),
@@ -31,7 +49,10 @@ export function authorizationUrl(
     client_id: config.clientId,
     redirect_uri: `${config.baseUrl}/auth/callback`,
     response_type: 'code',
-    scope: 'openid profile email roles',
+    // The imported Keycloak client already has the `roles` client scope as a
+    // default scope. Requesting it explicitly makes Keycloak reject the
+    // authorization request in some local realm configurations.
+    scope: 'openid profile email',
     state: transaction.state,
     code_challenge: challenge,
     code_challenge_method: 'S256',
@@ -75,13 +96,13 @@ async function tokenRequest(
     cache: 'no-store',
     signal: AbortSignal.timeout(10_000),
   });
-  if (!response.ok) throw new Error(`OIDC token exchange failed (${response.status})`);
+  if (!response.ok) throw new OidcFlowError('TOKEN_EXCHANGE_FAILED');
   return response.json() as Promise<TokenResponse>;
 }
 async function sessionFromTokens(config: AuthConfig, tokens: TokenResponse): Promise<AuthSession> {
-  const access = await verify(config, tokens.access_token, config.clientId);
+  const access = await verify(config, tokens.access_token, config.apiAudience, 'access');
   const identity = tokens.id_token
-    ? await verify(config, tokens.id_token, config.clientId)
+    ? await verify(config, tokens.id_token, config.clientId, 'id')
     : access;
   const realmRoles = ((access.realm_access as { roles?: unknown } | undefined)?.roles ??
     []) as unknown;
@@ -107,10 +128,30 @@ async function sessionFromTokens(config: AuthConfig, tokens: TokenResponse): Pro
     refreshExpiresAt: Date.now() + tokens.refresh_expires_in * 1000,
   };
 }
-async function verify(config: AuthConfig, token: string, audience: string): Promise<JWTPayload> {
+async function verify(
+  config: AuthConfig,
+  token: string,
+  audience: string,
+  tokenKind: 'access' | 'id',
+): Promise<JWTPayload> {
   const jwks = createRemoteJWKSet(new URL(`${config.issuer}/protocol/openid-connect/certs`));
-  return (await jwtVerify(token, jwks, { issuer: config.issuer, audience, algorithms: ['RS256'] }))
-    .payload;
+  try {
+    return (
+      await jwtVerify(token, jwks, { issuer: config.issuer, audience, algorithms: ['RS256'] })
+    ).payload;
+  } catch (error) {
+    if (tokenKind === 'access' && error instanceof Error && error.message.includes('aud'))
+      throw new OidcFlowError('ACCESS_TOKEN_AUDIENCE_INVALID', error);
+    if (tokenKind === 'access' && error instanceof Error && error.message.includes('iss'))
+      throw new OidcFlowError('ACCESS_TOKEN_ISSUER_INVALID', error);
+    if (
+      error instanceof Error &&
+      (error.message.includes('exp') || error.message.includes('expired'))
+    )
+      throw new OidcFlowError('ACCESS_TOKEN_EXPIRED', error);
+    if (tokenKind === 'id') throw new OidcFlowError('ID_TOKEN_INVALID', error);
+    throw new OidcFlowError('TOKEN_INVALID', error);
+  }
 }
 export function logoutUrl(config: AuthConfig): URL {
   const url = new URL(`${config.issuer}/protocol/openid-connect/logout`);

@@ -5,6 +5,7 @@ import type { AuthConfig } from './config';
 const config: AuthConfig = {
   issuer: 'https://id.example/realms/rise',
   clientId: 'web',
+  apiAudience: 'api',
   baseUrl: 'https://app.example',
   sessionSecret: '0123456789abcdef0123456789abcdef',
   secureCookies: true,

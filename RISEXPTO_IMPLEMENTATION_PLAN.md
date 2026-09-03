@@ -2667,3 +2667,36 @@ develop → main
 ```
 
 serão realizados manualmente pelo proprietário do projeto.
+
+# PRE-LIVE READINESS
+
+As fases 01–30 concluíram a foundation implementation. A etapa `Pre-Live Readiness` valida integração real, persistência, segurança operacional e readiness comercial. Portanto, uma fase histórica marcada como concluída não significa que o respectivo domínio esteja pronto para uso financeiro, comercial ou produção.
+
+O inventário técnico e os gates atuais estão em [`docs/production/pre-live-readiness.md`](docs/production/pre-live-readiness.md).
+
+## Estado desta etapa
+
+| Domínio | Estado atual |
+|---|---|
+| Autenticação OIDC/PKCE/RBAC | `PARTIALLY_IMPLEMENTED` |
+| User provisioning no PostgreSQL | `NOT_INTEGRATED` |
+| Sessão server-side/revogação | `PARTIALLY_IMPLEMENTED` |
+| API de domínio | `NOT_INTEGRATED` |
+| Frontend com dados reais | `NOT_INTEGRATED` |
+| Worker Redis/BullMQ | `NOT_INTEGRATED` |
+| Paper Trading E2E | `NOT_INTEGRATED` |
+| Binance Spot Testnet | `BLOCKED_EXTERNAL` |
+| Stripe Test Mode | `MOCK_ONLY` |
+| Segurança operacional | `PARTIALLY_IMPLEMENTED` |
+| Observability integrada | `NOT_INTEGRATED` |
+| Binance Production | `BLOCKED_EXTERNAL` — não autorizado |
+| Stripe Live | `BLOCKED_EXTERNAL` — não autorizado |
+
+## Primeira entrega de hardening
+
+- O frontend valida o access token com `KEYCLOAK_API_AUDIENCE` e o ID token com `KEYCLOAK_CLIENT_ID`.
+- O callback OIDC emite logs estruturados seguros com `correlationId` e códigos para provider error, state/PKCE, troca de código, audience, issuer, expiração, token inválido e e-mail não verificado.
+- A tela de login apresenta mensagens específicas sem exibir tokens, secrets ou detalhes internos.
+- A configuração do realm declara os client scopes OIDC necessários para uma importação local limpa.
+
+Essa entrega não libera nenhum gate: ainda são obrigatórios testes E2E, provisioning persistido, API/worker integrados, Paper Trading funcional, Testnet validada, Stripe Test Mode e revisão de produção.

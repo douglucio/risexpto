@@ -1,6 +1,7 @@
 import type { AppRole } from './roles';
 export type AuthenticatedUser = Readonly<{
   id: string;
+  applicationUserId?: string;
   email: string;
   name: string;
   roles: AppRole[];

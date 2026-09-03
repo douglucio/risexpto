@@ -8,7 +8,7 @@ export class ProfileController {
   @Roles('USER', 'SUPPORT', 'ADMIN')
   profile(@CurrentUser() user: AuthenticatedUser) {
     return {
-      id: user.id,
+      id: user.applicationUserId ?? user.id,
       email: user.email,
       name: user.name,
       emailVerified: user.emailVerified,
