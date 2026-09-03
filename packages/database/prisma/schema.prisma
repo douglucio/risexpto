@@ -126,6 +126,12 @@ enum SubscriptionStatus {
   UNPAID
 }
 
+enum KillSwitchScope {
+  USER
+  BOT
+  SYSTEM
+}
+
 model User {
   id                  String               @id @default(uuid()) @db.Uuid
   externalAuthId      String               @unique @db.VarChar(128)
@@ -491,6 +497,21 @@ model AuditLog {
   @@index([botId, createdAt])
   @@index([correlationId])
   @@index([eventType, createdAt])
+}
+
+model KillSwitchState {
+  id            String         @id @default(uuid()) @db.Uuid
+  scope         KillSwitchScope
+  targetId      String         @db.VarChar(128)
+  active        Boolean        @default(true)
+  reason        String         @db.VarChar(500)
+  activatedBy   String         @db.VarChar(128)
+  activatedAt   DateTime       @default(now()) @db.Timestamptz(3)
+  deactivatedAt DateTime?      @db.Timestamptz(3)
+  updatedAt     DateTime       @updatedAt @db.Timestamptz(3)
+
+  @@unique([scope, targetId])
+  @@index([active, scope])
 }
 
 model Plan {

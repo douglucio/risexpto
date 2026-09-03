@@ -4,14 +4,14 @@ import { DATABASE, UserProvisioningService } from './user-provisioning.service';
 @Global()
 @Module({
   providers: [UserProvisioningService],
-  exports: [UserProvisioningService],
+  exports: [UserProvisioningService, DATABASE],
 })
 export class UsersModule {
   static withDatabase(database: object) {
     return {
       module: UsersModule,
       providers: [{ provide: DATABASE, useValue: database }],
-      exports: [UserProvisioningService],
+      exports: [UserProvisioningService, DATABASE],
     };
   }
 }

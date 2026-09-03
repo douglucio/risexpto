@@ -40,7 +40,7 @@ Status usados neste documento:
 | Bot manager/wizard             | `PARTIALLY_IMPLEMENTED`        | CRUD/lifecycle inicial persistido na API com ownership; o package manager/wizard em memória e scheduler ainda não estão integrados.                       |
 | Worker runtime                 | `MOCK_ONLY`                    | Handlers, locks, timer e dead-letter são locais em memória; ADR-007 já reconhece adapter Redis futuro.                                                 |
 | Live execution                 | `MOCK_ONLY`                    | `Map` é fonte de verdade e o connector Binance real não existe; não executar LIVE.                                                                     |
-| Kill switch                    | `MOCK_ONLY` / `NOT_INTEGRATED` | Estado hierárquico fica em `Map`; não alcança workers nem execução.                                                                                    |
+| Kill switch                    | `PARTIALLY_IMPLEMENTED`     | Estado `SYSTEM/USER/BOT` agora persiste em PostgreSQL e possui endpoints ADMIN; o worker ainda precisa consultar esse estado antes de executar.                        |
 | Portfolio                      | `NOT_INTEGRATED`               | Relatórios determinísticos isolados, sem dados persistidos/runtime.                                                                                    |
 | Notifications                  | `MOCK_ONLY` / `NOT_INTEGRATED` | Adapters e deduplicação local; sem outbox, persistência ou entrega operacional.                                                                        |
 | Audit trail                    | `NOT_INTEGRATED`               | Sanitização/hash chain existem no package, sem gravação via API/worker.                                                                                |
@@ -132,5 +132,6 @@ Nenhuma ordem Binance foi enviada, nenhuma credencial real foi usada e Stripe Li
 - API runtime: build passou; smoke `GET http://127.0.0.1:3001/health` retornou `{"service":"api","status":"ok"}`.
 - Typecheck do Web: OK.
 - Bots e strategies no Web: leitura real da API, sem dados hardcoded nesses dois domínios; a URL da API é configurável por `API_BASE_URL`.
+- Kill switch persistente: migration, serviço e endpoints ADMIN adicionados; testes do serviço cobrem scopes SYSTEM/USER/BOT. O gate permanece bloqueado enquanto o worker não consultar esse estado e não houver teste de restart.
 - Suíte Turbo: 16 tarefas passaram; os testes HTTP da API falharam neste executor com `listen EPERM: operation not permitted 0.0.0.0`, impedindo a abertura do servidor usado pelo Supertest. O resultado global não é considerado verde.
 - Criação da branch `feature/pre-live-audit`: bloqueada pelo ambiente porque `.git/refs` está somente leitura; nenhum commit ou push foi realizado.

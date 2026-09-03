@@ -7,6 +7,7 @@ import { createDatabaseClient } from '@risexpto/database';
 import { StrategiesModule } from './strategies/strategies.module';
 import { BotsModule } from './bots/bots.module';
 import { ExchangeConnectionsModule } from './exchange-connections/exchange-connections.module';
+import { AdminModule } from './admin/admin.module';
 
 const database = createDatabaseClient(
   process.env.DATABASE_URL ?? 'postgresql://invalid:invalid@localhost:5432/invalid',
@@ -19,6 +20,7 @@ const database = createDatabaseClient(
     StrategiesModule,
     BotsModule,
     ExchangeConnectionsModule,
+    AdminModule.withDatabase(database),
   ],
   controllers: [AppController, ProfileController],
 })
