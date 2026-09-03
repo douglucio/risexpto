@@ -52,4 +52,9 @@ describe('RiskEngine', () => {
     expect(engine().evaluate({ ...context, lastTradeAt: 950 }).reasonCode).toBe('COOLDOWN');
     expect(engine().evaluate({ ...context, botStatus: 'PAUSED' }).reasonCode).toBe('BOT_NOT_READY');
   });
+  it('uses decimal arithmetic for fractional notional values', () => {
+    const result = engine().evaluate({ ...context, amount: 0.1, price: 0.2, availableBalance: 0.02 });
+    expect(result.reasonCode).toBe('APPROVED');
+    expect(result.riskSnapshot.proposedValue).toBe(0.02);
+  });
 });
