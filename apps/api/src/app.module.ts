@@ -6,13 +6,20 @@ import { UsersModule } from './users/users.module';
 import { createDatabaseClient } from '@risexpto/database';
 import { StrategiesModule } from './strategies/strategies.module';
 import { BotsModule } from './bots/bots.module';
+import { ExchangeConnectionsModule } from './exchange-connections/exchange-connections.module';
 
 const database = createDatabaseClient(
   process.env.DATABASE_URL ?? 'postgresql://invalid:invalid@localhost:5432/invalid',
 );
 
 @Module({
-  imports: [UsersModule.withDatabase(database), AuthModule, StrategiesModule, BotsModule],
+  imports: [
+    UsersModule.withDatabase(database),
+    AuthModule,
+    StrategiesModule,
+    BotsModule,
+    ExchangeConnectionsModule,
+  ],
   controllers: [AppController, ProfileController],
 })
 export class AppModule {}
