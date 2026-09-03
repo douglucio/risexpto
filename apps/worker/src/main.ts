@@ -1,6 +1,7 @@
 import { createPersistentWorker } from './queue.js';
 import { createDatabaseClient } from '@risexpto/database';
 import { processPaperCycle } from './paper-cycle.js';
+import { reconcilePaperOrders } from './reconciliation.js';
 
 export const workerIdentity = Object.freeze({ service: 'worker', status: 'ready' });
 
@@ -13,7 +14,14 @@ async function bootstrap(): Promise<void> {
   const infrastructure = await createPersistentWorker(
     redisUrl,
     process.env.WORKER_QUEUE_NAME,
-    (job) => processPaperCycle(database, job),
+    async (job) => job.data.type === 'reconcile'
+      ? void await reconcilePaperOrders(database)
+      : processPaperCycle(database, job),
+  );
+  await infrastructure.queue.upsertJobScheduler(
+    'paper-reconciliation',
+    { every: 60_000 },
+    { name: 'reconcile', data: { type: 'reconcile' } },
   );
   console.info(JSON.stringify({ event: 'worker_started', service: 'worker', queue: process.env.WORKER_QUEUE_NAME ?? 'risexpto' }));
   const shutdown = async (signal: string) => {
