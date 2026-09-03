@@ -47,7 +47,7 @@ Status usados neste documento:
 | Billing                        | `MOCK_ONLY`                    | `MockStripeProvider`, `Set` e `Map`; SDK Stripe, webhook real e idempotência PostgreSQL ausentes.                                                      |
 | Admin console                  | `NOT_INTEGRATED`               | Serviço de leitura isolado; UI `/admin` é placeholder e não possui endpoint operacional.                                                               |
 | Observability                  | `NOT_INTEGRATED`               | Checks/métricas/logging existem no package, mas não estão ligados ao runtime Nest/Next/worker.                                                         |
-| Security                       | `PARTIALLY_IMPLEMENTED`        | Helpers e testes existem; a API ainda não configura globalmente validation pipe, CORS restrito, Helmet, rate limit e exception filter.                 |
+| Security                       | `PARTIALLY_IMPLEMENTED`        | API agora possui ValidationPipe global, CORS configurável e exception filter seguro com correlation ID; Helmet, rate limit e revisão completa ainda pendentes. |
 | i18n                           | `NOT_INTEGRATED`               | Package existe, porém telas têm textos hardcoded em inglês.                                                                                            |
 
 ## Auditoria de autenticação
