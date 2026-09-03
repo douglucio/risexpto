@@ -7,20 +7,22 @@ export type PersistentWorker = Readonly<{
   events: QueueEvents;
   close(): Promise<void>;
 }>;
+export type WorkerProcessor = (job: Job<WorkerJob>) => Promise<void>;
 
 export async function createPersistentWorker(
   redisUrl: string,
   queueName = 'risexpto',
+  processor?: WorkerProcessor,
 ): Promise<PersistentWorker> {
   const connection = redisConnection(redisUrl);
   const queue = new Queue<WorkerJob>(queueName, { connection, prefix: 'risexpto' });
   const events = new QueueEvents(queueName, { connection, prefix: 'risexpto' });
   const worker = new Worker<WorkerJob>(
     queueName,
-    (job: Job<WorkerJob>) => {
+    processor ?? ((job: Job<WorkerJob>) => {
       console.info(JSON.stringify({ event: 'worker_job_received', jobId: job.id, type: job.data.type }));
       return Promise.resolve();
-    },
+    }),
     { connection, prefix: 'risexpto', concurrency: 1 },
   );
   worker.on('failed', (job, error) => {

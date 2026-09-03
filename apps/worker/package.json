@@ -15,6 +15,7 @@
     "tsx": "4.20.5"
   },
   "dependencies": {
+    "@risexpto/database": "workspace:*",
     "bullmq": "5.63.0"
   }
 }
