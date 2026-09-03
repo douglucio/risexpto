@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { authorizationUrl, createLoginTransaction } from './oidc';
+import { authorizationUrl, createLoginTransaction, OidcFlowError } from './oidc';
 import type { AuthConfig } from './config';
 
 const config: AuthConfig = {
@@ -18,6 +18,11 @@ describe('OIDC authorization', () => {
     expect(url.searchParams.get('code_challenge_method')).toBe('S256');
     expect(url.searchParams.get('state')).toBe(transaction.state);
     expect(url.searchParams.get('code_challenge')).toHaveLength(43);
+  });
+  it('exposes a safe diagnostic for incomplete identity claims', () => {
+    const error = new OidcFlowError('IDENTITY_CLAIMS_MISSING');
+    expect(error.code).toBe('IDENTITY_CLAIMS_MISSING');
+    expect(error.message).not.toContain('token');
   });
   it('prevents external return redirects', () => {
     expect(createLoginTransaction('https://evil.example').returnTo).toBe('/');
