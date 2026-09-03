@@ -42,6 +42,7 @@ function errorTitle(error: string): string {
   if (error === 'email_not_verified') return 'Email verification required';
   if (error === 'code_expired') return 'Login expired';
   if (error === 'invalid_state_or_pkce') return 'Login session invalid';
+  if (error === 'identity_claims_missing') return 'Profile incomplete';
   return 'Authentication failed';
 }
 
@@ -50,6 +51,8 @@ function errorMessage(error: string): string {
   if (error === 'code_expired') return 'This login attempt expired. Start a new sign-in attempt.';
   if (error === 'invalid_state_or_pkce')
     return 'The login session was invalid or expired. Try again.';
+  if (error === 'identity_claims_missing')
+    return 'Your Keycloak profile is missing a valid email. Update it and try again.';
   if (error === 'access_token_audience_invalid')
     return 'The identity service returned a token for the wrong application.';
   if (error === 'id_token_invalid' || error === 'token_invalid')

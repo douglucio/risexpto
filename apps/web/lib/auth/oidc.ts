@@ -17,6 +17,7 @@ export type OidcFailureCode =
   | 'ACCESS_TOKEN_ISSUER_INVALID'
   | 'ACCESS_TOKEN_EXPIRED'
   | 'ID_TOKEN_INVALID'
+  | 'IDENTITY_CLAIMS_MISSING'
   | 'TOKEN_INVALID';
 
 export class OidcFlowError extends Error {
@@ -112,7 +113,7 @@ async function sessionFromTokens(config: AuthConfig, tokens: TokenResponse): Pro
       )
     : [];
   if (!identity.sub || typeof identity.email !== 'string')
-    throw new Error('OIDC identity is missing required claims');
+    throw new OidcFlowError('IDENTITY_CLAIMS_MISSING');
   return {
     user: {
       id: identity.sub,
