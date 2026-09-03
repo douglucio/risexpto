@@ -12,6 +12,23 @@ export async function processPaperCycle(database: PrismaClient, job: Job<WorkerJ
     include: { configuration: true, strategyVersion: { include: { definition: true } } },
   });
   if (!bot?.configuration) return;
+  const killSwitch = await database.killSwitchState.findFirst({
+    where: {
+      active: true,
+      OR: [
+        { scope: 'SYSTEM', targetId: 'global' },
+        { scope: 'USER', targetId: bot.userId },
+        { scope: 'BOT', targetId: bot.id },
+      ],
+    },
+    select: { scope: true, reason: true },
+  });
+  if (killSwitch) {
+    await database.botEvent.create({
+      data: { botId: bot.id, type: 'CYCLE_BLOCKED', payload: { jobId: job.id, scope: killSwitch.scope, reason: killSwitch.reason } },
+    });
+    return;
+  }
   await database.botEvent.create({
     data: { botId: bot.id, type: 'CYCLE_STARTED', payload: { jobId: job.id } },
   });
