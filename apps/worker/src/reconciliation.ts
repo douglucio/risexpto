@@ -24,3 +24,20 @@ export async function reconcilePaperOrders(database: PrismaClient): Promise<numb
   }
   return divergences;
 }
+
+export async function recoverOrphanedReservations(database: PrismaClient, now = Date.now()): Promise<number> {
+  const cutoff = new Date(now - 5 * 60_000);
+  const reservations = await database.paperCapitalReservation.findMany({
+    where: { status: 'ACTIVE', createdAt: { lt: cutoff } },
+    include: { proposal: { select: { order: { select: { id: true } } } } },
+  });
+  for (const reservation of reservations) {
+    if (reservation.proposal.order) continue;
+    await database.$transaction([
+      database.paperCapitalReservation.updateMany({ where: { id: reservation.id, status: 'ACTIVE' }, data: { status: 'RELEASED' } }),
+      database.paperCapitalAllocation.updateMany({ where: { botId: reservation.botId, allocated: { gte: reservation.amount } }, data: { allocated: { decrement: reservation.amount } } }),
+      database.botEvent.create({ data: { botId: reservation.botId, type: 'CAPITAL_RESERVATION_RELEASED', payload: { reservationId: reservation.id, reason: 'ORPHANED' } } }),
+    ]);
+  }
+  return reservations.filter((reservation) => !reservation.proposal.order).length;
+}
