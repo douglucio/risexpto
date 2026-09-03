@@ -386,6 +386,14 @@ model PaperCapitalAllocation {
   bot       Bot      @relation(fields: [botId], references: [id], onDelete: Cascade)
 }
 
+model PaperGlobalCapitalAllocation {
+  id        String   @id @default("global") @db.VarChar(32)
+  allocated Decimal  @default(0) @db.Decimal(38, 18)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+
+  @@index([allocated])
+}
+
 model PaperCapitalReservation {
   id          String                  @id @default(uuid()) @db.Uuid
   botId       String                  @db.Uuid
