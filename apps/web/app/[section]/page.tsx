@@ -49,7 +49,9 @@ export default async function SectionPage({ params }: { params: Promise<{ sectio
   const page = pages[section as keyof typeof pages];
   if (!page) notFound();
   const data =
-    section === 'bots' || section === 'strategies' ? await loadSectionData(section) : null;
+    section === 'bots' || section === 'strategies' || section === 'exchange-connections'
+      ? await loadSectionData(section)
+      : null;
   return (
     <>
       <PageHeader
@@ -66,6 +68,7 @@ export default async function SectionPage({ params }: { params: Promise<{ sectio
 type SectionData =
   | { kind: 'bots'; value: BotRecord[] }
   | { kind: 'strategies'; value: StrategyRecord[] }
+  | { kind: 'exchange-connections'; value: ExchangeConnectionRecord[] }
   | { kind: 'error'; message: string };
 type BotRecord = {
   id: string;
@@ -81,8 +84,18 @@ type StrategyRecord = {
   description: string;
   versions: Array<{ id: string; version: number; implementationKey: string }>;
 };
+type ExchangeConnectionRecord = {
+  id: string;
+  provider: string;
+  label: string;
+  status: string;
+  maskedApiKey: string;
+  lastCheckedAt?: string | null;
+};
 
-async function loadSectionData(section: 'bots' | 'strategies'): Promise<SectionData> {
+async function loadSectionData(
+  section: 'bots' | 'strategies' | 'exchange-connections',
+): Promise<SectionData> {
   const session = await readSession(false);
   if (!session)
     return { kind: 'error', message: 'Your session is no longer available. Sign in again.' };
@@ -96,9 +109,9 @@ async function loadSectionData(section: 'bots' | 'strategies'): Promise<SectionD
     if (!response.ok)
       return { kind: 'error', message: `Could not load ${section}. Try again shortly.` };
     const payload: unknown = await response.json();
-    return section === 'bots'
-      ? { kind: 'bots', value: payload as BotRecord[] }
-      : { kind: 'strategies', value: payload as StrategyRecord[] };
+    if (section === 'bots') return { kind: 'bots', value: payload as BotRecord[] };
+    if (section === 'strategies') return { kind: 'strategies', value: payload as StrategyRecord[] };
+    return { kind: 'exchange-connections', value: payload as ExchangeConnectionRecord[] };
   } catch {
     return { kind: 'error', message: `Could not connect to the API. Try again shortly.` };
   }
@@ -180,15 +193,42 @@ function SectionContent({ section, data }: { section: string; data: SectionData 
         <Alert tone="warning" title="Trade-only access">
           Never enable withdrawals on an API key connected to RiseXPTO.
         </Alert>
+        {data?.kind === 'error' ? (
+          <Alert tone="negative" title="Unable to load connections">
+            {data.message}
+          </Alert>
+        ) : null}
+        {data?.kind === 'exchange-connections' && data.value.length === 0 ? (
+          <EmptyState
+            title="No exchange connections"
+            description="Add a trade-only Binance connection to use exchange-backed features."
+          />
+        ) : null}
+        {data?.kind === 'exchange-connections' && data.value.length > 0 ? (
+          <div className="card-grid content-stack">
+            {data.value.map((connection) => (
+              <Card key={connection.id}>
+                <div className="section-heading">
+                  <h2>{connection.label}</h2>
+                  <Badge tone={connection.status === 'CONNECTED' ? 'positive' : 'negative'}>
+                    {connection.status}
+                  </Badge>
+                </div>
+                <p>
+                  {connection.provider} · {connection.maskedApiKey}
+                </p>
+                {connection.status === 'UNSAFE_PERMISSIONS' ? (
+                  <Alert tone="negative" title="Unsafe permissions">
+                    Disable withdrawal permissions in Binance API Management and test the
+                    connection again.
+                  </Alert>
+                ) : null}
+                <Button>Test connection</Button>
+              </Card>
+            ))}
+          </div>
+        ) : null}
         <div className="card-grid content-stack">
-          <Card>
-            <div className="section-heading">
-              <h2>Binance Spot</h2>
-              <Badge tone="positive">CONNECTED</Badge>
-            </div>
-            <p>Key ending ••••7K2M · checked 2 minutes ago</p>
-            <Button>Test connection</Button>
-          </Card>
           <EmptyState
             title="Add another connection"
             description="The MVP supports one Binance Spot connection."
