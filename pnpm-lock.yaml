@@ -185,7 +185,11 @@ importers:
 
   packages/observability: {}
 
-  packages/paper-trading: {}
+  packages/paper-trading:
+    dependencies:
+      decimal.js:
+        specifier: 10.6.0
+        version: 10.6.0
 
   packages/portfolio: {}
 
