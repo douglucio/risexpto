@@ -82,14 +82,14 @@ Classificação: `PARTIALLY_IMPLEMENTED`, `BLOCKED_EXTERNAL`; não é `PRODUCTIO
 1. Ainda não existe fluxo executável Web → API → PostgreSQL para execução de trading; strategies/bots possuem apenas o slice de leitura/criação.
 2. Não existe worker real; `Map`, `Set` e timers são fontes de estado em vários packages.
 3. Não há isolamento multi-tenant implementado em controllers/repositories, porque os recursos ainda não possuem endpoints.
-4. Paper Trading, Risk Engine, Kill Switch, portfolio e reconciliação ainda não formam um fluxo E2E completo; proposals, RiskEvents, orders, trades e posições Paper agora são persistidos.
+4. O smoke test do Paper Trading já executa um ciclo persistido contra PostgreSQL/Redis reais e verifica proposal, RiskEvent, order, trade, posição e saldo; o fluxo de usuário via navegador e restart recovery ainda não formam um E2E completo.
 5. `number` é usado em Paper Trading e Risk Engine para valores financeiros.
 6. Live execution não possui connector Binance real, persistência de Order, `clientOrderId` persistido ou reconciliação após crash.
 7. Binance connection possui CRUD/test/revoke persistidos e vault AES-GCM, mas rotação de master key e validação contra Testnet ainda estão pendentes.
 8. Billing é mock-only e não pode liberar acesso comercial; Stripe Test Mode ainda não está integrado.
 9. Admin, notifications, audit e observability não estão ligados a endpoints/runtime.
 10. As páginas autenticadas em `apps/web/app/[section]/page.tsx` ainda contêm dados e controles demonstrativos/hardcoded nos domínios não integrados (risco, notificações, billing e admin).
-11. Testes de contrato da API cobrem lifecycle, ownership e enfileiramento PAPER; smoke test BullMQ/worker contra Redis real foi adicionado, mas ainda não há Playwright E2E nem execução conjunta comprovada com Keycloak, PostgreSQL, Redis e worker reais.
+11. Testes de contrato da API cobrem lifecycle, ownership e enfileiramento PAPER; smoke tests BullMQ/worker e ciclo persistido contra Redis/PostgreSQL reais existem, mas ainda não há Playwright E2E nem execução conjunta com Keycloak real.
 12. A configuração local apresentou problemas de carregamento de `.env`, scopes do Keycloak e SMTP; esses caminhos precisam de smoke tests documentados.
 
 ## Gates de release

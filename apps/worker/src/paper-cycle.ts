@@ -161,7 +161,7 @@ async function executePaperOrder(
     const order = await tx.order.create({ data: {
       botId, tradeProposalId: proposalId, idempotencyKey: `paper:${proposalId}`,
       clientOrderId: `paper-${proposalId}`, tradingMode: 'PAPER', symbol, side, type: 'MARKET',
-      status: 'FILLED', requestedQuantity: quantity, requestedQuoteAmount: quoteAmount,
+      status: 'FILLED', requestedQuantity: null, requestedQuoteAmount: quoteAmount,
       filledQuantity: quantity, averageFillPrice: price, submittedAt: new Date(), completedAt: new Date(),
     } });
     await tx.trade.create({ data: { orderId: order.id, quantity, price, executedAt: new Date() } });
