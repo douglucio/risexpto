@@ -82,7 +82,7 @@ Classificação: `PARTIALLY_IMPLEMENTED`, `BLOCKED_EXTERNAL`; não é `PRODUCTIO
 1. Ainda não existe fluxo executável Web → API → PostgreSQL para execução de trading; strategies/bots possuem apenas o slice de leitura/criação.
 2. Não existe worker real; `Map`, `Set` e timers são fontes de estado em vários packages.
 3. Não há isolamento multi-tenant implementado em controllers/repositories, porque os recursos ainda não possuem endpoints.
-4. O smoke test do Paper Trading já executa um ciclo persistido contra PostgreSQL/Redis reais e verifica proposal, RiskEvent, order, trade, posição e saldo; o fluxo de usuário via navegador e restart recovery ainda não formam um E2E completo.
+4. O smoke test do Paper Trading já executa um ciclo persistido contra PostgreSQL/Redis reais, valida retry e entrega duplicada sem segunda ordem; o fluxo de usuário via navegador e restart recovery de processo ainda não formam um E2E completo.
 5. `number` é usado em Paper Trading e Risk Engine para valores financeiros.
 6. Live execution não possui connector Binance real, persistência de Order, `clientOrderId` persistido ou reconciliação após crash.
 7. Binance connection possui CRUD/test/revoke persistidos e vault AES-GCM, mas rotação de master key e validação contra Testnet ainda estão pendentes.
@@ -97,7 +97,7 @@ Classificação: `PARTIALLY_IMPLEMENTED`, `BLOCKED_EXTERNAL`; não é `PRODUCTIO
 | Gate                            | Estado                                | Bloqueios atuais                                                                                    |
 | ------------------------------- | ------------------------------------- | --------------------------------------------------------------------------------------------------- |
 | A — Authentication              | `PARTIALLY_IMPLEMENTED`               | Diagnóstico e provisioning iniciais existem; refresh/logout E2E, sessão server-side e testes reais pendentes. |
-| B — Paper Trading               | `NOT_INTEGRATED`                      | API, banco, worker, risk, execução e dashboard não conectados.                                      |
+| B — Paper Trading               | `PARTIALLY_IMPLEMENTED`              | Ciclo persistido, retry e idempotência têm smoke tests reais; navegador, dashboard e recuperação após restart ainda pendentes. |
 | C — Binance Spot Testnet        | `NOT_INTEGRATED` / `BLOCKED_EXTERNAL` | Connector, filters, credentials persistidas, idempotência e reconciliação pendentes.                |
 | D — Stripe Test Mode            | `MOCK_ONLY`                           | SDK, checkout, portal, webhook e idempotência persistida pendentes.                                 |
 | E — Production Security         | `PARTIALLY_IMPLEMENTED`               | Hardening de runtime, secrets, backup/restore executado, observability e deployment real pendentes. |

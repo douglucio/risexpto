@@ -64,7 +64,12 @@ export async function processPaperCycle(database: PrismaClient, job: Job<WorkerJ
     });
     const storedProposal = await database.tradeProposal.findUniqueOrThrow({
       where: { botId_correlationId: { botId: bot.id, correlationId: id } },
+      include: { order: { select: { id: true } } },
     });
+    if (storedProposal.order) {
+      await complete(database, bot.id, job, 'DUPLICATE_ALREADY_EXECUTED');
+      return;
+    }
     const profile = await database.riskProfile.findUnique({ where: { botId: bot.id } });
     if (!profile) {
       await database.riskEvent.create({ data: {

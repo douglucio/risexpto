@@ -28,14 +28,16 @@ describe('paper trading persistence integration', () => {
       await database.marketSnapshot.create({ data: { id: marketId, provider: 'BINANCE', symbol: 'BTCUSDT', interval: '1m', openTime: new Date(Date.now() - 60_000), closeTime: new Date(), open: 100, high: 101, low: 99, close: 100, volume: 10 } });
 
       await processPaperCycle(database, { id: `e2e-${suffix}`, data: { type: 'bot-cycle', botId } } as never);
+      await processPaperCycle(database, { id: `e2e-${suffix}`, data: { type: 'bot-cycle', botId } } as never);
 
-      const [proposal, riskEvents, order, trades, position, balance] = await Promise.all([
+      const [proposal, riskEvents, order, trades, position, balance, botEvents] = await Promise.all([
         database.tradeProposal.findFirst({ where: { botId } }),
         database.riskEvent.findMany({ where: { botId } }),
         database.order.findFirst({ where: { botId } }),
         database.trade.findMany({ where: { order: { botId } } }),
         database.position.findFirst({ where: { botId, status: 'OPEN' } }),
         database.paperBalance.findUnique({ where: { botId_asset: { botId, asset: 'USDT' } } }),
+        database.botEvent.findMany({ where: { botId, type: 'CYCLE_COMPLETED' } }),
       ]);
       expect(proposal?.status).toBe('EXECUTED');
       expect(riskEvents).toHaveLength(1);
@@ -44,6 +46,7 @@ describe('paper trading persistence integration', () => {
       expect(trades).toHaveLength(1);
       expect(position?.symbol).toBe('BTCUSDT');
       expect(balance?.free.toString()).toBe('89.99');
+      expect(botEvents.some((event) => (event.payload as { reason?: string } | null)?.reason === 'DUPLICATE_ALREADY_EXECUTED')).toBe(true);
     } finally {
       await database.trade.deleteMany({ where: { order: { botId } } });
       await database.order.deleteMany({ where: { botId } });
