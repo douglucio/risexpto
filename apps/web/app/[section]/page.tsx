@@ -17,6 +17,7 @@ import {
 import { notFound } from 'next/navigation';
 import { PageHeader } from '../../components/page-header';
 import { PreferencesForm } from '../../components/preferences-form';
+import { BotControls } from '../../components/bot-controls';
 import { readSession } from '../../lib/auth/session';
 
 const pages = {
@@ -166,7 +167,7 @@ function SectionContent({ section, data }: { section: string; data: SectionData 
         {data?.kind === 'bots' && data.value.length > 0 ? (
           <div className="content-stack">
             <DataTable
-              columns={['Name', 'Mode', 'Capital', 'Status']}
+              columns={['Name', 'Mode', 'Capital', 'Status', 'Actions']}
               rows={data.value.map((bot) => [
                 <b key={`${bot.id}-name`}>{bot.name}</b>,
                 <Badge key={`${bot.id}-mode`} tone="brand">
@@ -178,6 +179,7 @@ function SectionContent({ section, data }: { section: string; data: SectionData 
                   currency={bot.configuration?.quoteCurrency ?? 'USD'}
                 />,
                 <Badge key={`${bot.id}-status`}>{bot.status}</Badge>,
+                <BotControls key={`${bot.id}-actions`} id={bot.id} status={bot.status} tradingMode={bot.tradingMode} />,
               ])}
             />
           </div>
