@@ -189,7 +189,7 @@ async function executePaperOrder(
   });
 }
 
-async function reserveCapital(database: PrismaClient, botId: string, proposalId: string, limit: number, amount: number): Promise<boolean> {
+export async function reserveCapital(database: PrismaClient, botId: string, proposalId: string, limit: number, amount: number): Promise<boolean> {
   return database.$transaction(async (tx) => {
     const existing = await tx.paperCapitalReservation.findUnique({ where: { proposalId } });
     if (existing) return existing.status === 'ACTIVE';
