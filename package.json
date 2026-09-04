@@ -13,11 +13,13 @@
     "lint": "turbo run lint",
     "test": "turbo run test",
     "typecheck": "turbo run typecheck",
+    "test:e2e": "playwright test",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
+    "@playwright/test": "1.51.1",
     "@types/node": "22.18.1",
     "eslint": "10.9.1",
     "eslint-config-prettier": "10.1.8",
