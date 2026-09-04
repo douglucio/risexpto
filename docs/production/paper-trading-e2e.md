@@ -18,3 +18,16 @@ pnpm --filter @risexpto/worker test:integration
 ```
 
 Sem uma das variáveis E2E, o respectivo teste é marcado como skipped para que a suíte unitária continue determinística. O teste PostgreSQL cria fixtures isoladas, executa um ciclo e verifica proposal, risk event, order, trade, position e saldo. Isso ainda não substitui o E2E completo de usuário e navegador; o Gate B permanece bloqueado até esse fluxo ser coberto.
+
+## Navegador
+
+O teste Playwright exige a API e o web rodando, um bot PAPER de fixture e um arquivo de sessão autenticada criado fora do repositório:
+
+```bash
+E2E_STORAGE_STATE=/tmp/risexpto-storage.json \
+E2E_BOT_NAME='E2E' \
+E2E_WEB_URL=http://localhost:3000 \
+pnpm test:e2e
+```
+
+O arquivo de sessão pode conter cookies sensíveis e nunca deve ser commitado. Sem `E2E_STORAGE_STATE`, o teste é skipped; portanto o Gate B só pode ser aprovado após execução explícita com Keycloak e web reais.
