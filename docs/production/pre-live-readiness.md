@@ -89,7 +89,7 @@ Classificação: `PARTIALLY_IMPLEMENTED`, `BLOCKED_EXTERNAL`; não é `PRODUCTIO
 8. Billing é mock-only e não pode liberar acesso comercial; Stripe Test Mode ainda não está integrado.
 9. Admin, notifications, audit e observability não estão ligados a endpoints/runtime.
 10. As páginas autenticadas em `apps/web/app/[section]/page.tsx` ainda contêm dados e controles demonstrativos/hardcoded nos domínios não integrados (risco, notificações, billing e admin).
-11. Testes existentes são majoritariamente unitários; não há Playwright E2E, integração com Keycloak real, PostgreSQL real ou Redis real.
+11. Testes de contrato da API agora cobrem lifecycle, ownership e enfileiramento PAPER; ainda não há Playwright E2E nem execução conjunta comprovada com Keycloak, PostgreSQL, Redis e worker reais.
 12. A configuração local apresentou problemas de carregamento de `.env`, scopes do Keycloak e SMTP; esses caminhos precisam de smoke tests documentados.
 
 ## Gates de release
