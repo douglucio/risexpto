@@ -22,7 +22,13 @@ export class QueueService implements OnModuleDestroy {
   async enqueueBotCycle(botId: string, idempotencyKey: string) {
     if (!this.queue) throw new ServiceUnavailableException('Worker queue unavailable');
     if (await this.queue.getJob(idempotencyKey)) throw new ConflictException('Cycle already queued');
-    return this.queue.add('bot-cycle', { type: 'bot-cycle', botId }, { jobId: idempotencyKey });
+    return this.queue.add('bot-cycle', { type: 'bot-cycle', botId }, {
+      jobId: idempotencyKey,
+      attempts: 3,
+      backoff: { type: 'exponential', delay: 1_000 },
+      removeOnComplete: { age: 86_400, count: 10_000 },
+      removeOnFail: false,
+    });
   }
 
   async onModuleDestroy(): Promise<void> {
