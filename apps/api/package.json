@@ -18,6 +18,7 @@
     "@risexpto/binance-connection": "workspace:*",
     "@risexpto/database": "workspace:*",
     "bullmq": "5.63.0",
+    "helmet": "8.1.0",
     "jsonwebtoken": "9.0.3",
     "jwks-rsa": "4.1.0",
     "reflect-metadata": "0.2.2",

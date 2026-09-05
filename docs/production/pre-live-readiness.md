@@ -47,7 +47,7 @@ Status usados neste documento:
 | Billing                        | `MOCK_ONLY`                    | `MockStripeProvider`, `Set` e `Map`; SDK Stripe, webhook real e idempotência PostgreSQL ausentes.                                                      |
 | Admin console                  | `NOT_INTEGRATED`               | Serviço de leitura isolado; UI `/admin` é placeholder e não possui endpoint operacional.                                                               |
 | Observability                  | `NOT_INTEGRATED`               | Checks/métricas/logging existem no package, mas não estão ligados ao runtime Nest/Next/worker.                                                         |
-| Security                       | `PARTIALLY_IMPLEMENTED`        | API agora possui ValidationPipe global, CORS configurável e exception filter seguro com correlation ID; Helmet, rate limit e revisão completa ainda pendentes. |
+| Security                       | `PARTIALLY_IMPLEMENTED`        | API possui ValidationPipe global, CORS configurável, Helmet e exception filter seguro com correlation ID; rate limit distribuído e revisão completa ainda pendentes. |
 | i18n                           | `NOT_INTEGRATED`               | Package existe, porém telas têm textos hardcoded em inglês.                                                                                            |
 
 ## Auditoria de autenticação
@@ -133,7 +133,7 @@ Nenhuma ordem Binance foi enviada, nenhuma credencial real foi usada e Stripe Li
 - Typecheck do Web: OK.
 - Bots e strategies no Web: leitura real da API, sem dados hardcoded nesses dois domínios; a URL da API é configurável por `API_BASE_URL`.
 - Kill switch persistente: migration, serviço e endpoints ADMIN adicionados; testes do serviço cobrem scopes SYSTEM/USER/BOT. O gate permanece bloqueado enquanto o worker não consultar esse estado e não houver teste de restart.
-- Hardening API: ValidationPipe global, CORS configurável, exception filter seguro e correlation ID; Helmet, rate limit e revisão completa ainda pendentes.
+- Hardening API: ValidationPipe global, CORS configurável, Helmet, exception filter seguro e correlation ID; rate limit distribuído e revisão completa ainda pendentes.
 - Commercial readiness: checklist criado em `docs/production/commercial-readiness.md`; status permanece `NOT_READY`.
 - Suíte Turbo: 16 tarefas passaram; os testes HTTP da API falharam neste executor com `listen EPERM: operation not permitted 0.0.0.0`, impedindo a abertura do servidor usado pelo Supertest. O resultado global não é considerado verde.
 - Criação da branch `feature/pre-live-audit`: bloqueada pelo ambiente porque `.git/refs` está somente leitura; nenhum commit ou push foi realizado.
