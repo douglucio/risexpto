@@ -91,6 +91,7 @@ Classificação: `PARTIALLY_IMPLEMENTED`, `BLOCKED_EXTERNAL`; não é `PRODUCTIO
 10. As páginas autenticadas em `apps/web/app/[section]/page.tsx` ainda contêm dados e controles demonstrativos/hardcoded nos domínios não integrados (risco, notificações, billing e admin).
 11. Testes de contrato da API cobrem lifecycle, ownership e enfileiramento PAPER; smoke tests BullMQ/worker, ciclo persistido contra Redis/PostgreSQL reais e um teste Playwright de lifecycle existem, mas o browser E2E ainda requer execução autenticada com Keycloak real.
 12. A configuração local apresentou problemas de carregamento de `.env`, scopes do Keycloak e SMTP; esses caminhos precisam de smoke tests documentados.
+13. O bootstrap da API exigiu declarar `class-validator` e `class-transformer`; o start com `.env` carregado agora inicializa corretamente, mas o E2E autenticado permanece bloqueado por credencial de teste Keycloak não configurada.
 
 ## Gates de release
 
