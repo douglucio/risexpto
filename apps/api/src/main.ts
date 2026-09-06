@@ -23,5 +23,6 @@ async function bootstrap(): Promise<void> {
   );
   app.useGlobalFilters(new SafeExceptionFilter());
   await app.listen(Number(process.env.API_PORT ?? 3001), '0.0.0.0');
+  app.getHttpServer().on('close', () => rateLimiter.close());
 }
 void bootstrap();
