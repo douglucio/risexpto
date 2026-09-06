@@ -4,10 +4,13 @@ import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
 import { SafeExceptionFilter } from './http/safe-exception.filter';
 import helmet from 'helmet';
+import { createRedisRateLimiter } from './http/redis-rate-limit';
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule);
   app.use(helmet({ contentSecurityPolicy: false }));
+  const rateLimiter = createRedisRateLimiter(process.env.REDIS_URL);
+  app.use(rateLimiter.middleware);
   app.enableCors({
     origin: (process.env.CORS_ORIGINS ?? process.env.AUTH_BASE_URL ?? 'http://localhost:3000')
       .split(',')
