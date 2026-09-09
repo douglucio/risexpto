@@ -3385,7 +3385,7 @@ As notas acima são atuais. Auditorias anteriores permanecem abaixo como histór
 |---|---|---|---|
 | 58 | Public runtime stability | ✅ CODE_IMPLEMENTED / LOCALLY_VALIDATED | observer válido/limpo, favicon, teste de configuração; browser Back ainda requer execução E2E |
 | 59 | Public/auth route boundary | ✅ CODE_IMPLEMENTED / LOCALLY_VALIDATED | política explícita e testes de classificação; HTTP anônimo real requer stack Web |
-| 60 | Public session behavior | 🟨 | landing não dispara sessão obrigatória; `401` opcional é anônimo |
+| 60 | Public session behavior | ✅ CODE_IMPLEMENTED / LOCALLY_VALIDATED | landing não dispara sessão obrigatória; teste Web confirma caminhos públicos |
 | 61 | Complete application i18n | 🟨 | catálogos en/pt-BR/es cobrem landing, login, shell e workspace |
 | 62 | Language selector UX | 🟨 | bandeiras acessíveis e troca imediata |
 | 63 | Locale persistence | 🟨 | precedência profile → cookie → browser → en e Settings persistente |

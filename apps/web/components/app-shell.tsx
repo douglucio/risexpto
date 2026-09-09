@@ -31,7 +31,9 @@ export function AppShell({ children }: { children: ReactNode }) {
     document.documentElement.dataset.theme = next;
   }, []);
   useEffect(() => {
-    if (pathname === '/login') return;
+    // The public landing page does not need an anonymous session probe. This
+    // avoids an expected 401 and keeps the public runtime free of auth noise.
+    if (pathname === '/' || pathname === '/login') return;
     void fetch('/auth/session', { cache: 'no-store' }).then(async (response) => {
       if (response.ok) {
         const body = (await response.json()) as { user: { name: string; email: string; roles: string[] } };
