@@ -4,6 +4,7 @@ import { RiskEngine } from '@risexpto/risk-engine';
 import type { PrismaClient } from '@risexpto/database';
 import type { Job } from 'bullmq';
 import type { WorkerJob } from './queue.js';
+import { assertFreshMarketData } from './market-data-runtime.js';
 
 export async function processPaperCycle(database: PrismaClient, job: Job<WorkerJob>): Promise<void> {
   if (job.data.type !== 'bot-cycle' || !job.data.botId) return;
@@ -44,6 +45,12 @@ export async function processPaperCycle(database: PrismaClient, job: Job<WorkerJ
     });
     if (!market) {
       await complete(database, bot.id, job, 'MARKET_DATA_UNAVAILABLE');
+      return;
+    }
+    try {
+      assertFreshMarketData(market.closeTime);
+    } catch {
+      await complete(database, bot.id, job, 'STALE_MARKET_DATA');
       return;
     }
     const proposal = createDcaStrategy(`0.0.${bot.strategyVersion.version}`, parameters).analyze({

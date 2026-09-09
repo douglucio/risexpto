@@ -2,7 +2,7 @@ import { Body, ConflictException, Controller, Get, Param, Patch, Post } from '@n
 import { CurrentUser } from '../auth/current-user.decorator';
 import type { AuthenticatedUser } from '../auth/auth.types';
 import { BotsService } from './bots.service';
-import type { BotStatusChange, CreateBotBody } from './bots.types';
+import type { BotStatusChange, CreateBotBody, RiskProfileBody } from './bots.types';
 import { QueueService } from '../queue/queue.service';
 
 @Controller('bots')
@@ -17,6 +17,16 @@ export class BotsController {
   @Get(':id')
   get(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string) {
     return this.bots.get(user, id);
+  }
+
+  @Get(':id/risk-profile')
+  riskProfile(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string) {
+    return this.bots.riskProfile(user, id);
+  }
+
+  @Patch(':id/risk-profile')
+  updateRiskProfile(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string, @Body() body: RiskProfileBody) {
+    return this.bots.updateRiskProfile(user, id, body);
   }
 
   @Post()

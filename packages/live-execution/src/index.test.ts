@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { LiveExecutionEngine, type LiveConnector } from './index.js';
+import { InMemoryLiveOrderStore, LiveExecutionEngine, type LiveConnector } from './index.js';
 
 const order = {
   clientOrderId: 'bot-1-1',
@@ -29,7 +29,7 @@ describe('LiveExecutionEngine', () => {
       query,
       cancel: vi.fn(),
     };
-    const engine = new LiveExecutionEngine(connector, true);
+    const engine = new LiveExecutionEngine(connector, true, new InMemoryLiveOrderStore());
     await expect(engine.submit(order)).resolves.toEqual(result);
     await expect(engine.submit(order)).resolves.toEqual(result);
     expect(submit).toHaveBeenCalledTimes(1);
@@ -42,8 +42,35 @@ describe('LiveExecutionEngine', () => {
       query: vi.fn().mockResolvedValue(result),
       cancel,
     };
-    const engine = new LiveExecutionEngine(connector, true);
+    const store = new InMemoryLiveOrderStore();
+    await store.createPending({ request: order, result: null, state: 'PENDING_SUBMIT' });
+    const engine = new LiveExecutionEngine(connector, true, store);
     await expect(engine.cancel(order.clientOrderId)).resolves.toEqual(result);
     expect(cancel).not.toHaveBeenCalled();
+  });
+
+  it('persists an unresolved intent and never resubmits after recovery query failure', async () => {
+    const submit = vi.fn().mockRejectedValue(new Error('timeout'));
+    const query = vi.fn().mockRejectedValue(new Error('exchange unavailable'));
+    const connector: LiveConnector = { submit, query, cancel: vi.fn() };
+    const store = new InMemoryLiveOrderStore();
+    const engine = new LiveExecutionEngine(connector, true, store);
+    await expect(engine.submit(order)).rejects.toThrow('exchange unavailable');
+    await expect(engine.submit(order)).rejects.toThrow('exchange unavailable');
+    expect(submit).toHaveBeenCalledTimes(1);
+    expect(query).toHaveBeenCalledTimes(2);
+  });
+
+  it('survives an engine restart using the same durable store', async () => {
+    const store = new InMemoryLiveOrderStore();
+    const firstConnector: LiveConnector = { submit: vi.fn().mockResolvedValue(result), query: vi.fn(), cancel: vi.fn() };
+    const firstEngine = new LiveExecutionEngine(firstConnector, true, store);
+    await expect(firstEngine.submit(order)).resolves.toEqual(result);
+
+    const secondSubmit = vi.fn();
+    const secondConnector: LiveConnector = { submit: secondSubmit, query: vi.fn(), cancel: vi.fn() };
+    const restartedEngine = new LiveExecutionEngine(secondConnector, true, store);
+    await expect(restartedEngine.submit(order)).resolves.toEqual(result);
+    expect(secondSubmit).not.toHaveBeenCalled();
   });
 });

@@ -1808,7 +1808,7 @@ Atualizar esta seção conforme o projeto avançar.
 | 27 | Security Hardening | ✅ Concluído |
 | 28 | Internationalization | ✅ Concluído |
 | 29 | Marketing Site | ✅ Concluído |
-| 30 | Production Readiness | ✅ Concluído |
+| 30 | Production Readiness | 🟨 Parcial — gates de Binance pendentes |
 
 Legenda:
 
@@ -2700,3 +2700,589 @@ O inventário técnico e os gates atuais estão em [`docs/production/pre-live-re
 - A configuração do realm declara os client scopes OIDC necessários para uma importação local limpa.
 
 Essa entrega não libera nenhum gate: ainda são obrigatórios testes E2E, provisioning persistido, API/worker integrados, Paper Trading funcional, Testnet validada, Stripe Test Mode e revisão de produção.
+
+---
+
+# 42. BINANCE READINESS — TESTNET E PRODUÇÃO CONTROLADA
+
+As fases históricas 07, 15, 16 e 17 representam contratos e fundações testados com mocks. Elas não autorizam envio de ordens. Esta etapa é o backlog obrigatório para permitir validação contra a Binance Spot Testnet e, somente depois de aprovação explícita, um piloto de produção com valores limitados.
+
+## 42.1 Gate 0 — ambiente e segurança
+
+- [ ] Fixar Node/pnpm suportados e executar a suíte sem concorrência destrutiva entre tarefas.
+- [ ] Subir PostgreSQL, Redis e Keycloak reais no ambiente de integração.
+- [x] Corrigir tipagens do runtime BullMQ/Redis para que o worker compile e execute com a versão instalada.
+- [ ] Configurar secrets por secret manager ou `.env` local não versionado.
+- [ ] Gerar `BINANCE_CREDENTIAL_MASTER_KEY` com 32 bytes aleatórios e documentar rotação.
+- [ ] Separar credenciais e URLs de `TESTNET` e `PRODUCTION`.
+- [ ] Rejeitar inicialização quando URL, ambiente e credenciais não forem compatíveis.
+- [ ] Garantir que logs, erros, métricas e auditoria nunca contenham API key/secret, assinatura ou payload sensível.
+
+## 42.2 Gate 1 — Binance Spot Testnet, somente controlado
+
+- [x] Implementar connector REST privado real para order, query order e cancel order (Testnet-only; ainda não registrado no runtime).
+- [x] Usar assinatura HMAC SHA-256, timestamp/`recvWindow`, timeout e tratamento básico dos códigos HTTP/API.
+- [x] Implementar `exchangeInfo` como fonte das regras do símbolo na Testnet.
+- [x] Validar `status`, `isSpotTradingAllowed`, tipos de ordem, `LOT_SIZE`, `PRICE_FILTER`, `MIN_NOTIONAL`/`NOTIONAL` antes do envio.
+- [x] Normalizar e comparar quantidades/preços/notional com aritmética decimal exata baseada em `BigInt`; nunca usar `number` para dinheiro.
+- [x] Persistir `LiveRiskState` por bot com exposição, posições abertas, perda diária, drawdown e pico de equity.
+- [ ] Persistir `Order`, `clientOrderId`, estado, tentativa, resposta e correlation ID antes/depois da chamada.
+- [x] Definir contrato de store durável e fluxo fail-closed de intenção pendente no `LiveExecutionEngine`.
+- [x] Criar adapter Prisma para criar `Order` LIVE pending antes do submit e resolver estado/external ID depois da resposta.
+- [ ] Tornar submit idempotente e consultar a Binance após timeout/erro ambíguo antes de repetir.
+- [ ] Implementar reconciliação periódica de ordens abertas, fills, saldos e posições.
+- [x] Integrar connector ao worker, Risk Engine, kill switch e auditoria; nenhuma estratégia acessa o connector diretamente.
+- [x] Preparar factory do worker que conecta credenciais vault + connector Testnet + store Prisma + engine atrás de flag fail-closed.
+- [x] Integrar job explícito de reconciliação LIVE com consulta de kill switch e registro de evento/auditoria.
+- [x] Integrar job explícito `live-submit` com saldo Binance, Risk Engine, dupla verificação de kill switch e auditoria.
+- [x] Atualizar `LiveRiskState` após reconciliação com posições LIVE, preços, equity, exposição e drawdown; falhar fechado se faltar preço.
+- [x] Consultar `myTrades`, persistir fills LIVE idempotentes e atualizar P&L realizado por fill.
+- [x] Recalcular `dailyLoss` a partir de P&L realizado do dia em UTC.
+- [x] Manter LIVE desabilitado por padrão e rejeitar qualquer URL que não seja a Testnet.
+- [x] Criar testes de contrato com fixtures sanitizados para assinatura, validação, mapeamento e terminalidade.
+- [ ] Criar teste real de ordem mínima na Testnet, com símbolo permitido, limite de capital e cancelamento/reconciliação.
+- [ ] Validar restart/crash recovery e duplicação de jobs na Testnet.
+- [x] Simular restart local do engine com o mesmo store persistente e confirmar que não há segundo submit.
+- [x] Preparar teste de integração PostgreSQL opt-in para restart, corrida de criação e recuperação de ordem LIVE.
+- [x] Tornar IDs de jobs LIVE determinísticos para deduplicação de submit e reconciliação no BullMQ.
+- [x] Criar preflight de readiness Testnet sem rede, sem autenticação e sem exposição de segredos.
+- [x] Criar smoke test executável com modo leitura padrão e ordem Testnet protegida por flags explícitas.
+
+## 42.3 Gate 2 — piloto de produção, somente após aprovação humana
+
+- [ ] Revisão de permissões: `TRADE`/`USER_DATA`, sem `WITHDRAW` e sem `DEPOSIT` quando desnecessário.
+- [ ] Allowlist de domínio Binance e bloqueio de URLs arbitrárias/SSRF.
+- [ ] Limite global e por bot para notional, quantidade, frequência, perda e exposição.
+- [ ] Kill switch SYSTEM/USER/BOT consultado imediatamente antes de cada ordem e cancelamento.
+- [ ] Dry-run e modo “armed” com janela de confirmação operacional.
+- [ ] Conta Binance dedicada ao piloto, com capital pequeno e símbolos previamente autorizados.
+- [ ] Runbook de incidente, revogação de chave, cancelamento manual e recuperação de divergência.
+- [ ] Alertas de falha, latência, divergência, rejeição e ordem órfã funcionando.
+- [ ] Backup/restore testado, auditoria persistida e observabilidade operacional validadas.
+- [ ] Aprovação explícita do proprietário registrada antes de configurar produção.
+- [ ] Primeiro teste de produção limitado a leitura; nenhuma ordem automática sem aprovação posterior.
+
+## 42.4 Ordem de implementação
+
+1. Connector Testnet e configuração fail-closed.
+2. Regras de símbolo e precisão decimal.
+3. Persistência/idempotência/reconciliação de ordens.
+4. Integração API → fila → worker → Risk Engine → connector.
+5. Kill switch, auditoria, observabilidade e crash recovery.
+6. Smoke tests reais na Testnet.
+7. Piloto de produção somente após os Gates 0–2 e aprovação humana.
+
+## 42.5 Estado de readiness em 2026-09-06
+
+| Gate | Estado | Observação |
+|---|---|---|
+| Gate 0 — ambiente e segurança | 🟨 Parcial | Vault e bloqueios básicos existem; ambiente integrado e rotação ainda faltam. |
+| Gate 1 — Binance Spot Testnet | ⛔ Bloqueado | Connector Testnet inicial existe, mas não há persistência nem fluxo worker integrado. |
+| Gate 2 — piloto de produção | ⛔ Bloqueado | Não autorizado enquanto Gates 0 e 1 não forem aprovados. |
+
+Nenhuma credencial real deve ser adicionada ao repositório, e nenhuma ordem de produção deve ser enviada durante a implementação desta etapa.
+
+## 2026-09-06 — Binance Testnet connector (primeira fatia do Gate 1)
+
+Resumo:
+- adapter REST privado `BinanceSpotTestnetConnector` criado no package de conexão Binance;
+- submit/query/cancel com HMAC SHA-256, `timestamp`, `recvWindow`, timeout e `clientOrderId` implementados;
+- produção é rejeitada por allowlist rígida: o adapter aceita somente `https://testnet.binance.vision`;
+- estados de ordem Binance são mapeados para o contrato `LiveConnector`;
+- testes não usam credenciais nem rede real e cobrem assinatura, validação e estados terminais.
+
+Validações:
+- testes direcionados: OK (9 testes);
+- typecheck: OK;
+- build: OK;
+- lint: OK.
+
+Limite:
+- o connector ainda não está integrado à API/worker, não persiste ordens e não envia ordens automaticamente;
+- Gate 1 permanece bloqueado até concluir persistência, idempotência, Risk Engine, kill switch, reconciliação e smoke Testnet.
+
+## 2026-09-06 — Binance Testnet exchangeInfo e filtros
+
+Resumo:
+- `exchangeInfo` da Testnet é consultado antes de cada submit;
+- ordens são bloqueadas quando o símbolo não está `TRADING`, não permite Spot ou não suporta o tipo solicitado;
+- `LOT_SIZE`, `PRICE_FILTER`, `MIN_NOTIONAL` e `NOTIONAL` são validados antes da chamada privada;
+- quantidade, preço e notional são comparados com escala decimal exata baseada em `BigInt`;
+- testes cobrem resposta pública de regras, assinatura da ordem privada e rejeições de formato.
+
+Validações:
+- testes direcionados: OK (12 testes);
+- typecheck: OK;
+- build: OK;
+- lint: OK.
+
+## 2026-09-06 — Live execution: intenção pendente e idempotência
+
+Resumo:
+- `LiveOrderStore` adicionado para substituir a dependência obrigatória de `Map` em memória;
+- `InMemoryLiveOrderStore` mantido somente como implementação de teste;
+- o engine reserva a intenção antes do submit e resolve o registro somente após resposta da exchange;
+- uma ordem já resolvida retorna o resultado persistido sem novo submit;
+- uma tentativa ambígua consulta a exchange e nunca reenvia automaticamente;
+- cancelamento e reconciliação atualizam o store antes de concluir.
+
+Validações:
+- testes direcionados: OK (7 testes);
+- typecheck: OK;
+- build: OK;
+- lint: OK.
+
+Limite:
+- o adapter Prisma existe, mas ainda não está conectado ao runtime LIVE; `Order` continua precisando ser usado pelo fluxo do worker antes de qualquer smoke test que envie ordem na Testnet.
+
+## 2026-09-06 — Adapter Prisma para ordens LIVE
+
+Resumo:
+- `PrismaLiveOrderStore` criado em `apps/worker`;
+- cria `Order` LIVE com `CREATED` antes do submit;
+- usa `clientOrderId`/`idempotencyKey` e recupera corridas por constraint única;
+- restaura o request persistido e converte o estado Prisma para o contrato de execução;
+- grava `externalOrderId`, quantidade preenchida, status e timestamps ao resolver;
+- teste unitário cobre criação, resolução e leitura persistida simulada.
+
+Validações:
+- testes do worker: OK (13 testes, 6 integrações ignoradas);
+- lint do worker: OK;
+- typecheck/build do adapter: sem erros no novo arquivo.
+
+Bloqueio conhecido:
+- o adapter ainda não está conectado ao runtime LIVE; a integração precisa ocorrer atrás de flag Testnet explícita e com Risk Engine/Kill Switch.
+
+## 2026-09-06 — Correção do runtime BullMQ/Redis
+
+Resumo:
+- opções Redis passaram a omitir `username`/`password` quando ausentes, respeitando `exactOptionalPropertyTypes`;
+- genéricos de `Queue`, `Worker` e `Job` foram alinhados ao BullMQ 5.63;
+- scheduler de reconciliação voltou a compilar sem perder o contrato dos dados de job.
+
+Validações:
+- testes do worker: OK (14 testes, 6 integrações ignoradas);
+- lint: OK;
+- typecheck: OK;
+- build: OK.
+
+## 2026-09-07 — Factory segura de runtime LIVE Testnet
+
+Resumo:
+- `createTestnetLiveExecutionEngine` criado em `apps/worker/src/live-runtime.ts`;
+- busca somente conexão Binance ativa e não revogada no PostgreSQL;
+- descriptografa credenciais através do `CredentialVault` existente;
+- conecta `BinanceSpotTestnetConnector`, `PrismaLiveOrderStore` e `LiveExecutionEngine`;
+- exige `BINANCE_TRADING_ENVIRONMENT=TESTNET` e `LIVE_TRADING_ENABLED=true`;
+- rejeita produção e flag ausente antes de acessar credenciais ou banco;
+- `.env.example` documenta as flags com LIVE desabilitado por padrão.
+
+Validações:
+- testes do worker: OK (16 testes, 6 integrações ignoradas);
+- lint: OK;
+- typecheck: OK;
+- build: OK.
+
+Limite:
+- a factory ainda não é chamada pelo bootstrap; o job de reconciliação usa a integração, mas falta o fluxo de submit com Risk Engine antes de qualquer smoke Testnet com ordem.
+
+## 2026-09-07 — Reconciliação LIVE controlada no worker
+
+Resumo:
+- job `live-reconcile` adicionado ao contrato BullMQ;
+- worker consulta ordens LIVE abertas por conexão e usa a factory Testnet + store Prisma;
+- kill switch SYSTEM/USER/BOT é consultado antes de cada reconciliação;
+- sucessos, bloqueios e falhas geram `BotEvent` e `AuditLog` sanitizados;
+- nenhuma estratégia ou API recebeu capacidade de enfileirar submit LIVE.
+
+Validações:
+- testes do worker: OK (18 testes, 6 integrações ignoradas);
+- lint: OK;
+- typecheck: OK;
+- build: OK.
+
+Limite:
+- o submit LIVE foi integrado ao worker, mas a API ainda não produz esse job e os dados completos de risco operacional permanecem pendentes.
+
+## 2026-09-07 — Submit LIVE Testnet protegido por Risk Engine
+
+Resumo:
+- job `live-submit` adicionado ao worker;
+- saldo livre da moeda de cotação é consultado na Binance Testnet antes da decisão de risco;
+- Risk Engine avalia símbolo, quantidade, preço, saldo, limites de capital, exposição, posições e modo LIVE;
+- kill switch é verificado antes do Risk Engine e novamente imediatamente antes do submit;
+- `ORDER_REQUEST`, `ORDER_RESULT`, bloqueios e decisões de risco são persistidos sem credenciais;
+- submit usa o `PrismaLiveOrderStore`, preservando idempotência e recuperação segura.
+
+Validações:
+- testes Binance: OK (12 testes);
+- testes do worker: OK (18 testes, 6 integrações ignoradas);
+- lint: OK;
+- typecheck: OK;
+- build: OK.
+
+Limites ainda abertos:
+- o contexto de perdas diárias, drawdown e exposição histórica ainda não está persistido/calculado para LIVE;
+- o job não é produzido pela API, que continua rejeitando criação de bots LIVE;
+- nenhum submit real foi executado na Testnet; faltam smoke test controlado e crash recovery.
+
+## 2026-09-08 — Estado persistido de risco LIVE
+
+Resumo:
+- modelo `LiveRiskState` adicionado ao PostgreSQL, vinculado unicamente a cada bot;
+- migration `20260908090000_live_risk_state` criada;
+- submit LIVE passou a rejeitar com `LIVE_RISK_CONTEXT_UNAVAILABLE` quando não houver estado persistido;
+- Risk Engine agora recebe exposição, posições, perda diária e drawdown persistidos, em vez de zeros artificiais;
+- build do Prisma Client e worker validados.
+
+Validações:
+- database build/typecheck: OK;
+- worker typecheck/build/lint: OK.
+
+Limite:
+- o atualizador de `LiveRiskState` existe, mas a perda diária ainda depende de P&L temporal por fills; até essa fonte existir, o gate permanece bloqueado.
+
+## 2026-09-08 — Atualização de `LiveRiskState` após reconciliação
+
+Resumo:
+- `refreshLiveRiskState` criado em `apps/worker/src/live-risk-state.ts`;
+- exposição e equity são recalculadas com Decimal a partir das posições LIVE e últimos preços Binance persistidos;
+- posições abertas, pico de equity e drawdown são atualizados por upsert transacional lógico;
+- ausência de preço para posição aberta interrompe a atualização, evitando estado parcialmente confiável;
+- reconciliação LIVE chama o atualizador após cada ordem reconciliada.
+
+Validações:
+- testes do worker: OK (18 testes, 6 integrações ignoradas);
+- lint: OK;
+- typecheck: OK;
+- build: OK.
+
+Limite:
+- o cálculo temporal de `dailyLoss` agora existe; nenhuma ordem deve ser liberada como pronta para produção enquanto o smoke test, crash recovery e validação de dados reais não forem concluídos.
+
+## 2026-09-08 — Fills LIVE e P&L diário
+
+Resumo:
+- `myTrades` assinado adicionado ao connector Binance Testnet;
+- fills são persistidos em `Trade` por `externalTradeId`, evitando duplicidade;
+- `Trade.realizedPnl` adicionado ao modelo e migration;
+- posições LIVE são atualizadas em compras/vendas, incluindo preço médio, fechamento e P&L;
+- `LiveRiskState.dailyLoss` soma somente perdas realizadas desde o início do dia UTC;
+- reconciliação consulta fills após atualizar o estado da ordem.
+
+Validações:
+- testes Binance: OK (12 testes);
+- testes worker: OK (18 testes, 6 integrações ignoradas);
+- database build: OK;
+- worker build/typecheck/lint: OK.
+
+Limite:
+- o P&L depende de posições/fills LIVE persistidos; saldos da conta continuam sendo usados como fonte de disponibilidade, e o smoke test real ainda não foi executado.
+
+## 2026-09-08 — Smoke test Binance Spot Testnet
+
+Resumo:
+- comando `pnpm --filter @risexpto/worker smoke:testnet` adicionado;
+- modo padrão consulta somente `exchangeInfo` e saldos;
+- ordem MARKET de teste exige `RUN_BINANCE_TESTNET_SMOKE=true`, `BINANCE_TRADING_ENVIRONMENT=TESTNET` e `BINANCE_TESTNET_SMOKE_ORDER=true`;
+- fluxo de ordem consulta estado, cancela se necessário e reconcilia novamente;
+- produção e URLs de produção são rejeitadas antes do uso das credenciais;
+- guia operacional criado em `docs/production/binance-testnet-smoke.md`.
+
+Validações:
+- Binance connector build: OK;
+- worker typecheck/lint/build: OK;
+- bloqueio sem flag: OK, sem rede ou credenciais;
+- smoke real: não executado, pois não há credenciais Testnet configuradas no ambiente.
+
+Limite:
+- ainda falta executar leitura e ordem mínima com uma conta Spot Testnet descartável, além de validar restart/crash recovery.
+
+## 2026-09-08 — Simulação local de restart/crash recovery
+
+Resumo:
+- teste de integração do `LiveExecutionEngine` simula a troca de processo usando o mesmo `LiveOrderStore`;
+- uma ordem já resolvida após o primeiro processo é recuperada pelo segundo engine;
+- o segundo engine retorna o resultado persistido sem chamar `submit` novamente;
+- o cenário cobre a proteção contra duplicação após reinício antes da validação em uma conta Testnet real.
+
+Validações:
+- testes `live-execution`: OK (9 testes);
+- testes worker: OK (18 testes, 6 integrações ignoradas);
+- typecheck, build e lint: OK.
+
+Limite:
+- a simulação usa o store em memória de teste; a validação de restart com PostgreSQL, jobs duplicados e dados reais Binance permanece pendente.
+
+## 2026-09-08 — Idempotência do adapter Prisma sob job duplicado
+
+Resumo:
+- teste do `PrismaLiveOrderStore` simula dois workers tentando criar a mesma intenção LIVE;
+- a segunda criação recebe uma violação de unicidade (`P2002`) e recupera a ordem já persistida;
+- após reinício com a ordem ainda pendente, o engine consulta a exchange, resolve a ordem e não executa um segundo submit;
+- o cenário confirma a proteção no adapter persistente sem exigir credenciais ou rede.
+
+Validações:
+- testes do worker: OK (19 testes, 6 integrações ignoradas);
+- lint, typecheck e build do worker: OK.
+
+Limite:
+- a simulação ainda usa um fake de Prisma; falta executar contra PostgreSQL real, duplicar jobs BullMQ em ambiente controlado e validar o comportamento com uma conta Binance Spot Testnet.
+
+## 2026-09-08 — Integração PostgreSQL para persistência LIVE
+
+Resumo:
+- teste `live-order-store.integration.test.ts` criado para executar somente quando `E2E_DATABASE_URL` estiver configurada;
+- fixture cria usuário, conexão Binance sanitizada, bot LIVE, versão de estratégia e proposta, sem credenciais reais;
+- valida persistência da intenção, corrida duplicada, recuperação após reinício, resolução por consulta e ausência de novo submit;
+- limpeza é executada no `finally`, mantendo o teste isolado por UUID.
+
+Validações:
+- suíte worker: OK (20 testes, 7 integrações ignoradas sem `E2E_DATABASE_URL`);
+- lint, typecheck, build e `git diff --check`: OK.
+
+Limite:
+- PostgreSQL real ainda não foi executado porque o ambiente atual não tem `E2E_DATABASE_URL`/banco disponível; a execução controlada deve ocorrer antes do smoke com ordem Testnet.
+
+## 2026-09-08 — Deduplicação de jobs LIVE no BullMQ
+
+Resumo:
+- helpers `enqueueLiveSubmit` e `enqueueLiveReconciliation` adicionados ao worker;
+- `jobId` determinístico usa `live-submit:<orderId>` e `live-reconcile:<exchangeConnectionId>`;
+- IDs vazios são rejeitados antes do enfileiramento;
+- testes verificam que chamadas repetidas produzem o mesmo `jobId`, permitindo que o BullMQ deduplicate o job persistido.
+
+Validações:
+- testes do worker: OK (22 testes, 8 integrações ignoradas);
+- lint, typecheck e build do worker: OK.
+
+Limite:
+- a confirmação contra Redis real continua pendente; as integrações existentes permanecem opt-in via `E2E_REDIS_URL`.
+
+## 2026-09-08 — Preflight de readiness Binance Testnet
+
+Resumo:
+- comando `pnpm --filter @risexpto/worker preflight:testnet` adicionado;
+- valida ambiente Testnet, endpoint permitido, flags LIVE, credenciais, PostgreSQL e Redis;
+- saída JSON não imprime valores de API key, secret ou connection strings;
+- execução falha fechada quando qualquer requisito estiver ausente ou apontar para produção.
+
+Validações:
+- testes do worker: OK (26 testes, 8 integrações ignoradas);
+- lint, typecheck e build do worker: OK;
+- execução compilada sem credenciais: bloqueada corretamente, sem rede ou autenticação.
+
+Limite:
+- o ambiente atual continua sem credenciais Binance, `E2E_DATABASE_URL` e `E2E_REDIS_URL`; o preflight ainda não autoriza smoke real.
+
+# 43. MVP INTEGRATION & EXECUTION READINESS
+
+Esta seção supersede os checkboxes históricos quando houver conflito: o estado deve ser comprovado por código integrado, testes e execução funcional. Binance Production e Stripe Live permanecem proibidos.
+
+| Fase | Escopo | Estado | Critério objetivo |
+|---|---|---|---|
+| 31 | Environment bootstrap | 🟨 | Loader raiz e `pnpm db:setup` implementados; falta executar com todos os serviços locais healthy. |
+| 32 | Strategy and risk seed | ✅ | Seed idempotente cria DCA, Grid e Trend com versão ativa, schema e implementation key; testes passam. |
+| 33 | Market Data runtime | 🟨 | Job público Binance → `MarketSnapshot`, freshness, retry, rate limit e circuit breaker implementados; execução com PostgreSQL/Binance ainda falta. |
+| 34 | Bot Wizard + Risk API | 🟨 | API transacional, endpoints RiskProfile, wizard PAPER, presets revisáveis e tela de risco real implementados; E2E autenticado ainda falta. |
+| 35 | Automatic Paper Scheduler | 🟨 | Scheduler BullMQ, `nextRunAt`, claim atômico e deduplicação implementados; execução com serviços reais e E2E ainda faltam. |
+| 36 | Paper Trading E2E | ⬜ | Clone limpo → login → bot PAPER → ciclo automático → trade/position visíveis. |
+| 37 | Exchange Connection UI | 🟨 | Add/test/status/revoke reais, secret nunca retornado e modo Testnet visível implementados; falta validação browser autenticada. |
+| 38 | Binance Testnet E2E | ⛔ | Código preparado; depende de PostgreSQL/Redis/Keycloak e credenciais Testnet descartáveis. |
+| 39 | Stripe Test Mode | 🟨 | SDK oficial restrito a `sk_test_` implementado; checkout/portal, webhook persistido e entitlements ainda faltam. |
+| 40 | Commercial/Production Gate | ⛔ | Só após fases 31–39, revisão operacional e aprovação humana explícita. |
+
+Status atualizado: fase 33 está implementada em código/testes; permanece sem validação externa até haver serviços e ambiente configurados.
+
+## 43.1 Auditoria real em 2026-09-08
+
+Fontes revisadas: README, plano integral, readiness/commercial/PAPER/Binance docs, ADR-001 a ADR-011, `apps/web`, `apps/api`, `apps/worker`, packages, Prisma/migrations, `.env.example` e `compose.yaml`.
+
+Achados reconciliados:
+- o worker é executável e inicia Redis/BullMQ + PostgreSQL, processando Paper e jobs LIVE explícitos; não é correto classificá-lo como `NOT_INTEGRATED`;
+- o LIVE Testnet possui connector, store Prisma, Risk Engine, kill switch, fills, P&L, reconciliação, preflight e smoke protegido, mas continua `BLOCKED_EXTERNAL` sem execução real;
+- o Market Data agora possui job periódico público no worker, com símbolos derivados de bots RUNNING, upsert por candle e bloqueio `STALE_MARKET_DATA`; a execução contra Binance continua externa;
+- o Paper Cycle existe no worker, porém a API ainda depende de ciclo manual e não há scheduler 24/7 integrado;
+- o seed agora cobre DCA, Grid e Trend, mas o worker Paper continua executando somente `implementationKey=dca`;
+- Stripe permanece `MOCK_ONLY`; nenhum SDK oficial ou endpoint de billing foi habilitado;
+- páginas de risco, billing, notificações e admin ainda contêm conteúdo demonstrativo e não devem ser tratadas como dados do usuário.
+
+## 2026-09-08 — Environment bootstrap e execução local reproduzível
+
+Resumo:
+- loader `scripts/root-env.mjs` passou a carregar automaticamente o `.env` raiz para root dev, API e worker;
+- `pnpm db:setup` aplica migrations e executa seed com o mesmo ambiente carregado;
+- API e worker exigem variáveis obrigatórias em runtime, sem fallback perigoso de banco fora de testes;
+- README documenta `nvm use`, Compose, setup do banco e carregamento automático do ambiente.
+
+Validações:
+- loader raiz: OK;
+- API lint/typecheck/build: OK;
+- worker test/lint/typecheck/build: OK;
+- database typecheck/build: OK;
+- `git diff --check`: OK.
+
+Limite:
+- a execução completa do bootstrap ainda depende de Docker/Keycloak/PostgreSQL/Redis ativos no ambiente do operador; nenhum serviço externo foi alterado nesta etapa.
+
+## 2026-09-08 — Seed de estratégias MVP
+
+Resumo:
+- seed passou a cadastrar DCA, Grid e Trend Following de forma idempotente;
+- cada definição possui uma `StrategyVersion` ativa, `parameterSchema` e `implementationKey` compatíveis com o código existente;
+- teste isolado verifica a identidade e os campos mínimos das três estratégias.
+
+Validações:
+- database tests: OK (5 testes);
+- database lint, typecheck e build: OK.
+
+Limite:
+- a execução em instalação limpa PostgreSQL ainda precisa ser realizada com infraestrutura disponível; o worker Paper continua operacional somente para DCA.
+
+## 2026-09-08 — Market Data runtime persistente
+
+Resumo:
+- job `market-data-sync` integrado ao worker e agendado pelo BullMQ;
+- símbolos são derivados de `allowedSymbols` e `parameters.symbol` dos bots RUNNING;
+- candles públicos Binance de 1 minuto são persistidos com upsert por `provider/symbol/interval/openTime`;
+- `Paper Cycle`, submit LIVE e cálculo de risco rejeitam snapshots fora de `MARKET_DATA_MAX_AGE_MS` com `STALE_MARKET_DATA`;
+- nenhum secret é usado no client público; retry, rate limit e circuit breaker permanecem no package `@risexpto/market-data`.
+
+Validações:
+- worker tests: OK (30 testes, 8 integrações ignoradas);
+- worker lint/typecheck/build: OK.
+
+Limite:
+- falta executar o job contra Binance pública e PostgreSQL reais, observar freshness em operação e concluir o scheduler automático de ciclos dos bots.
+
+## 2026-09-08 — Bot + RiskProfile transacionais
+
+Resumo:
+- criação PAPER agora usa uma transação única para `Bot`, `BotConfiguration`, `RiskProfile` e `PaperCapitalAllocation`;
+- RiskProfile exige limites de capital, exposição, perda, drawdown, posições, símbolos e cooldown válidos;
+- endpoints `GET/PATCH /bots/:id/risk-profile` aplicam ownership e não permitem alterar risco de bot RUNNING;
+- LIVE continua rejeitado na API nesta etapa.
+
+Validações:
+- teste direcionado de BotsService: OK (5 testes);
+- API lint/typecheck/build: OK;
+- `git diff --check`: OK.
+
+Limite:
+- falta validar o wizard PAPER real e a UI de risco no E2E autenticado, além de executar contra os serviços locais.
+
+## 2026-09-08 — Bot Wizard PAPER e Risk UI real
+
+Resumo:
+- proxies BFF para criação/listagem de bots, estratégias e RiskProfile adicionados;
+- wizard web implementa Strategy → Market → Capital → Risk → Review e libera somente PAPER;
+- presets Conservative/Balanced/Aggressive preenchem os limites, mas todos os valores permanecem revisáveis antes do envio;
+- criação envia configuração e RiskProfile para a transação da API, sem INSERT manual;
+- tela `/risk` agora lista bots reais, exibe limites reais e permite PATCH seguro do RiskProfile;
+- edição de risco é bloqueada pela API enquanto o bot está RUNNING.
+
+Validações:
+- web lint/typecheck: OK;
+- API teste direcionado de criação atômica: OK (5 testes);
+- API lint/typecheck/build: OK.
+
+Limite:
+- build Next completo está bloqueado neste executor quando o Next tenta iniciar o subprocesso TypeScript (`EPERM`); o typecheck isolado passa. E2E autenticado ainda falta.
+
+## 2026-09-08 — Scheduler automático de Paper Trading
+
+Resumo:
+- campo persistente `Bot.nextRunAt` e migration de índice adicionados;
+- job `paper-scheduler` periódico identifica bots PAPER/RUNNING e agenda `bot-cycle` conforme `parameters.intervalMs`;
+- claim atômico por `status`, `tradingMode`, `archivedAt` e `nextRunAt` evita ciclos duplicados entre workers;
+- `jobId` determinístico por bot e janela permite retry/restart seguro;
+- PAUSED, STOPPED, LIVE e intervalos inválidos não geram ciclos.
+
+## 2026-09-08 — Binance Testnet fail-closed e readiness da API
+
+Resumo:
+- configuração privada Binance separada em `BINANCE_TESTNET_BASE_URL` e `BINANCE_PRODUCTION_BASE_URL`, removendo `BINANCE_BASE_URL` ambígua;
+- a API rejeita qualquer ambiente diferente de `TESTNET` e qualquer endpoint diferente de `https://testnet.binance.vision`;
+- smoke/readiness do worker validam o endpoint Testnet e nunca executam Binance Production;
+- `/health` informa liveness e `/ready` verifica PostgreSQL e Redis sem expor configuração sensível.
+
+Validações:
+- testes unitários de ambiente Binance: OK (API 3 testes; worker 2 testes);
+- API lint/typecheck: OK;
+- worker testes: OK (18 testes, 4 integrações ignoradas).
+
+Limite:
+- conexão real ainda depende de credenciais Spot Testnet e serviços PostgreSQL/Redis/Keycloak; Production permanece proibida.
+
+## 2026-09-08 — Exchange Connection UI
+
+Resumo:
+- BFF web adicionado para listar, criar, testar e revogar conexões com ownership mantido na API;
+- tela de conexões aceita credenciais somente no formulário, limpa o segredo após salvar e nunca o exibe novamente;
+- status, permissões e API key mascarada vêm da API; o modo TESTNET fica visível na tela;
+- revogação remove a conexão da lista local após confirmação da API.
+
+Validações:
+- web lint: OK;
+- web typecheck: OK;
+- `git diff --check`: OK.
+
+Limite:
+- browser E2E autenticado e teste real Binance continuam dependentes de Keycloak, PostgreSQL, Redis e credenciais Spot Testnet.
+
+## 2026-09-08 — Stripe Test Mode adapter
+
+Resumo:
+- SDK oficial `stripe` adicionado ao package de billing;
+- `StripeTestProvider` implementa customer, Checkout subscription e Billing Portal;
+- construção falha fechada sem `STRIPE_SECRET_KEY` ou com chave `sk_live_`, mantendo Stripe Live proibido;
+- URLs de retorno são obrigatórias e vêm do ambiente, sem defaults externos.
+
+Validações:
+- teste de rejeição de credenciais Live/ausentes: OK;
+- package billing typecheck: pendente de validação completa após integração dos endpoints.
+
+Limite:
+- checkout, webhook e entitlements persistidos já estão conectados à API; ainda são necessários `sk_test_` e endpoint webhook Stripe para validação externa.
+
+## 2026-09-08 — Billing API e UI em Stripe Test Mode
+
+Resumo:
+- migration `BillingWebhookEvent` persiste IDs Stripe com unicidade para idempotência;
+- API expõe `GET /billing`, `POST /billing/checkout`, `POST /billing/portal` e `POST /billing/webhooks/stripe`;
+- webhook valida assinatura com o SDK, persiste o evento antes de aplicar a subscription e mapeia preços Test para planos persistidos;
+- billing web deixou de exibir plano, preço, invoice e uso fictícios; mostra dados da API e TEST MODE;
+- `.env.example` documenta chave, webhook, preços e URLs de retorno somente Test Mode.
+
+Validações:
+- billing lint/typecheck/test/build: OK;
+- API lint/typecheck/build: OK;
+- web lint/typecheck: OK;
+- database typecheck/Prisma generation: OK.
+
+Limites:
+- ainda falta validar checkout, webhook assinado, atualização fora de ordem e enforcement de entitlements contra Stripe Test real;
+- não há invoices/usage reais expostos enquanto a integração Test não for exercitada.
+
+## 2026-09-08 — Enforcement inicial de entitlements
+
+Resumo:
+- provisionamento idempotente cria subscription Starter para usuários novos, usando somente o plano persistido pelo seed;
+- API consulta subscription ativa e entitlement `maxBots` antes de aceitar criação de bot;
+- ausência de plano/subscription ou limite excedido bloqueia a operação no backend;
+- frontend não é autoridade para autorização comercial.
+
+Validações:
+- API testes direcionados de provisioning/bot: OK (7 testes);
+- API lint/typecheck/build: OK.
+
+Limite:
+- enforcement de `liveTrading` e `maxMonthlyBacktests` deve ser conectado aos endpoints desses domínios quando forem integrados; LIVE continua bloqueado nesta fase.
+
+Validações:
+- worker tests: OK (18 testes, 4 integrações ignoradas);
+- worker lint/typecheck/build: OK;
+- migration e Prisma Client: geração/build OK.
+
+Limite:
+- execução contra Redis/PostgreSQL reais ainda não foi realizada; o scheduler não fecha sozinho o E2E até o Market Data e o wizard PAPER estarem validados.

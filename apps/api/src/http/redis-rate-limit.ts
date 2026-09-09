@@ -13,7 +13,7 @@ export function createRedisRateLimiter(redisUrl: string | undefined) {
   const windowSeconds = positiveInt(process.env.API_RATE_LIMIT_WINDOW_SECONDS, 60);
   const maxRequests = positiveInt(process.env.API_RATE_LIMIT_MAX_REQUESTS, 120);
   return {
-    async middleware(request: RequestLike, response: ResponseLike, next: () => void) {
+    middleware: async (request: RequestLike, response: ResponseLike, next: () => void) => {
       if (request.path === '/health') return next();
       const client = request.ip ?? request.headers['x-forwarded-for'] ?? 'unknown';
       const identity = Array.isArray(client) ? client[0] : client;

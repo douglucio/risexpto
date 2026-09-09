@@ -13,13 +13,16 @@ The host Node 18 runtime is not supported. Use Node Version Manager (`nvm use`) 
 ## Setup
 
 ```bash
+nvm use
 corepack enable
-corepack prepare pnpm@10.34.5 --activate
 pnpm install --frozen-lockfile
 cp .env.example .env
 docker compose up -d
+pnpm db:setup
 pnpm dev
 ```
+
+The root `.env` is loaded automatically by the root `dev` command and by the API/worker application commands. Existing shell variables take precedence. The API and worker fail fast when required runtime variables are missing; test-only module imports may use isolated test fixtures.
 
 Never use real Binance or Stripe credentials in local fixtures or tests. Values in `.env.example` are placeholders.
 

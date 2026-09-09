@@ -10,5 +10,8 @@
     "lint": "eslint src",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "stripe": "^22.6.1"
   }
 }

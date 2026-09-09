@@ -16,7 +16,7 @@ export class QueueService implements OnModuleDestroy {
     this.queue = redisUrl
       ? new Queue<CycleJob>(process.env.WORKER_QUEUE_NAME ?? 'risexpto', {
           connection: redisConnection(redisUrl) as never, prefix: 'risexpto',
-        }) as Queue<CycleJob>
+        })
       : null;
   }
   async enqueueBotCycle(botId: string, idempotencyKey: string) {

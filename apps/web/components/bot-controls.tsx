@@ -32,13 +32,13 @@ export function BotControls({ id, status, tradingMode }: { id: string; status: s
 
   return (
     <div className="content-stack">
-      {tradingMode === 'PAPER' && currentStatus === 'READY' ? <Button disabled={busy} onClick={() => change('RUNNING')}>Start</Button> : null}
+      {tradingMode === 'PAPER' && currentStatus === 'READY' ? <Button disabled={busy} onClick={() => void change('RUNNING')}>Start</Button> : null}
       {tradingMode === 'PAPER' && currentStatus === 'RUNNING' ? <>
-        <Button disabled={busy} onClick={cycle}>Run cycle</Button>
-        <Button disabled={busy} onClick={() => change('PAUSED')}>Pause</Button>
+        <Button disabled={busy} onClick={() => void cycle()}>Run cycle</Button>
+        <Button disabled={busy} onClick={() => void change('PAUSED')}>Pause</Button>
         </> : null}
-      {tradingMode === 'PAPER' && currentStatus === 'PAUSED' ? <Button disabled={busy} onClick={() => change('RUNNING')}>Resume</Button> : null}
-      {tradingMode === 'PAPER' && (currentStatus === 'RUNNING' || currentStatus === 'PAUSED') ? <Button disabled={busy} onClick={() => change('STOPPED')}>Stop</Button> : null}
+      {tradingMode === 'PAPER' && currentStatus === 'PAUSED' ? <Button disabled={busy} onClick={() => void change('RUNNING')}>Resume</Button> : null}
+      {tradingMode === 'PAPER' && (currentStatus === 'RUNNING' || currentStatus === 'PAUSED') ? <Button disabled={busy} onClick={() => void change('STOPPED')}>Stop</Button> : null}
       {message ? <Alert tone="negative" title="Bot action">{message}</Alert> : null}
     </div>
   );

@@ -10,10 +10,12 @@ import { ExchangeConnectionsModule } from './exchange-connections/exchange-conne
 import { QueueModule } from './queue/queue.module';
 import { TradingActivityModule } from './trading-activity/trading-activity.module';
 import { AdminModule } from './admin/admin.module';
+import { BillingModule } from './billing/billing.module';
 
-const database = createDatabaseClient(
-  process.env.DATABASE_URL ?? 'postgresql://invalid:invalid@localhost:5432/invalid',
-);
+const databaseUrl = process.env.DATABASE_URL;
+if (!databaseUrl && process.env.NODE_ENV !== 'test')
+  throw new Error('DATABASE_URL is required for the API');
+const database = createDatabaseClient(databaseUrl ?? 'postgresql://test:test@localhost:5432/test');
 
 @Module({
   imports: [
@@ -25,6 +27,7 @@ const database = createDatabaseClient(
     QueueModule,
     TradingActivityModule,
     AdminModule.withDatabase(database),
+    BillingModule.withDatabase(database),
   ],
   controllers: [AppController, ProfileController],
 })

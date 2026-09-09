@@ -5,9 +5,10 @@ import { AppModule } from './app.module';
 import { SafeExceptionFilter } from './http/safe-exception.filter';
 import helmet from 'helmet';
 import { createRedisRateLimiter } from './http/redis-rate-limit';
+import type { Server } from 'node:http';
 
 async function bootstrap(): Promise<void> {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, { rawBody: true });
   app.use(helmet({ contentSecurityPolicy: false }));
   const rateLimiter = createRedisRateLimiter(process.env.REDIS_URL);
   app.use(rateLimiter.middleware);
@@ -23,6 +24,7 @@ async function bootstrap(): Promise<void> {
   );
   app.useGlobalFilters(new SafeExceptionFilter());
   await app.listen(Number(process.env.API_PORT ?? 3001), '0.0.0.0');
-  app.getHttpServer().on('close', () => rateLimiter.close());
+  const server = app.getHttpServer() as Server;
+  server.on('close', () => void rateLimiter.close());
 }
 void bootstrap();

@@ -14,6 +14,7 @@ import {
 import type { PrismaClient } from '@risexpto/database';
 import { DATABASE } from '../users/user-provisioning.service';
 import type { AuthenticatedUser } from '../auth/auth.types';
+import { resolveBinancePrivateBaseUrl } from './binance-environment';
 
 type CreateConnectionBody = { label?: unknown; apiKey?: unknown; apiSecret?: unknown };
 
@@ -69,7 +70,7 @@ export class ExchangeConnectionsService {
     const connection = await this.findOwned(user, id, true);
     const client = new BinanceAccountConnection(
       new CredentialVault(masterKey()),
-      process.env.BINANCE_BASE_URL ?? 'https://api.binance.com',
+      resolveBinancePrivateBaseUrl(),
     );
     client.restore(
       {

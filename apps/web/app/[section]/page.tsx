@@ -3,15 +3,9 @@ import {
   Badge,
   Button,
   Card,
-  Checkbox,
   CurrencyDisplay,
   DataTable,
   EmptyState,
-  FormField,
-  Input,
-  Progress,
-  Radio,
-  Switch,
   Tabs,
 } from '@risexpto/ui';
 import { notFound } from 'next/navigation';
@@ -19,6 +13,10 @@ import { PageHeader } from '../../components/page-header';
 import { PreferencesForm } from '../../components/preferences-form';
 import { BotControls } from '../../components/bot-controls';
 import { readSession } from '../../lib/auth/session';
+import { BotCreateWizard } from '../../components/bot-create-wizard';
+import { RiskPanel } from '../../components/risk-panel';
+import { ExchangeConnectionsPanel } from '../../components/exchange-connections-panel';
+import { BillingPanel } from '../../components/billing-panel';
 
 const pages = {
   bots: ['Automation', 'Bots', 'Create, monitor, and control automated strategy instances.'],
@@ -51,7 +49,7 @@ export default async function SectionPage({ params }: { params: Promise<{ sectio
   const page = pages[section as keyof typeof pages];
   if (!page) notFound();
   const data =
-    section === 'bots' || section === 'strategies' || section === 'exchange-connections' || section === 'trades' || section === 'portfolio'
+    section === 'bots' || section === 'strategies' || section === 'exchange-connections' || section === 'trades' || section === 'portfolio' || section === 'billing'
       ? await loadSectionData(section)
       : null;
   return (
@@ -60,7 +58,7 @@ export default async function SectionPage({ params }: { params: Promise<{ sectio
         eyebrow={page[0]}
         title={page[1]}
         description={page[2]}
-        action={<Button>{section === 'bots' ? 'Create bot' : 'Primary action'}</Button>}
+        action={section === 'bots' ? <BotCreateWizard /> : null}
       />
       <SectionContent section={section} data={data} />
     </>
@@ -73,6 +71,7 @@ type SectionData =
   | { kind: 'exchange-connections'; value: ExchangeConnectionRecord[] }
   | { kind: 'trades'; value: TradeRecord[] }
   | { kind: 'positions'; value: PositionRecord[] }
+  | { kind: 'billing'; value: BillingRecord }
   | { kind: 'error'; message: string };
 type BotRecord = {
   id: string;
@@ -114,9 +113,10 @@ type PositionRecord = {
   averagePrice: string;
   realizedPnl: string;
 };
+type BillingRecord = { mode: string; subscription: { status: string; plan: string; entitlements: Record<string, unknown> } | null };
 
 async function loadSectionData(
-  section: 'bots' | 'strategies' | 'exchange-connections' | 'trades' | 'portfolio',
+  section: 'bots' | 'strategies' | 'exchange-connections' | 'trades' | 'portfolio' | 'billing',
 ): Promise<SectionData> {
   const session = await readSession(false);
   if (!session)
@@ -135,6 +135,7 @@ async function loadSectionData(
     if (section === 'strategies') return { kind: 'strategies', value: payload as StrategyRecord[] };
     if (section === 'exchange-connections') return { kind: 'exchange-connections', value: payload as ExchangeConnectionRecord[] };
     if (section === 'trades') return { kind: 'trades', value: payload as TradeRecord[] };
+    if (section === 'billing') return { kind: 'billing', value: payload as BillingRecord };
     return { kind: 'positions', value: payload as PositionRecord[] };
   } catch {
     return { kind: 'error', message: `Could not connect to the API. Try again shortly.` };
@@ -223,43 +224,7 @@ function SectionContent({ section, data }: { section: string; data: SectionData 
             {data.message}
           </Alert>
         ) : null}
-        {data?.kind === 'exchange-connections' && data.value.length === 0 ? (
-          <EmptyState
-            title="No exchange connections"
-            description="Add a trade-only Binance connection to use exchange-backed features."
-          />
-        ) : null}
-        {data?.kind === 'exchange-connections' && data.value.length > 0 ? (
-          <div className="card-grid content-stack">
-            {data.value.map((connection) => (
-              <Card key={connection.id}>
-                <div className="section-heading">
-                  <h2>{connection.label}</h2>
-                  <Badge tone={connection.status === 'CONNECTED' ? 'positive' : 'negative'}>
-                    {connection.status}
-                  </Badge>
-                </div>
-                <p>
-                  {connection.provider} · {connection.maskedApiKey}
-                </p>
-                {connection.status === 'UNSAFE_PERMISSIONS' ? (
-                  <Alert tone="negative" title="Unsafe permissions">
-                    Disable withdrawal permissions in Binance API Management and test the
-                    connection again.
-                  </Alert>
-                ) : null}
-                <Button>Test connection</Button>
-              </Card>
-            ))}
-          </div>
-        ) : null}
-        <div className="card-grid content-stack">
-          <EmptyState
-            title="Add another connection"
-            description="The MVP supports one Binance Spot connection."
-            action={<Button disabled>Add exchange</Button>}
-          />
-        </div>
+        {data?.kind === 'exchange-connections' ? <ExchangeConnectionsPanel initial={data.value} /> : null}
       </>
     );
   if (section === 'backtests')
@@ -312,28 +277,7 @@ function SectionContent({ section, data }: { section: string; data: SectionData 
       />
     );
   if (section === 'risk')
-    return (
-      <div className="settings-grid">
-        <Card>
-          <h2>Portfolio limits</h2>
-          <FormField label="Maximum allocation" hint="Across all bots">
-            <Input defaultValue="40" inputMode="decimal" />
-          </FormField>
-          <FormField label="Maximum daily loss">
-            <Input defaultValue="2" inputMode="decimal" />
-          </FormField>
-          <Progress value={38} label="Current allocation" />
-        </Card>
-        <Card>
-          <h2>Execution policy</h2>
-          <Switch label="Proposal cooldown" defaultChecked />
-          <Checkbox label="Block symbols outside allowlist" defaultChecked />
-          <Radio name="risk" label="Conservative" defaultChecked />
-          <Radio name="risk" label="Custom" />
-          <Button>Review changes</Button>
-        </Card>
-      </div>
-    );
+    return <RiskPanel />;
   if (section === 'notifications')
     return (
       <div className="content-stack">
@@ -347,27 +291,7 @@ function SectionContent({ section, data }: { section: string; data: SectionData 
       </div>
     );
   if (section === 'billing')
-    return (
-      <div className="settings-grid">
-        <Card>
-          <Badge tone="brand">PRO</Badge>
-          <h2>Professional</h2>
-          <p>
-            <strong className="price">$49</strong> / month
-          </p>
-          <Progress value={40} label="Bot usage (4 of 10)" />
-          <Button>Manage subscription</Button>
-        </Card>
-        <Card>
-          <h2>Latest invoice</h2>
-          <p>August 2026 · Paid</p>
-          <CurrencyDisplay value={49} />
-          <p>
-            <Button>View invoices</Button>
-          </p>
-        </Card>
-      </div>
-    );
+    return data?.kind === 'billing' ? <BillingPanel /> : <Alert tone="negative" title="Unable to load billing">{data?.kind === 'error' ? data.message : 'Billing is unavailable.'}</Alert>;
   if (section === 'settings') return <PreferencesForm />;
   return (
     <>

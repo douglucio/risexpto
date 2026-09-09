@@ -1,4 +1,5 @@
 import { createDatabaseClient } from '../src/index.js';
+import { mvpStrategies } from '../src/seed-data.js';
 
 const connectionString = process.env.DATABASE_URL;
 if (!connectionString) throw new Error('DATABASE_URL is required for seed');
@@ -33,6 +34,18 @@ try {
         create: { planId: stored.id, key, value },
       });
     }
+  }
+  for (const strategy of mvpStrategies) {
+    const definition = await db.strategyDefinition.upsert({
+      where: { key: strategy.key },
+      update: { name: strategy.name, description: strategy.description, active: true },
+      create: { key: strategy.key, name: strategy.name, description: strategy.description, active: true },
+    });
+    await db.strategyVersion.upsert({
+      where: { strategyDefinitionId_version: { strategyDefinitionId: definition.id, version: 1 } },
+      update: { parameterSchema: strategy.parameterSchema, implementationKey: strategy.implementationKey, active: true },
+      create: { strategyDefinitionId: definition.id, version: 1, parameterSchema: strategy.parameterSchema, implementationKey: strategy.implementationKey, active: true },
+    });
   }
 } finally {
   await db.$disconnect();

@@ -9,6 +9,20 @@ export type CreateBotBody = {
   allowedSymbols?: unknown;
   authorizedCapital?: unknown;
   quoteCurrency?: unknown;
+  riskProfile?: unknown;
+};
+
+export type RiskProfileBody = {
+  name?: unknown;
+  maxAllocatedCapital?: unknown;
+  maxTradeAmount?: unknown;
+  maxExposurePercent?: unknown;
+  maxPositionPercent?: unknown;
+  maxPositions?: unknown;
+  maxDailyLossPercent?: unknown;
+  maxDrawdownPercent?: unknown;
+  allowedSymbols?: unknown;
+  cooldownSeconds?: unknown;
 };
 
 export type BotStatusChange = 'READY' | 'RUNNING' | 'PAUSED' | 'STOPPED' | 'ARCHIVED';

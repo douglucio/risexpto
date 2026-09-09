@@ -1,4 +1,5 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
+import Stripe from 'stripe';
 
 export type Plan = {
   key: string;
@@ -32,7 +33,8 @@ export type BillingEvent = {
   createdAt: number;
 };
 export class MockStripeProvider implements BillingProvider {
-  async createCustomer(userId: string): Promise<string> {
+  async createCustomer(userId: string, email: string): Promise<string> {
+    void email;
     await Promise.resolve();
     return `cus_mock_${userId}`;
   }
@@ -44,6 +46,50 @@ export class MockStripeProvider implements BillingProvider {
     await Promise.resolve();
     return `portal_mock_${customerId}`;
   }
+}
+
+/** Stripe adapter restricted to Test Mode. Live keys are rejected at construction. */
+export class StripeTestProvider implements BillingProvider {
+  private readonly stripe: Stripe;
+
+  constructor(secretKey = process.env.STRIPE_SECRET_KEY) {
+    if (!secretKey?.startsWith('sk_test_'))
+      throw new Error('Stripe Test Mode requires STRIPE_SECRET_KEY starting with sk_test_');
+    this.stripe = new Stripe(secretKey);
+  }
+
+  async createCustomer(userId: string, email: string): Promise<string> {
+    const customer = await this.stripe.customers.create({ email, metadata: { riseXpToUserId: userId } });
+    return customer.id;
+  }
+
+  async checkout(customerId: string, priceId: string): Promise<string> {
+    const session = await this.stripe.checkout.sessions.create({
+      mode: 'subscription', customer: customerId, line_items: [{ price: priceId, quantity: 1 }],
+      success_url: requiredUrl('STRIPE_CHECKOUT_SUCCESS_URL'),
+      cancel_url: requiredUrl('STRIPE_CHECKOUT_CANCEL_URL'),
+    });
+    if (!session.url) throw new Error('Stripe did not return a checkout URL');
+    return session.url;
+  }
+
+  async portal(customerId: string): Promise<string> {
+    const session = await this.stripe.billingPortal.sessions.create({
+      customer: customerId, return_url: requiredUrl('STRIPE_PORTAL_RETURN_URL'),
+    });
+    return session.url;
+  }
+
+  constructWebhookEvent(payload: string | Buffer, signature: string, webhookSecret: string): Stripe.Event {
+    if (!webhookSecret.trim()) throw new Error('STRIPE_WEBHOOK_SECRET is required for Stripe Test Mode');
+    return this.stripe.webhooks.constructEvent(payload, signature, webhookSecret);
+  }
+}
+
+function requiredUrl(name: string): string {
+  const value = process.env[name]?.trim();
+  if (!value) throw new Error(`${name} is required for Stripe Test Mode`);
+  return value;
 }
 export function verifyWebhookSignature(
   payload: string,

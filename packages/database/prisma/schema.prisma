@@ -235,6 +235,7 @@ model Bot {
   tradingMode          TradingMode         @default(PAPER)
   createdAt            DateTime            @default(now()) @db.Timestamptz(3)
   updatedAt            DateTime            @updatedAt @db.Timestamptz(3)
+  nextRunAt            DateTime?           @db.Timestamptz(3)
   archivedAt           DateTime?           @db.Timestamptz(3)
   user                 User                @relation(fields: [userId], references: [id], onDelete: Cascade)
   exchangeConnection   ExchangeConnection? @relation(fields: [exchangeConnectionId], references: [id], onDelete: Restrict)
@@ -247,6 +248,7 @@ model Bot {
   paperCapitalAllocation PaperCapitalAllocation?
   paperReservations    PaperCapitalReservation[]
   riskProfile          RiskProfile?
+  liveRiskState        LiveRiskState?
   riskEvents           RiskEvent[]
   events               BotEvent[]
   backtests            Backtest[]
@@ -336,6 +338,7 @@ model Trade {
   price           Decimal  @db.Decimal(38, 18)
   fee             Decimal  @default(0) @db.Decimal(38, 18)
   feeAsset        String?  @db.VarChar(16)
+  realizedPnl     Decimal  @default(0) @db.Decimal(38, 18)
   executedAt      DateTime @db.Timestamptz(3)
   createdAt       DateTime @default(now()) @db.Timestamptz(3)
   order           Order    @relation(fields: [orderId], references: [id], onDelete: Restrict)
@@ -430,6 +433,18 @@ model RiskProfile {
   riskEvents          RiskEvent[]
 
   @@unique([userId, name])
+}
+
+model LiveRiskState {
+  id              String   @id @default(uuid()) @db.Uuid
+  botId           String   @unique @db.Uuid
+  currentExposure Decimal  @db.Decimal(38, 18)
+  openPositions   Int
+  dailyLoss       Decimal  @db.Decimal(38, 18)
+  drawdown        Decimal  @db.Decimal(38, 18)
+  peakEquity      Decimal  @db.Decimal(38, 18)
+  updatedAt       DateTime @updatedAt @db.Timestamptz(3)
+  bot             Bot      @relation(fields: [botId], references: [id], onDelete: Cascade)
 }
 
 model RiskEvent {
@@ -637,4 +652,16 @@ model Usage {
 
   @@unique([userId, metric, periodStart, periodEnd])
   @@index([subscriptionId, metric])
+}
+
+model BillingWebhookEvent {
+  id          String   @id @default(uuid()) @db.Uuid
+  provider    String   @db.VarChar(32)
+  providerId  String   @unique @db.VarChar(128)
+  type        String   @db.VarChar(128)
+  payload     Json
+  processedAt DateTime @default(now()) @db.Timestamptz(3)
+  createdAt   DateTime @default(now()) @db.Timestamptz(3)
+
+  @@index([provider, type])
 }

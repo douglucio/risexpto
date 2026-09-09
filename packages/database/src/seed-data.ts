@@ -1,0 +1,60 @@
+export const mvpStrategies = [
+  {
+    key: 'dca',
+    name: 'DCA',
+    description: 'Scheduled recurring purchases with explicit capital and risk limits.',
+    implementationKey: 'dca',
+    parameterSchema: {
+      type: 'object',
+      required: ['symbol', 'intervalMs', 'quoteAmount', 'maxCapital'],
+      properties: {
+        symbol: { type: 'string', pattern: '^[A-Z0-9]{5,20}$' },
+        intervalMs: { type: 'number', exclusiveMinimum: 0 },
+        quoteAmount: { type: 'number', exclusiveMinimum: 0 },
+        maxCapital: { type: 'number', exclusiveMinimum: 0 },
+        minPrice: { type: 'number', exclusiveMinimum: 0 },
+        maxPrice: { type: 'number', exclusiveMinimum: 0 },
+      },
+    },
+  },
+  {
+    key: 'grid',
+    name: 'Grid',
+    description: 'Paper Trading grid orders within a bounded price range and volatility limit.',
+    implementationKey: 'grid',
+    parameterSchema: {
+      type: 'object',
+      required: ['symbol', 'lowerPrice', 'upperPrice', 'levels', 'capital', 'maxVolatility'],
+      properties: {
+        symbol: { type: 'string', pattern: '^[A-Z0-9]{5,20}$' },
+        lowerPrice: { type: 'number', exclusiveMinimum: 0 },
+        upperPrice: { type: 'number', exclusiveMinimum: 0 },
+        levels: { type: 'integer', minimum: 2 },
+        capital: { type: 'number', exclusiveMinimum: 0 },
+        maxVolatility: { type: 'number', minimum: 0 },
+      },
+    },
+  },
+  {
+    key: 'trend-following',
+    name: 'Trend Following',
+    description: 'Paper Trading trend signals filtered by momentum, volume and volatility.',
+    implementationKey: 'trend-following',
+    parameterSchema: {
+      type: 'object',
+      required: ['symbol', 'fastEmaPeriod', 'slowEmaPeriod', 'atrPeriod', 'momentumPeriod', 'minMomentumPercent', 'minVolumeRatio', 'maxAtrPercent', 'quoteAmount', 'maxCapital'],
+      properties: {
+        symbol: { type: 'string', pattern: '^[A-Z0-9]{5,20}$' },
+        fastEmaPeriod: { type: 'integer', minimum: 1 },
+        slowEmaPeriod: { type: 'integer', minimum: 2 },
+        atrPeriod: { type: 'integer', minimum: 1 },
+        momentumPeriod: { type: 'integer', minimum: 1 },
+        minMomentumPercent: { type: 'number' },
+        minVolumeRatio: { type: 'number', exclusiveMinimum: 0 },
+        maxAtrPercent: { type: 'number', exclusiveMinimum: 0 },
+        quoteAmount: { type: 'number', exclusiveMinimum: 0 },
+        maxCapital: { type: 'number', exclusiveMinimum: 0 },
+      },
+    },
+  },
+] as const;
