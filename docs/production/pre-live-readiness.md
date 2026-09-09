@@ -27,6 +27,7 @@ O caminho atual está em `TESTABLE MVP READINESS`, não em `PRODUCTION_READY`. B
 - The shared cause was the Web server-rendered section loader reading the sealed session with refresh disabled, while `/auth/session` refreshed the access token. The API proxy also allowed an incoming `Authorization` header to override the session token.
 - Phase 49 now refreshes the access token before API calls, gives the session token precedence over forwarded headers, and emits only safe diagnostics (`missing/present`, token kind, audience, issuer host and expiry; never the token).
 - Browser validation must still confirm `/profile`, `/strategies`, `/bots`, `/exchange-connections`, `/trades`, `/positions` and `/billing` against the live local stack.
+- The first browser regression also identified routing/navigation, provider-neutral Connections, locale persistence and public pricing gaps; these are tracked as phases 50–57 in the implementation plan.
 
 ## Historical audit notes
 

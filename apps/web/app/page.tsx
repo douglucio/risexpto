@@ -1,4 +1,10 @@
+'use client';
+
 import Link from 'next/link';
+import { translate } from '@risexpto/i18n';
+import { useLocale } from '../components/locale-provider';
+import { PublicPricing } from '../components/public-pricing';
+import { useEffect, useState } from 'react';
 
 const benefits = [
   [
@@ -16,6 +22,19 @@ const benefits = [
 ];
 
 export default function MarketingPage() {
+  const { locale, setLocale } = useLocale();
+  const [activeSection, setActiveSection] = useState('');
+  const t = (key: string) => translate(key, locale);
+  useEffect(() => {
+    const sections = ['how-it-works', 'security', 'pricing'].map((id) => document.getElementById(id)).filter((item): item is HTMLElement => Boolean(item));
+    const observer = new IntersectionObserver((entries) => {
+      const visible = entries.filter((entry) => entry.isIntersecting).sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+      if (visible) setActiveSection(visible.target.id);
+    }, { rootMargin: '-5rem 0px -55% 0px', threshold: [0.1, 0.5] });
+    sections.forEach((section) => observer.observe(section));
+    return () => observer.disconnect();
+  }, []);
+  const navClass = (section: string) => activeSection === section ? 'is-active' : undefined;
   return (
     <main className="marketing-page">
       <nav className="marketing-nav" aria-label="Marketing navigation">
@@ -24,32 +43,30 @@ export default function MarketingPage() {
           <b>RiseXPTO</b>
         </Link>
         <div>
-          <Link href="#how-it-works">How it works</Link>
-          <Link href="#security">Security</Link>
-          <Link href="#pricing">Pricing</Link>
+          <Link className={navClass('how-it-works')} href="#how-it-works">{t('marketing.how')}</Link>
+          <Link className={navClass('security')} href="#security">{t('marketing.security')}</Link>
+          <Link className={navClass('pricing')} href="#pricing">{t('marketing.pricing')}</Link>
+          <select aria-label="Language" value={locale} onChange={(event) => setLocale(event.target.value as typeof locale)}><option value="en">EN</option><option value="pt-BR">PT</option><option value="es">ES</option></select>
           <Link href="/login" className="marketing-login">
-            Log in
+            {t('marketing.login')}
           </Link>
         </div>
       </nav>
       <section className="marketing-hero">
         <div>
           <p className="marketing-eyebrow">AUTOMATION WITH GUARDRAILS</p>
-          <h1>Trade with a system you can understand.</h1>
-          <p className="marketing-lede">
-            RiseXPTO brings disciplined crypto automation, risk controls, and transparent monitoring
-            into one focused workspace.
-          </p>
+          <h1>{t('marketing.hero')}</h1>
+          <p className="marketing-lede">{t('marketing.lede')}</p>
           <div className="marketing-actions">
             <Link href="/login" className="marketing-button">
-              Start in Paper Trading
+              {t('marketing.paper')}
             </Link>
             <a href="#how-it-works" className="marketing-secondary">
-              See how it works →
+              {t('marketing.see')}
             </a>
           </div>
           <p className="marketing-note">
-            No custody. No withdrawal access. No promises of returns.
+            {t('marketing.note')}
           </p>
         </div>
         <div className="marketing-preview" aria-label="Illustrative risk dashboard preview">
@@ -80,8 +97,8 @@ export default function MarketingPage() {
         </div>
       </section>
       <section id="how-it-works" className="marketing-section">
-        <p className="marketing-eyebrow">A CONTROLLED LOOP</p>
-        <h2>From signal to decision, every step has context.</h2>
+        <p className="marketing-eyebrow">{t('marketing.loop')}</p>
+        <h2>{t('marketing.context')}</h2>
         <div className="marketing-cards">
           {benefits.map(([title, text], index) => (
             <article key={title}>
@@ -94,8 +111,8 @@ export default function MarketingPage() {
       </section>
       <section id="security" className="marketing-security">
         <div>
-          <p className="marketing-eyebrow">SECURITY IS THE PRODUCT</p>
-          <h2>Automation should make decisions more disciplined, not more mysterious.</h2>
+          <p className="marketing-eyebrow">{t('marketing.product')}</p>
+          <h2>{t('marketing.securityHeadline')}</h2>
         </div>
         <ul>
           <li>Trade-only API permissions</li>
@@ -105,14 +122,15 @@ export default function MarketingPage() {
         </ul>
       </section>
       <section id="pricing" className="marketing-pricing">
-        <p className="marketing-eyebrow">SIMPLE START</p>
-        <h2>Begin with Paper Trading.</h2>
+        <p className="marketing-eyebrow">{t('marketing.simple')}</p>
+        <h2>{t('marketing.begin')}</h2>
         <p>
           Explore strategies, configure limits, and understand the workflow before considering live
           execution.
         </p>
+        <PublicPricing />
         <Link href="/login" className="marketing-button">
-          Create your workspace
+          {t('marketing.workspace')}
         </Link>
       </section>
       <footer className="marketing-footer">

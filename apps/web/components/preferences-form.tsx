@@ -2,12 +2,14 @@
 
 import { Alert, Button, Card, Checkbox, FormField, Select, Switch } from '@risexpto/ui';
 import { useEffect, useState, type FormEvent } from 'react';
+import { useLocale } from './locale-provider';
 
-type Preferences = { locale: 'en' | 'pt-BR'; timezone: string; currency: 'USD' | 'BRL' | 'EUR' };
+type Preferences = { locale: 'en' | 'pt-BR' | 'es'; timezone: string; currency: 'USD' | 'BRL' | 'EUR' };
 type Profile = { name: string; email: string; emailVerified: boolean };
 const defaults: Preferences = { locale: 'en', timezone: 'UTC', currency: 'USD' };
 
 export function PreferencesForm() {
+  const { setLocale } = useLocale();
   const [preferences, setPreferences] = useState(defaults);
   const [user, setUser] = useState<Profile | null>(null);
   const [status, setStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
@@ -22,12 +24,16 @@ export function PreferencesForm() {
   async function submit(event: FormEvent) {
     event.preventDefault();
     setStatus('saving');
-    const response = await fetch('/auth/preferences', {
+    const [sessionResponse, profileResponse] = await Promise.all([fetch('/auth/preferences', {
       method: 'PUT',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify(preferences),
-    });
-    setStatus(response.ok ? 'saved' : 'error');
+    }), fetch('/api/profile/preferences', {
+      method: 'PATCH',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(preferences),
+    })]);
+    setStatus(sessionResponse.ok && profileResponse.ok ? 'saved' : 'error');
   }
   return (
     <form className="settings-grid" onSubmit={(event) => void submit(event)}>
@@ -56,15 +62,17 @@ export function PreferencesForm() {
         <FormField label="Language">
           <Select
             value={preferences.locale}
-            onChange={(event) =>
+            onChange={(event) => {
               setPreferences({
                 ...preferences,
                 locale: event.target.value as Preferences['locale'],
-              })
-            }
+              });
+              setLocale(event.target.value as Preferences['locale']);
+            }}
           >
             <option value="en">English</option>
             <option value="pt-BR">Português (Brasil)</option>
+            <option value="es">Español</option>
           </Select>
         </FormField>
         <FormField label="Timezone">

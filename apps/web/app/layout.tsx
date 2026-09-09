@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { AppShell } from '../components/app-shell';
 import './globals.css';
 import '@risexpto/ui/styles.css';
+import { LocaleProvider } from '../components/locale-provider';
 
 export const metadata: Metadata = {
   title: 'RiseXPTO — Trading automation with guardrails',
@@ -17,7 +18,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="en" data-theme="dark" suppressHydrationWarning>
       <body>
-        <AppShell>{children}</AppShell>
+        <LocaleProvider><AppShell>{children}</AppShell></LocaleProvider>
       </body>
     </html>
   );

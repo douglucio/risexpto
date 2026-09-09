@@ -1,0 +1,41 @@
+/* RiseXPTO-owned visual layer over the Keycloak login templates. */
+:root {
+  --rx-bg: #080d18;
+  --rx-surface: #101827;
+  --rx-border: #28364b;
+  --rx-text: #f1f5f9;
+  --rx-muted: #9aa8bc;
+  --rx-brand: #6f8cff;
+}
+body.kcBody {
+  background: radial-gradient(circle at 50% 0, rgb(111 140 255 / 0.2), transparent 42%), var(--rx-bg);
+  color: var(--rx-text);
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+}
+.login-pf-page .card-pf,
+.kc-form-card {
+  border: 1px solid var(--rx-border);
+  border-radius: 14px;
+  background: var(--rx-surface);
+  box-shadow: 0 20px 60px rgb(0 0 0 / 0.35);
+}
+.login-pf-page .card-pf h1,
+#kc-page-title {
+  color: var(--rx-text);
+  letter-spacing: -0.03em;
+}
+input[type='text'], input[type='password'], input[type='email'], select {
+  border: 1px solid var(--rx-border);
+  border-radius: 8px;
+  background: #172235;
+  color: var(--rx-text);
+}
+.btn-primary {
+  border: 0;
+  border-radius: 8px;
+  background: var(--rx-brand);
+  color: #080d18;
+  font-weight: 700;
+}
+a { color: var(--rx-brand); }
+.alert { border-radius: 8px; }

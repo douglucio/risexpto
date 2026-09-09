@@ -34,6 +34,7 @@ services:
     ports: ['8080:8080']
     volumes:
       - ./infra/keycloak/risexpto-realm.json:/opt/keycloak/data/import/risexpto-realm.json:ro
+      - ./infra/keycloak/themes:/opt/keycloak/themes:ro
     healthcheck:
       test:
         [

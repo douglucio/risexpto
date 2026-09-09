@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState, type ReactNode } from 'react';
+import { useLocale } from './locale-provider';
 
 const navigation = [
   ['Dashboard', '/dashboard'],
@@ -18,6 +19,7 @@ const navigation = [
 ] as const;
 
 export function AppShell({ children }: { children: ReactNode }) {
+  const { locale, setLocale } = useLocale();
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [theme, setTheme] = useState<'light' | 'dark'>('dark');
@@ -101,6 +103,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             <strong>{activeLabel}</strong>
           </div>
           <div className="topbar-actions">
+            <select aria-label="Language" value={locale} onChange={(event) => setLocale(event.target.value as typeof locale)}><option value="en">EN</option><option value="pt-BR">PT</option><option value="es">ES</option></select>
             <button
               onClick={toggleTheme}
               aria-label={`Use ${theme === 'dark' ? 'light' : 'dark'} theme`}
