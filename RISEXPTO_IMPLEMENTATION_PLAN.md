@@ -3392,7 +3392,7 @@ As notas acima são atuais. Auditorias anteriores permanecem abaixo como histór
 | 64 | Keycloak locale propagation | ✅ CODE_IMPLEMENTED / LOCALLY_VALIDATED | `ui_locales` validado no authorization URL e locale seguro |
 | 65 | Public pricing regression | ✅ CODE_IMPLEMENTED / LOCALLY_VALIDATED | pricing anônimo com loading/success/empty/error e `Intl.NumberFormat` |
 | 66 | Auth session on public pages | ✅ CODE_IMPLEMENTED / LOCALLY_VALIDATED | landing não consulta sessão obrigatoriamente; `401` anônimo não é erro de UI |
-| 67 | Browser regression suite | ✅ CODE_IMPLEMENTED / BLOCKED_EXTERNAL | Playwright cobre landing, locale, hashes, Back e pricing; browser não executou porque o Chromium local não está instalado |
-| 68 | Authenticated MVP regression | 🟨 | contratos e propagação de token já cobertos; repetir `/profile`, `/strategies`, `/bots`, `/exchange-connections`, `/trades`, `/positions` e `/billing` com stack/browser |
+| 67 | Browser regression suite | ✅ CODE_IMPLEMENTED / LOCALLY_VALIDATED / BROWSER_VALIDATED | 4 testes públicos passaram com Chromium e Web local: locale, hashes, Back, ausência de exception e pricing anônimo |
+| 68 | Authenticated MVP regression | ✅ CODE_IMPLEMENTED / LOCALLY_VALIDATED; ⛔ BROWSER_VALIDATED | contratos e propagação de token cobertos; validação real dos endpoints depende de login Keycloak local e sessão autenticada |
 
 Os estados `CODE_IMPLEMENTED`, `LOCALLY_VALIDATED`, `BROWSER_VALIDATED`, `EXTERNAL_TEST_VALIDATED` e `PRODUCTION_READY` continuam sendo independentes; nenhum teste unitário promove automaticamente uma feature a validação de browser ou externa.

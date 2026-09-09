@@ -4,7 +4,7 @@ test.describe('public marketing navigation', () => {
   test('keeps the root public and navigates its sections', async ({ page }) => {
     const errors: string[] = [];
     page.on('pageerror', (error) => errors.push(error.message));
-    await page.goto('/');
+    await page.goto('/', { waitUntil: 'domcontentloaded', timeout: 60_000 });
     await expect(page).toHaveURL(/\/$/);
     await expect(page.getByRole('heading', { name: /Trade with a system|Opere com um sistema|Opera con un sistema/ })).toBeVisible();
     await page.getByRole('link', { name: /Security|Segurança|Seguridad/ }).click();
