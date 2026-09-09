@@ -1,7 +1,6 @@
 import {
   Alert,
   Badge,
-  Button,
   Card,
   CurrencyDisplay,
   DataTable,
@@ -234,9 +233,8 @@ function SectionContent({ section, data }: { section: string; data: SectionData 
           Past performance does not guarantee future results.
         </Alert>
         <EmptyState
-          title="No completed backtests"
-          description="Configure a strategy and period to generate your first reproducible test."
-          action={<Button>New backtest</Button>}
+          title="Backtesting is coming soon"
+          description="The backtest engine is not connected to this workspace yet. No simulated results are shown."
         />
       </>
     );
@@ -280,15 +278,10 @@ function SectionContent({ section, data }: { section: string; data: SectionData 
     return <RiskPanel />;
   if (section === 'notifications')
     return (
-      <div className="content-stack">
-        <Alert tone="negative" title="Risk proposal blocked">
-          SOL/USDT exceeded the configured position exposure. No order was sent.
-        </Alert>
-        <Alert tone="positive" title="Backtest completed">
-          DCA BTC 180D is ready to review.
-        </Alert>
-        <Alert title="Bot paused">Range ETH was paused by you at 18:12.</Alert>
-      </div>
+      <EmptyState
+        title="Notifications are coming soon"
+        description="Operational and risk events will appear here after the notification outbox is connected. No sample events are displayed."
+      />
     );
   if (section === 'billing')
     return data?.kind === 'billing' ? <BillingPanel /> : <Alert tone="negative" title="Unable to load billing">{data?.kind === 'error' ? data.message : 'Billing is unavailable.'}</Alert>;
@@ -299,8 +292,8 @@ function SectionContent({ section, data }: { section: string; data: SectionData 
         Admin access requires an explicit privileged role and audited actions.
       </Alert>
       <EmptyState
-        title="Admin console foundation"
-        description="Operational modules will be implemented in Feature 25."
+        title="Admin console is coming soon"
+        description="Operational health, queues, risk events, exchange status, and kill-switch controls are not connected to this screen yet."
       />
     </>
   );
