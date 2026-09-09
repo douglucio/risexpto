@@ -3386,7 +3386,7 @@ As notas acima são atuais. Auditorias anteriores permanecem abaixo como histór
 | 58 | Public runtime stability | ✅ CODE_IMPLEMENTED / LOCALLY_VALIDATED | observer válido/limpo, favicon, teste de configuração; browser Back ainda requer execução E2E |
 | 59 | Public/auth route boundary | ✅ CODE_IMPLEMENTED / LOCALLY_VALIDATED | política explícita e testes de classificação; HTTP anônimo real requer stack Web |
 | 60 | Public session behavior | ✅ CODE_IMPLEMENTED / LOCALLY_VALIDATED | landing não dispara sessão obrigatória; teste Web confirma caminhos públicos |
-| 61 | Complete application i18n | 🟨 | catálogos en/pt-BR/es cobrem landing, login, shell, pricing e settings; páginas de domínio ainda requerem migração integral |
+| 61 | Complete application i18n | 🟨 | catálogos en/pt-BR/es agora também cobrem headers das páginas de domínio e dashboard; conteúdo interno de componentes/wizard ainda requer migração integral |
 | 62 | Language selector UX | ✅ CODE_IMPLEMENTED / LOCALLY_VALIDATED | bandeiras acessíveis e troca imediata nos seletores público/autenticado |
 | 63 | Locale persistence | ✅ CODE_IMPLEMENTED / LOCALLY_VALIDATED | cookie/localStorage/browser fallback e Settings/profile update |
 | 64 | Keycloak locale propagation | ✅ CODE_IMPLEMENTED / LOCALLY_VALIDATED | `ui_locales` validado no authorization URL e locale seguro |

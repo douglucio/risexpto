@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { Badge, Card, CurrencyDisplay, EmptyState } from '@risexpto/ui';
 import { readSession } from '../../lib/auth/session';
+import { translate, type Locale } from '@risexpto/i18n';
 
 type Bot = { id: string; status: string; tradingMode: string };
 type Trade = { id: string; executedAt: string; realizedPnl?: string };
@@ -8,7 +9,9 @@ type Position = { realizedPnl: string };
 
 export default async function DashboardPage() {
   const session = await readSession(true, false);
-  if (!session) return <EmptyState title="Session unavailable" description="Sign in again to open your workspace." />;
+  const locale: Locale = session?.preferences.locale ?? 'en';
+  const t = (key: string) => translate(key, locale);
+  if (!session) return <EmptyState title={t('dashboard.sessionUnavailable')} description={t('dashboard.signInAgain')} />;
   const [bots, trades, positions] = await Promise.all([
     api<Bot[]>('/bots', session.accessToken),
     api<Trade[]>('/trades', session.accessToken),
@@ -19,18 +22,18 @@ export default async function DashboardPage() {
   return (
     <>
       <div className="page-header">
-        <div><span>WORKSPACE</span><h1>Dashboard</h1><p>Real account activity, with Paper Trading clearly separated from live execution.</p></div>
+        <div><span>{t('section.workspace')}</span><h1>{t('nav.dashboard')}</h1><p>{t('dashboard.description')}</p></div>
         <Badge tone="brand">PAPER</Badge>
       </div>
       <div className="kpi-grid">
-        <Card><small>Paper balance</small><h2><CurrencyDisplay value={0} currency="USD" /></h2><p>Shown as zero until a persisted paper balance exists.</p></Card>
-        <Card><small>Active bots</small><h2>{activeBots ?? '—'}</h2><p>{bots.ok ? `${bots.value.length} total bots` : 'Unavailable'}</p></Card>
-        <Card><small>Realized P&amp;L</small><h2>{pnl === null ? '—' : <CurrencyDisplay value={pnl} currency="USD" />}</h2><p>Calculated from persisted positions.</p></Card>
-        <Card><small>Risk status</small><h2>{bots.ok ? 'Within limits' : 'Unavailable'}</h2><p>Risk decisions remain backend-controlled.</p></Card>
+        <Card><small>{t('dashboard.paperBalance')}</small><h2><CurrencyDisplay value={0} currency="USD" /></h2><p>{t('dashboard.zeroBalance')}</p></Card>
+        <Card><small>{t('marketing.activeBots')}</small><h2>{activeBots ?? '—'}</h2><p>{bots.ok ? `${bots.value.length} ${t('dashboard.totalBots')}` : t('dashboard.unavailable')}</p></Card>
+        <Card><small>{t('dashboard.realizedPnl')}</small><h2>{pnl === null ? '—' : <CurrencyDisplay value={pnl} currency="USD" />}</h2><p>{t('dashboard.persistedPositions')}</p></Card>
+        <Card><small>{t('dashboard.riskStatus')}</small><h2>{bots.ok ? t('marketing.withinLimits') : t('dashboard.unavailable')}</h2><p>{t('dashboard.backendRisk')}</p></Card>
       </div>
       <div className="dashboard-grid">
-        <Card className="content-stack"><div className="section-heading"><div><span>ACTIVITY</span><h2>Recent trades</h2></div><Link href="/trades">View all</Link></div>{trades.ok && trades.value.length ? <p>{trades.value.length} persisted trade(s) available in Trades.</p> : <p>No trades yet. Start a Paper bot to see activity here.</p>}</Card>
-        <Card className="content-stack"><div className="section-heading"><div><span>SETUP</span><h2>Next step</h2></div></div><p>{bots.ok && bots.value.length ? 'Review your bot status and risk limits.' : 'Choose a strategy and create your first Paper bot.'}</p><Link className="rx-button" href={bots.ok && bots.value.length ? '/bots' : '/strategies'}>{bots.ok && bots.value.length ? 'Review bots' : 'Browse strategies'}</Link></Card>
+        <Card className="content-stack"><div className="section-heading"><div><span>{t('section.activity')}</span><h2>{t('dashboard.recentTrades')}</h2></div><Link href="/trades">{t('dashboard.viewAll')}</Link></div>{trades.ok && trades.value.length ? <p>{trades.value.length} {t('dashboard.persistedTrades')}</p> : <p>{t('dashboard.noTrades')}</p>}</Card>
+        <Card className="content-stack"><div className="section-heading"><div><span>{t('dashboard.setup')}</span><h2>{t('dashboard.nextStep')}</h2></div></div><p>{bots.ok && bots.value.length ? t('dashboard.reviewBot') : t('dashboard.chooseStrategy')}</p><Link className="rx-button" href={bots.ok && bots.value.length ? '/bots' : '/strategies'}>{bots.ok && bots.value.length ? t('dashboard.reviewBots') : t('dashboard.browseStrategies')}</Link></Card>
       </div>
     </>
   );

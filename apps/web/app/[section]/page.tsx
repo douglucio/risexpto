@@ -18,27 +18,24 @@ import { ExchangeConnectionsPanel } from '../../components/exchange-connections-
 import { BillingPanel } from '../../components/billing-panel';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
+import { translate, type Locale } from '@risexpto/i18n';
 
 const pages = {
-  bots: ['Automation', 'Bots', 'Create, monitor, and control automated strategy instances.'],
+  bots: ['section.automation', 'nav.bots', 'section.botsDescription'],
   strategies: [
-    'Library',
-    'Strategies',
-    'Choose versioned strategies that generate proposals without executing orders.',
+    'section.library', 'nav.strategies', 'section.strategiesDescription',
   ],
   'exchange-connections': [
-    'Connections',
-    'Exchange connections',
-    'Manage non-custodial, trade-only exchange access.',
+    'nav.connections', 'section.connectionsTitle', 'section.connectionsDescription',
   ],
-  backtests: ['Research', 'Backtests', 'Evaluate strategies against historical market data.'],
-  trades: ['Activity', 'Trades', 'Inspect proposals, orders, fills, and resulting positions.'],
-  portfolio: ['Activity', 'Portfolio', 'Review persisted PAPER positions and realized results.'],
-  risk: ['Controls', 'Risk', 'Define hard portfolio and bot-level execution limits.'],
-  notifications: ['Inbox', 'Notifications', 'Review operational and risk-related events.'],
-  billing: ['Workspace', 'Billing', 'Manage plan access, usage, and invoices.'],
-  settings: ['Workspace', 'Settings', 'Manage profile, locale, display, and security preferences.'],
-  admin: ['Operations', 'Admin', 'Restricted operational oversight placeholder.'],
+  backtests: ['section.research', 'nav.backtests', 'section.backtestsDescription'],
+  trades: ['section.activity', 'nav.trades', 'section.tradesDescription'],
+  portfolio: ['section.activity', 'section.portfolio', 'section.portfolioDescription'],
+  risk: ['section.controls', 'nav.risk', 'section.riskDescription'],
+  notifications: ['section.inbox', 'nav.notifications', 'section.notificationsDescription'],
+  billing: ['section.workspace', 'nav.billing', 'section.billingDescription'],
+  settings: ['section.workspace', 'nav.settings', 'section.settingsDescription'],
+  admin: ['section.operations', 'section.admin', 'section.adminDescription'],
 } as const;
 
 export function generateStaticParams() {
@@ -49,8 +46,9 @@ export default async function SectionPage({ params }: { params: Promise<{ sectio
   const { section } = await params;
   const page = pages[section as keyof typeof pages];
   if (!page) notFound();
+  const session = await readSession(true, false);
+  const locale: Locale = session?.preferences.locale ?? 'en';
   if (section === 'admin') {
-    const session = await readSession(true, false);
     if (!session?.user.roles.includes('ADMIN')) redirect('/dashboard');
   }
   const data =
@@ -60,9 +58,9 @@ export default async function SectionPage({ params }: { params: Promise<{ sectio
   return (
     <>
       <PageHeader
-        eyebrow={page[0]}
-        title={page[1]}
-        description={page[2]}
+        eyebrow={translate(page[0], locale)}
+        title={translate(page[1], locale)}
+        description={translate(page[2], locale)}
         action={section === 'bots' ? <BotCreateWizard /> : null}
       />
       <SectionContent section={section} data={data} />
