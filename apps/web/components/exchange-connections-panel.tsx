@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Alert, Badge, Button, Card, FormField, Input } from '@risexpto/ui';
+import { tradingProviders } from '@risexpto/shared';
 
 type Connection = {
   id: string;
@@ -61,6 +62,7 @@ export function ExchangeConnectionsPanel({ initial }: { initial: Connection[] })
   }
 
   return <div className="content-stack">
+    <Card className="content-stack"><h2>Choose provider</h2><p>Binance is available now. Other providers are shown as roadmap options only.</p><div className="provider-grid">{tradingProviders.map((provider) => <div key={provider.id} className="provider-option"><div><strong>{provider.displayName}</strong><small>{provider.marketTypes.join(' · ')}</small></div><Badge tone={provider.status === 'AVAILABLE' ? 'positive' : 'warning'}>{provider.status === 'AVAILABLE' ? 'Available' : 'Coming soon'}</Badge></div>)}</div></Card>
     <Card className="content-stack">
       <div className="section-heading"><h2>Your connections</h2><Badge tone="warning">TESTNET</Badge></div>
       <p>Choose a trading provider. Binance is available now; other providers are coming soon.</p>

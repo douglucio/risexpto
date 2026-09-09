@@ -10,6 +10,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@risexpto/shared": "workspace:*",
     "@risexpto/ui": "workspace:*",
     "jose": "6.2.10",
     "next": "16.3.3",

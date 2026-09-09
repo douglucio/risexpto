@@ -108,6 +108,9 @@ importers:
 
   apps/web:
     dependencies:
+      '@risexpto/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
       '@risexpto/ui':
         specifier: workspace:*
         version: link:../../packages/ui

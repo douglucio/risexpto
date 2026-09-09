@@ -3348,10 +3348,12 @@ Limites mantidos: nenhum secret real foi versionado, nenhuma ordem foi enviada e
 | 50 | Public/auth routing and dashboard | ✅ | `/` permanece público, pós-login vai para `/dashboard`, `returnTo` é seguro, dashboard é autenticado e logout retorna a `/`. |
 | 51 | Authenticated navigation, RBAC and state UX | 🟨 | Admin é role-aware e protegido no servidor; loading, empty e error são distintos nos domínios autenticados. |
 | 52 | Strategy catalog and bot wizard regression | 🟨 | Catálogo seedado é carregado da API, sem criação arbitrária por USER, e o wizard exige estratégia válida. |
-| 53 | Trading provider foundation and Connections UX | ⬜ | `TradingProvider`/registry/capabilities e picker multi-provider Coming Soon existem; Binance continua o único provider operacional. |
+| 53 | Trading provider foundation and Connections UX | ✅ | `TradingProvider`/registry/capabilities e picker multi-provider Coming Soon existem; Binance continua o único provider operacional. |
 | 54 | Keycloak visual theme | ⬜ | Tema próprio RiseXPTO cobre telas principais e documentação de seleção está disponível. |
 | 55 | i18n EN/pt-BR/es | ⬜ | Catálogos, seletor público, Settings e área autenticada mudam idioma e persistem locale. |
 | 56 | Landing navigation and public pricing | ⬜ | Header sticky, seção ativa, hash navigation e catálogo público de planos funcionam sem autenticação. |
 | 57 | Browser/API regression and Paper gate | ⬜ | Testes públicos/autenticados possíveis passam; Paper/Binance permanecem externalizados quando credenciais/serviços forem necessários. |
 
 O estado atual desta auditoria não autoriza Binance Production nem Stripe Live. A execução real de browser, Keycloak, PostgreSQL e Redis deve ser classificada separadamente de testes unitários/contratuais.
+
+Validação das fases 50–53: Web lint/typecheck e shared test/lint/typecheck/build passaram. A API autenticada depende da execução manual contra Keycloak/PostgreSQL/Redis disponíveis; nenhum provider futuro foi conectado à rede.

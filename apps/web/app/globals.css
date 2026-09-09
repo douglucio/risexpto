@@ -544,6 +544,26 @@ p {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--rx-space-4);
 }
+.provider-grid {
+  display: grid;
+  gap: 0.6rem;
+}
+.provider-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.8rem;
+  border: 1px solid var(--rx-color-border);
+  border-radius: var(--rx-radius-md);
+}
+.provider-option > div {
+  display: grid;
+  gap: 0.2rem;
+}
+.provider-option small {
+  color: var(--rx-color-text-muted);
+}
 .content-stack {
   display: grid;
   gap: var(--rx-space-4);
