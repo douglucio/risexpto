@@ -3286,3 +3286,40 @@ Validações:
 
 Limite:
 - execução contra Redis/PostgreSQL reais ainda não foi realizada; o scheduler não fecha sozinho o E2E até o Market Data e o wizard PAPER estarem validados.
+
+## 2026-09-09 — Testable MVP Readiness: bootstrap local e reconciliação documental
+
+### Matriz vigente de implementação e validação
+
+| Feature | Implementation | Local validation | Browser validation | External test validation |
+|---|---|---|---|---|
+| 31 Environment bootstrap | ✅ loader, `pnpm install --frozen`, `pnpm dev:secrets`, validação fail-fast | ✅ Node `v24.20.0`, pnpm `10.34.5`, instalação reproduzível | ⬜ | ⛔ Docker daemon indisponível nesta execução |
+| 32 Strategy seed | ✅ DCA/Grid/Trend + versões ativas | ✅ testes idempotentes | ⬜ | N/A |
+| 33 Market Data runtime | ✅ `market-data-sync`, candles e `MarketSnapshot` idempotente | ✅ testes do worker | N/A | ⬜ Binance pública/PostgreSQL real |
+| 34 Bot + Risk | ✅ criação transacional, API e Wizard | ✅ API/UI lint/typecheck/testes direcionados | ⬜ | N/A |
+| 35 Paper Scheduler | ✅ `nextRunAt`, claim atômico e job determinístico | ✅ testes do scheduler | ⬜ | ⬜ Redis/PostgreSQL reais |
+| 36 Paper DCA E2E | ✅ ciclo e Playwright preparado | ✅ smoke opt-in preparado | ⬜ sessão Keycloak real | ⬜ |
+| 37 Binance Connection UI | ✅ Add/Test/Revoke, masking e vault | ✅ testes sanitizados | ⬜ | ⬜ credenciais Testnet |
+| 38 Binance Testnet E2E | ✅ pipeline fail-closed preparado | ✅ contratos/preflight/smoke protegido | ⬜ | ⬜ |
+| 39 Stripe Test Mode | ✅ provider oficial, Checkout, Portal, webhook, subscription e entitlements | ✅ lint/typecheck/test/build | ⬜ | ⬜ Stripe Test real |
+| 40 Commercial/Production Gate | ⬜ aprovação e operação final | ⬜ | ⬜ | ⛔ bloqueado pelos gates anteriores |
+
+### Bootstrap e segurança de desenvolvimento
+
+- `pnpm dev:secrets` gera `AUTH_SESSION_SECRET` e `BINANCE_CREDENTIAL_MASTER_KEY` com `randomBytes(32)`, preserva secrets existentes, completa somente defaults não sensíveis e migra a variável obsoleta `BINANCE_BASE_URL` sem usar endpoint arbitrário.
+- `pnpm dev` carrega `.env` e falha antes de iniciar os processos se faltar configuração essencial, se o ambiente Binance não for `TESTNET`, se a URL Testnet não for a allowlist oficial, se a chave AES não tiver 32 bytes ou se Stripe usar `sk_live_`.
+- `pnpm dev:grant-plan <email> [STARTER|PRO]` cria/atualiza somente uma subscription local marcada com `dev_local_*`; exige `NODE_ENV=development` e nunca é uma rota de autorização de produção.
+- `docs/development/local-smoke-test.md` documenta bootstrap, usuário Keycloak verificado, fluxo PAPER, Binance Testnet e Stripe Test Mode.
+- Backtests, Notifications e Admin não apresentam mais eventos, resultados ou ações fictícias na tela autenticada; enquanto não houver integração, exibem `Coming soon`.
+
+Validações desta rodada:
+
+- `pnpm install --frozen-lockfile`: OK;
+- `pnpm lint`: OK (29 tarefas);
+- typecheck de database, API, worker e web: OK;
+- Web lint/typecheck: OK;
+- `git diff --check`: OK;
+- `docker compose ps`: bloqueado porque o daemon Docker não está disponível neste ambiente;
+- testes HTTP Nest/Supertest: bloqueados pelo sandbox ao abrir `0.0.0.0` (`listen EPERM`); testes unitários permanecem passando.
+
+Limites mantidos: nenhum secret real foi versionado, nenhuma ordem foi enviada e Binance Production/Stripe Live continuam proibidos.
