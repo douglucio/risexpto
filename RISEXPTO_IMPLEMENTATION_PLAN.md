@@ -3182,12 +3182,12 @@ Resumo:
 - edição de risco é bloqueada pela API enquanto o bot está RUNNING.
 
 Validações:
-- web lint/typecheck: OK;
+- web lint/typecheck/build: OK;
 - API teste direcionado de criação atômica: OK (5 testes);
 - API lint/typecheck/build: OK.
 
 Limite:
-- build Next completo está bloqueado neste executor quando o Next tenta iniciar o subprocesso TypeScript (`EPERM`); o typecheck isolado passa. E2E autenticado ainda falta.
+- E2E autenticado ainda falta; o build Next agora carrega o `.env` raiz, usa a API TypeScript do Next e limita workers para execução local determinística.
 
 ## 2026-09-08 — Scheduler automático de Paper Trading
 
