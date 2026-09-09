@@ -3383,8 +3383,8 @@ As notas acima são atuais. Auditorias anteriores permanecem abaixo como histór
 
 | Fase | Escopo | Estado | Evidência exigida |
 |---|---|---|---|
-| 58 | Public runtime stability | 🟨 | observer válido/limpo, favicon, testes unitários e regressão Back/Forward |
-| 59 | Public/auth route boundary | 🟨 | política explícita; `/api/public/*` anônimo retorna sem redirect |
+| 58 | Public runtime stability | ✅ CODE_IMPLEMENTED / LOCALLY_VALIDATED | observer válido/limpo, favicon, teste de configuração; browser Back ainda requer execução E2E |
+| 59 | Public/auth route boundary | ✅ CODE_IMPLEMENTED / LOCALLY_VALIDATED | política explícita e testes de classificação; HTTP anônimo real requer stack Web |
 | 60 | Public session behavior | 🟨 | landing não dispara sessão obrigatória; `401` opcional é anônimo |
 | 61 | Complete application i18n | 🟨 | catálogos en/pt-BR/es cobrem landing, login, shell e workspace |
 | 62 | Language selector UX | 🟨 | bandeiras acessíveis e troca imediata |
