@@ -22,6 +22,8 @@ Após o login, o destino esperado é `http://localhost:3000/dashboard`. O browse
 
 Na landing pública, `/auth/session` não é uma dependência obrigatória e `GET /api/public/plans` deve funcionar sem cookie e sem redirecionar para `/login`. Para reproduzir a regressão corrigida, abra `/`, entre em `/login`, use Back e confirme que a landing retorna sem erro de runtime; depois navegue até Pricing e confirme que os planos carregam anonimamente.
 
+Para executar os testes de browser pela primeira vez, instale o navegador do Playwright com `pnpm exec playwright install chromium` e então rode `pnpm test:e2e`; o ambiente desta auditoria não possuía o executável Chromium, portanto essa evidência permanece `BLOCKED_EXTERNAL`.
+
 Valide manualmente, sem alterar o cookie ou inserir bearer no DevTools:
 
 ```text
