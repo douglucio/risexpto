@@ -1,5 +1,30 @@
 # RiseXPTO — Pre-Live Readiness
 
+## Current status — 2026-09-09
+
+Esta é a matriz vigente. `CODE_IMPLEMENTED` indica caminho implementado; `LOCALLY_VALIDATED` exige teste ou execução local; `BROWSER_VALIDATED` exige fluxo autenticado no navegador; `EXTERNAL_TEST_VALIDATED` exige exercício da dependência externa; `PRODUCTION_READY` exige todos os gates e aprovação humana.
+
+| Domínio | CODE_IMPLEMENTED | LOCALLY_VALIDATED | BROWSER_VALIDATED | EXTERNAL_TEST_VALIDATED | PRODUCTION_READY |
+|---|---:|---:|---:|---:|---:|
+| Bootstrap/env | ✅ | ✅ `pnpm install --frozen-lockfile`, `dev:secrets`, validação fail-fast | N/A | ⬜ Docker/serviços | ❌ |
+| Keycloak login/provisioning | ✅ | ✅ unitários | ⬜ | ⬜ Keycloak real | ❌ |
+| Seed DCA/Grid/Trend | ✅ | ✅ testes idempotentes | ⬜ | N/A | ❌ |
+| Market Data runtime | ✅ worker + `MarketSnapshot` | ✅ testes/upsert idempotente | N/A | ⬜ Binance pública + PostgreSQL | ❌ |
+| Bot Wizard + Risk Profile | ✅ transacional | ✅ testes/typecheck | ⬜ | N/A | ❌ |
+| Paper Scheduler + DCA | ✅ BullMQ/claim/job determinístico | ✅ testes/smoke opt-in | ⬜ | ⬜ Redis/PostgreSQL reais | ❌ |
+| Portfolio/Trade/Position | ✅ leitura persistida | ✅ contratos | ⬜ | ⬜ E2E completo | ❌ |
+| Binance Connection/Vault | ✅ UI Testnet, key masked, secret cifrado | ✅ testes | ⬜ | ⬜ credenciais Testnet | ❌ |
+| Binance LIVE Testnet | ✅ pipeline fail-closed | ✅ testes sanitizados | ⬜ | ⬜ smoke/ordem/reconciliação | ❌ |
+| Stripe Test Mode | ✅ provider, Checkout, Portal, webhook, subscription, entitlements | ✅ lint/typecheck/test/build | ⬜ | ⬜ Stripe Test real | ❌ |
+| Notifications | ⬜ não integrada | ⬜ | N/A | N/A | ❌ |
+| Admin/auditoria/observabilidade | 🟨 parcial | 🟨 contratos/pacotes | ⬜ | ⬜ operação integrada | ❌ |
+
+O caminho atual está em `TESTABLE MVP READINESS`, não em `PRODUCTION_READY`. Binance Production e Stripe Live continuam proibidos.
+
+## Historical audit notes
+
+As seções seguintes preservam auditorias anteriores. Quando houver divergência, a matriz `Current status` acima é a fonte da verdade; classificações antigas abaixo são históricas e não devem ser interpretadas como o estado atual.
+
 ## Objetivo e regra de leitura
 
 As fases 01–30 do `RISEXPTO_IMPLEMENTATION_PLAN.md` concluíram a foundation implementation. Esta etapa valida integração real, persistência, segurança operacional e readiness comercial. A existência de um package ou de testes unitários não é considerada evidência de uma feature pronta para produção.

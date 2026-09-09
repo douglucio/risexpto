@@ -9,7 +9,9 @@
   },
   "scripts": {
     "build": "turbo run build",
-    "dev": "node scripts/root-env.mjs turbo run dev",
+    "dev": "node scripts/dev.mjs",
+    "dev:secrets": "node scripts/dev-secrets.mjs",
+    "dev:grant-plan": "node scripts/dev-grant-plan.mjs",
     "db:setup": "node scripts/db-setup.mjs",
     "lint": "turbo run lint",
     "test": "turbo run test",
