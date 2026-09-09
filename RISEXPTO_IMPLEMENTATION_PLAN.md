@@ -3386,13 +3386,13 @@ As notas acima são atuais. Auditorias anteriores permanecem abaixo como histór
 | 58 | Public runtime stability | ✅ CODE_IMPLEMENTED / LOCALLY_VALIDATED | observer válido/limpo, favicon, teste de configuração; browser Back ainda requer execução E2E |
 | 59 | Public/auth route boundary | ✅ CODE_IMPLEMENTED / LOCALLY_VALIDATED | política explícita e testes de classificação; HTTP anônimo real requer stack Web |
 | 60 | Public session behavior | ✅ CODE_IMPLEMENTED / LOCALLY_VALIDATED | landing não dispara sessão obrigatória; teste Web confirma caminhos públicos |
-| 61 | Complete application i18n | 🟨 | catálogos en/pt-BR/es cobrem landing, login, shell e pricing; workspace restante requer migração adicional |
+| 61 | Complete application i18n | 🟨 | catálogos en/pt-BR/es cobrem landing, login, shell, pricing e settings; páginas de domínio ainda requerem migração integral |
 | 62 | Language selector UX | ✅ CODE_IMPLEMENTED / LOCALLY_VALIDATED | bandeiras acessíveis e troca imediata nos seletores público/autenticado |
 | 63 | Locale persistence | ✅ CODE_IMPLEMENTED / LOCALLY_VALIDATED | cookie/localStorage/browser fallback e Settings/profile update |
 | 64 | Keycloak locale propagation | ✅ CODE_IMPLEMENTED / LOCALLY_VALIDATED | `ui_locales` validado no authorization URL e locale seguro |
 | 65 | Public pricing regression | ✅ CODE_IMPLEMENTED / LOCALLY_VALIDATED | pricing anônimo com loading/success/empty/error e `Intl.NumberFormat` |
 | 66 | Auth session on public pages | ✅ CODE_IMPLEMENTED / LOCALLY_VALIDATED | landing não consulta sessão obrigatoriamente; `401` anônimo não é erro de UI |
 | 67 | Browser regression suite | ✅ CODE_IMPLEMENTED / BLOCKED_EXTERNAL | Playwright cobre landing, locale, hashes, Back e pricing; browser não executou porque o Chromium local não está instalado |
-| 68 | Authenticated MVP regression | 🟨 | endpoints autenticados permanecem válidos com sessão real/mockada; repetir após regressão pública |
+| 68 | Authenticated MVP regression | 🟨 | contratos e propagação de token já cobertos; repetir `/profile`, `/strategies`, `/bots`, `/exchange-connections`, `/trades`, `/positions` e `/billing` com stack/browser |
 
 Os estados `CODE_IMPLEMENTED`, `LOCALLY_VALIDATED`, `BROWSER_VALIDATED`, `EXTERNAL_TEST_VALIDATED` e `PRODUCTION_READY` continuam sendo independentes; nenhum teste unitário promove automaticamente uma feature a validação de browser ou externa.
