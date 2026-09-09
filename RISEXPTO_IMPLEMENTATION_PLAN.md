@@ -2674,7 +2674,9 @@ As fases 01–30 concluíram a foundation implementation. A etapa `Pre-Live Read
 
 O inventário técnico e os gates atuais estão em [`docs/production/pre-live-readiness.md`](docs/production/pre-live-readiness.md).
 
-## Estado desta etapa
+## Historical audit notes (2026-09-08)
+
+The status table below is preserved as an audit snapshot. The current source of truth is the readiness matrix added on 2026-09-09 at the end of this document and in `docs/production/pre-live-readiness.md`.
 
 | Domínio | Estado atual |
 |---|---|
@@ -3316,10 +3318,13 @@ Validações desta rodada:
 
 - `pnpm install --frozen-lockfile`: OK;
 - `pnpm lint`: OK (29 tarefas);
-- typecheck de database, API, worker e web: OK;
+- `pnpm exec turbo run typecheck`: OK (29 tarefas);
+- `pnpm exec turbo run test --concurrency=1`: OK (37 tarefas; API 27 testes passando, 1 ignorado; worker 18 passando, 4 ignorados);
+- `pnpm exec turbo run build`: OK (29 tarefas; Web gerou 25/25 páginas);
 - Web lint/typecheck: OK;
 - `git diff --check`: OK;
 - `docker compose ps`: bloqueado porque o daemon Docker não está disponível neste ambiente;
-- testes HTTP Nest/Supertest: bloqueados pelo sandbox ao abrir `0.0.0.0` (`listen EPERM`); testes unitários permanecem passando.
+- testes HTTP Nest/Supertest: OK com execução autorizada e serializada; execução paralela anterior sofreu contenção de recursos;
+- `AuthGuard` passou a declarar explicitamente `UserProvisioningService`, corrigindo o teste de provisioning no `AppModule`.
 
 Limites mantidos: nenhum secret real foi versionado, nenhuma ordem foi enviada e Binance Production/Stripe Live continuam proibidos.
