@@ -20,6 +20,8 @@ Serviços esperados: Web `http://localhost:3000`, API `http://localhost:3001`, K
 
 Após o login, o destino esperado é `http://localhost:3000/dashboard`. O browser chama as rotas `/api/*` do Web; o BFF lê a sessão, renova o access token quando necessário e o encaminha para NestJS como `Authorization: Bearer <access-token>`. Não copie ID Token para chamadas da API. Se ocorrer `401`, consulte os logs por `web_api_auth_failed` e `api_authentication_failed`; eles informam apenas presença, tipo, audience, host do issuer e expiração, nunca o token.
 
+Na landing pública, `/auth/session` não é uma dependência obrigatória e `GET /api/public/plans` deve funcionar sem cookie e sem redirecionar para `/login`. Para reproduzir a regressão corrigida, abra `/`, entre em `/login`, use Back e confirme que a landing retorna sem erro de runtime; depois navegue até Pricing e confirme que os planos carregam anonimamente.
+
 Valide manualmente, sem alterar o cookie ou inserir bearer no DevTools:
 
 ```text

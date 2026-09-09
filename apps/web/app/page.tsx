@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { translate } from '@risexpto/i18n';
 import { useLocale } from '../components/locale-provider';
 import { PublicPricing } from '../components/public-pricing';
+import { marketingObserverOptions } from '../lib/marketing-observer';
 import { useEffect, useState } from 'react';
 
 const benefits = [
@@ -27,10 +28,11 @@ export default function MarketingPage() {
   const t = (key: string) => translate(key, locale);
   useEffect(() => {
     const sections = ['how-it-works', 'security', 'pricing'].map((id) => document.getElementById(id)).filter((item): item is HTMLElement => Boolean(item));
+    if (sections.length === 0 || typeof IntersectionObserver === 'undefined') return;
     const observer = new IntersectionObserver((entries) => {
       const visible = entries.filter((entry) => entry.isIntersecting).sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
       if (visible) setActiveSection(visible.target.id);
-    }, { rootMargin: '-5rem 0px -55% 0px', threshold: [0.1, 0.5] });
+    }, marketingObserverOptions);
     sections.forEach((section) => observer.observe(section));
     return () => observer.disconnect();
   }, []);

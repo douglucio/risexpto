@@ -21,6 +21,14 @@ Esta é a matriz vigente. `CODE_IMPLEMENTED` indica caminho implementado; `LOCAL
 
 O caminho atual está em `TESTABLE MVP READINESS`, não em `PRODUCTION_READY`. Binance Production e Stripe Live continuam proibidos.
 
+### Current status — nova rodada de estabilização pública
+
+Regressões confirmadas no último teste manual: `IntersectionObserver` com `rootMargin` inválido em `rem`, `/api/public/plans` interceptado pelo proxy, consulta anônima obrigatória de `/auth/session` na landing e i18n ainda parcial. As fases 58–68 do plano tratam esses pontos. Até sua validação, os domínios afetados permanecem `CODE_IMPLEMENTED`/`LOCALLY_VALIDATED` conforme evidência, nunca `BROWSER_VALIDATED` por inferência.
+
+### Historical audit notes
+
+O texto de auditorias anteriores abaixo é histórico. Quando mencionar ausência de runtime ou integração que já foi corrigida, vale o estado atual acima e a matriz vigente; não são dois estados simultâneos.
+
 ### Manual browser findings
 
 - Keycloak login, callback and `/auth/session` succeeded, but authenticated domain requests repeatedly returned `401`.

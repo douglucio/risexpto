@@ -3367,3 +3367,32 @@ Validação final desta rodada:
 - `pnpm build`: OK após limpar cache Turbopack corrompido; Web compilou e gerou 28 páginas/rotas;
 - `pnpm test:e2e`: preparado, mas browser real requer `E2E_STORAGE_STATE` e serviços locais ativos;
 - Docker/Keycloak/PostgreSQL/Redis/Binance Testnet/Stripe Test continuam `BLOCKED_EXTERNAL` nesta execução.
+
+## 2026-09-09 — Auditoria da nova rodada de regressões públicas
+
+### Achados confirmados antes da implementação
+
+- `apps/web/app/page.tsx` usava `IntersectionObserver.rootMargin` com `rem`, unidade inválida para a API do browser, causando exceção durante mount/remount e quebrando o retorno por Back/Forward.
+- `apps/web/proxy.ts` protegia `/api/public/plans` porque o matcher tratava a rota como autenticada; pricing público deslogado era redirecionado para `/login`.
+- `AppShell` buscava `/auth/session` na landing pública. O `401` anônimo é semanticamente esperado, mas era uma requisição desnecessária e gerava ruído.
+- A cobertura i18n da fase 55 era parcial: landing, login, shell e páginas autenticadas ainda continham textos em inglês fora dos catálogos.
+
+As notas acima são atuais. Auditorias anteriores permanecem abaixo como histórico; a implementação da rodada não altera o requisito de que Binance Production e Stripe Live permaneçam proibidos.
+
+### Fases desta rodada
+
+| Fase | Escopo | Estado | Evidência exigida |
+|---|---|---|---|
+| 58 | Public runtime stability | 🟨 | observer válido/limpo, favicon, testes unitários e regressão Back/Forward |
+| 59 | Public/auth route boundary | 🟨 | política explícita; `/api/public/*` anônimo retorna sem redirect |
+| 60 | Public session behavior | 🟨 | landing não dispara sessão obrigatória; `401` opcional é anônimo |
+| 61 | Complete application i18n | 🟨 | catálogos en/pt-BR/es cobrem landing, login, shell e workspace |
+| 62 | Language selector UX | 🟨 | bandeiras acessíveis e troca imediata |
+| 63 | Locale persistence | 🟨 | precedência profile → cookie → browser → en e Settings persistente |
+| 64 | Keycloak locale propagation | 🟨 | `ui_locales` propagado quando suportado pelo fluxo OIDC |
+| 65 | Public pricing regression | 🟨 | pricing anônimo com loading/success/empty/error e formatação local |
+| 66 | Auth session on public pages | 🟨 | sem spam/redirect e testes de sessão anônima |
+| 67 | Browser regression suite | 🟨 | Playwright cobre landing, locale, hashes, Back, pricing, login/logout |
+| 68 | Authenticated MVP regression | 🟨 | endpoints autenticados permanecem válidos com sessão real/mockada |
+
+Os estados `CODE_IMPLEMENTED`, `LOCALLY_VALIDATED`, `BROWSER_VALIDATED`, `EXTERNAL_TEST_VALIDATED` e `PRODUCTION_READY` continuam sendo independentes; nenhum teste unitário promove automaticamente uma feature a validação de browser ou externa.
