@@ -46,10 +46,9 @@ export class KeycloakJwtVerifier implements TokenVerifier {
   }
   async verify(token: string): Promise<VerifiedClaims> {
     const decoded = jwt.decode(token, { complete: true });
-    const payload = decoded && typeof decoded !== 'string' && typeof decoded.payload === 'object'
-      ? decoded.payload
-      : undefined;
-    const tokenKind = payload?.typ === 'ID' ? 'id' : payload?.typ === 'Bearer' ? 'access' : 'unknown';
+    const tokenKind = decoded && typeof decoded !== 'string' && decoded.header.typ === 'ID'
+      ? 'id'
+      : decoded && typeof decoded !== 'string' && decoded.header.typ === 'Bearer' ? 'access' : 'unknown';
     if (!decoded || typeof decoded === 'string' || !decoded.header.kid)
       throw new KeycloakTokenVerificationError('MALFORMED', tokenKind);
     const key = await this.client.getSigningKey(decoded.header.kid);

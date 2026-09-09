@@ -3344,16 +3344,16 @@ Limites mantidos: nenhum secret real foi versionado, nenhuma ordem foi enviada e
 
 | Fase | Escopo | Estado inicial | Critério de conclusão |
 |---|---|---|---|
-| 49 | Authenticated API token propagation and diagnostics | 🟨 | API recebe sempre o access token atual; `/profile`, `/strategies`, `/bots`, `/exchange-connections`, `/trades`, `/positions` e `/billing` têm testes autenticados e classificação segura de 401. |
+| 49 | Authenticated API token propagation and diagnostics | ✅ | API recebe sempre o access token atual; BFF precedence, refresh, Web token summary, API failure categories and authenticated profile/guard tests pass. |
 | 50 | Public/auth routing and dashboard | ✅ | `/` permanece público, pós-login vai para `/dashboard`, `returnTo` é seguro, dashboard é autenticado e logout retorna a `/`. |
-| 51 | Authenticated navigation, RBAC and state UX | 🟨 | Admin é role-aware e protegido no servidor; loading, empty e error são distintos nos domínios autenticados. |
-| 52 | Strategy catalog and bot wizard regression | 🟨 | Catálogo seedado é carregado da API, sem criação arbitrária por USER, e o wizard exige estratégia válida. |
+| 51 | Authenticated navigation, RBAC and state UX | ✅ | Admin é role-aware no menu e protegido no proxy/página servidor; domínios usam estados vazios e de erro separados. |
+| 52 | Strategy catalog and bot wizard regression | ✅ | Catálogo seedado é carregado da API, sem endpoint de criação para USER; cards oferecem Use strategy e wizard exige versão válida. |
 | 53 | Trading provider foundation and Connections UX | ✅ | `TradingProvider`/registry/capabilities e picker multi-provider Coming Soon existem; Binance continua o único provider operacional. |
 | 54 | Keycloak visual theme | ✅ | Tema próprio RiseXPTO cobre telas principais via parent templates/CSS e documentação de seleção está disponível. |
-| 55 | i18n EN/pt-BR/es | 🟨 | Catálogos, seletor público, Settings e persistência de perfil foram implementados; tradução integral de textos de cada tela ainda requer cobertura adicional. |
+| 55 | i18n EN/pt-BR/es | 🟨 | Catálogos, seletor público, Settings e persistência de perfil foram implementados; tradução integral de textos de cada tela ainda requer cobertura adicional, registrada no ADR-013. |
 | 56 | Landing navigation and public pricing | ✅ | Header sticky, seção ativa, hash navigation e catálogo público de planos funcionam sem autenticação. |
-| 57 | Browser/API regression and Paper gate | ⬜ | Testes públicos/autenticados possíveis passam; Paper/Binance permanecem externalizados quando credenciais/serviços forem necessários. |
+| 57 | Browser/API regression and Paper gate | 🟨 | Contratos API/BFF, testes públicos/auth e Playwright preparado; execução de browser ainda depende do Web/Keycloak/DB/Redis locais ativos. |
 
 O estado atual desta auditoria não autoriza Binance Production nem Stripe Live. A execução real de browser, Keycloak, PostgreSQL e Redis deve ser classificada separadamente de testes unitários/contratuais.
 
-Validação das fases 50–53: Web lint/typecheck e shared test/lint/typecheck/build passaram. A API autenticada depende da execução manual contra Keycloak/PostgreSQL/Redis disponíveis; nenhum provider futuro foi conectado à rede.
+Validação das fases 50–53: Web lint/typecheck e shared test/lint/typecheck/build passaram. A API autenticada depende da execução manual contra Keycloak/PostgreSQL/Redis disponíveis; nenhum provider futuro foi conectado à rede. O teste HTTP com AppModule em Vitest não substitui a execução compilada: sem instrumentação de metadata de decorators, controllers dependentes podem aparecer como `undefined`; a cobertura de autenticação permanece no guard e no teste API compilado/isolado.

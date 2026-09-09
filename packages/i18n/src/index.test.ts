@@ -5,6 +5,8 @@ describe('i18n', () => {
     expect(translate('bot.started', 'pt-BR')).toBe('Bot iniciado');
     expect(translate('unknown', 'pt-BR')).toBe('unknown');
     expect(normalizeLocale('pt-BR')).toBe('pt-BR');
+    expect(translate('risk.blocked', 'es')).toBe('Operación bloqueada por los controles de riesgo');
+    expect(normalizeLocale('es-MX')).toBe('es');
     expect(normalizeLocale('fr')).toBe('en');
   });
   it('formats currency and timezone-aware dates through Intl', () => {

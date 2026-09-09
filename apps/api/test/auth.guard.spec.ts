@@ -7,6 +7,7 @@ import {
 import { Reflector } from '@nestjs/core';
 import { describe, expect, it, vi } from 'vitest';
 import { AuthGuard } from '../src/auth/auth.guard';
+import { KeycloakTokenVerificationError } from '../src/auth/keycloak-jwt.verifier';
 import type { AuthenticatedUser, TokenVerifier } from '../src/auth/auth.types';
 import {
   UserProvisioningError,
@@ -61,6 +62,17 @@ describe('AuthGuard', () => {
     await expect(
       new AuthGuard(new Reflector(), verifier, provisioning).canActivate(execution),
     ).rejects.toThrow('Invalid or expired access token');
+  });
+  it('logs only safe token diagnostics for an invalid ID token', async () => {
+    const warning = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const verifier: TokenVerifier = {
+      verify: vi.fn().mockRejectedValue(new KeycloakTokenVerificationError('AUDIENCE', 'id')),
+    };
+    const { context: execution } = context('Bearer id-token');
+    await expect(new AuthGuard(new Reflector(), verifier, provisioning).canActivate(execution)).rejects.toBeInstanceOf(UnauthorizedException);
+    expect(warning).toHaveBeenCalledWith(JSON.stringify({ event: 'api_authentication_failed', reason: 'AUDIENCE', authorizationPresent: true, tokenKind: 'id' }));
+    expect(warning.mock.calls[0]?.[0]).not.toContain('id-token');
+    warning.mockRestore();
   });
   it('keeps a deactivated application user forbidden', async () => {
     const verifier: TokenVerifier = {

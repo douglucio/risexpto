@@ -1,5 +1,5 @@
 import { createHash, randomBytes } from 'node:crypto';
-import { createRemoteJWKSet, decodeJwt, jwtVerify, type JWTPayload } from 'jose';
+import { createRemoteJWKSet, decodeJwt, decodeProtectedHeader, jwtVerify, type JWTPayload } from 'jose';
 import type { AuthConfig } from './config';
 import { roles, type AppRole, type AuthSession, type LoginTransaction } from './types';
 
@@ -173,12 +173,13 @@ export function summarizeAccessToken(token: string): {
   if (!token) return { present: false, kind: 'unknown', audience: [], issuerHost: null, expired: null };
   try {
     const payload = decodeJwt(token);
+    const header = decodeProtectedHeader(token);
     const audiences = Array.isArray(payload.aud)
       ? payload.aud.filter((value): value is string => typeof value === 'string')
       : typeof payload.aud === 'string' ? [payload.aud] : [];
     let issuerHost: string | null = null;
     try { issuerHost = payload.iss ? new URL(payload.iss).host : null; } catch { /* safe summary */ }
-    const type = payload.typ;
+    const type = header.typ;
     return {
       present: true,
       kind: type === 'ID' ? 'id' : type === 'Bearer' ? 'access' : 'unknown',
