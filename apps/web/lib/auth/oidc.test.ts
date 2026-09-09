@@ -12,7 +12,7 @@ const config: AuthConfig = {
 };
 describe('OIDC authorization', () => {
   const token = (payload: Record<string, unknown>) =>
-    `eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.${Buffer.from(JSON.stringify(payload)).toString('base64url')}.signature`;
+    `${Buffer.from(JSON.stringify({ alg: 'RS256', typ: payload.typ })).toString('base64url')}.${Buffer.from(JSON.stringify(payload)).toString('base64url')}.signature`;
 
   it('summarizes access tokens without logging token contents', () => {
     expect(summarizeAccessToken(token({ typ: 'Bearer', aud: 'risexpto-api', iss: 'http://localhost:8080/realms/risexpto', exp: Math.floor(Date.now() / 1000) + 60 }))).toMatchObject({
@@ -38,8 +38,8 @@ describe('OIDC authorization', () => {
     expect(error.message).not.toContain('token');
   });
   it('prevents external return redirects', () => {
-    expect(createLoginTransaction('https://evil.example').returnTo).toBe('/');
-    expect(createLoginTransaction('//evil.example').returnTo).toBe('/');
+    expect(createLoginTransaction('https://evil.example').returnTo).toBe('/dashboard');
+    expect(createLoginTransaction('//evil.example').returnTo).toBe('/dashboard');
   });
   it('uses the provider registration and required-action endpoints', () => {
     const transaction = createLoginTransaction('/');
