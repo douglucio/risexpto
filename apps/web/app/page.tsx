@@ -7,21 +7,6 @@ import { PublicPricing } from '../components/public-pricing';
 import { marketingObserverOptions } from '../lib/marketing-observer';
 import { useEffect, useState } from 'react';
 
-const benefits = [
-  [
-    'Risk-first automation',
-    'Every trade proposal is checked against hard limits before execution.',
-  ],
-  [
-    'Paper Trading first',
-    'Validate behavior with market data and simulated balances before going live.',
-  ],
-  [
-    'Non-custodial by design',
-    'Your assets stay on your exchange. Withdrawal permission is never required.',
-  ],
-];
-
 export default function MarketingPage() {
   const { locale, setLocale } = useLocale();
   const [activeSection, setActiveSection] = useState('');
@@ -48,19 +33,19 @@ export default function MarketingPage() {
           <Link className={navClass('how-it-works')} href="#how-it-works">{t('marketing.how')}</Link>
           <Link className={navClass('security')} href="#security">{t('marketing.security')}</Link>
           <Link className={navClass('pricing')} href="#pricing">{t('marketing.pricing')}</Link>
-          <select aria-label="Language" value={locale} onChange={(event) => setLocale(event.target.value as typeof locale)}><option value="en">EN</option><option value="pt-BR">PT</option><option value="es">ES</option></select>
-          <Link href="/login" className="marketing-login">
+          <select aria-label="Language / Idioma / Idioma" value={locale} onChange={(event) => setLocale(event.target.value as typeof locale)}><option value="en">🇺🇸 EN</option><option value="pt-BR">🇧🇷 PT</option><option value="es">🇪🇸 ES</option></select>
+          <Link href={`/login?locale=${encodeURIComponent(locale)}`} className="marketing-login">
             {t('marketing.login')}
           </Link>
         </div>
       </nav>
       <section className="marketing-hero">
         <div>
-          <p className="marketing-eyebrow">AUTOMATION WITH GUARDRAILS</p>
+          <p className="marketing-eyebrow">{t('marketing.eyebrow')}</p>
           <h1>{t('marketing.hero')}</h1>
           <p className="marketing-lede">{t('marketing.lede')}</p>
           <div className="marketing-actions">
-            <Link href="/login" className="marketing-button">
+            <Link href={`/login?locale=${encodeURIComponent(locale)}`} className="marketing-button">
               {t('marketing.paper')}
             </Link>
             <a href="#how-it-works" className="marketing-secondary">
@@ -71,13 +56,13 @@ export default function MarketingPage() {
             {t('marketing.note')}
           </p>
         </div>
-        <div className="marketing-preview" aria-label="Illustrative risk dashboard preview">
+        <div className="marketing-preview" aria-label={t('marketing.previewLabel')}>
           <div className="preview-top">
-            <span>PORTFOLIO OVERVIEW</span>
+            <span>{t('marketing.portfolio')}</span>
             <b>● PAPER</b>
           </div>
           <strong>$128,420.36</strong>
-          <small>Illustrative workspace</small>
+          <small>{t('marketing.illustrative')}</small>
           <div className="preview-chart">
             <i />
             <i />
@@ -88,11 +73,11 @@ export default function MarketingPage() {
           </div>
           <div className="preview-stats">
             <span>
-              <small>Risk capacity</small>
-              <b>Within limits</b>
+              <small>{t('marketing.riskCapacity')}</small>
+              <b>{t('marketing.withinLimits')}</b>
             </span>
             <span>
-              <small>Active bots</small>
+              <small>{t('marketing.activeBots')}</small>
               <b>04</b>
             </span>
           </div>
@@ -102,11 +87,11 @@ export default function MarketingPage() {
         <p className="marketing-eyebrow">{t('marketing.loop')}</p>
         <h2>{t('marketing.context')}</h2>
         <div className="marketing-cards">
-          {benefits.map(([title, text], index) => (
-            <article key={title}>
+          {(['Risk', 'Paper', 'Custody'] as const).map((benefit, index) => (
+            <article key={benefit}>
               <span className="card-number">0{index + 1}</span>
-              <h3>{title}</h3>
-              <p>{text}</p>
+              <h3>{t(`marketing.benefit${benefit}`)}</h3>
+              <p>{t(`marketing.benefit${benefit}Text`)}</p>
             </article>
           ))}
         </div>
@@ -117,18 +102,17 @@ export default function MarketingPage() {
           <h2>{t('marketing.securityHeadline')}</h2>
         </div>
         <ul>
-          <li>Trade-only API permissions</li>
-          <li>Encrypted exchange credentials</li>
-          <li>Risk Engine before execution</li>
-          <li>Full audit trail for actions</li>
+          <li>{t('marketing.securityTrade')}</li>
+          <li>{t('marketing.securityCredentials')}</li>
+          <li>{t('marketing.securityEngine')}</li>
+          <li>{t('marketing.securityAudit')}</li>
         </ul>
       </section>
       <section id="pricing" className="marketing-pricing">
         <p className="marketing-eyebrow">{t('marketing.simple')}</p>
         <h2>{t('marketing.begin')}</h2>
         <p>
-          Explore strategies, configure limits, and understand the workflow before considering live
-          execution.
+          {t('marketing.pricingDescription')}
         </p>
         <PublicPricing />
         <Link href="/login" className="marketing-button">
@@ -137,7 +121,7 @@ export default function MarketingPage() {
       </section>
       <footer className="marketing-footer">
         <span>© 2026 RiseXPTO</span>
-        <span>Past performance does not guarantee future results.</span>
+        <span>{t('marketing.footerDisclaimer')}</span>
       </footer>
     </main>
   );

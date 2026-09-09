@@ -1,7 +1,7 @@
 export const roles = ['USER', 'SUPPORT', 'ADMIN'] as const;
 export type AppRole = (typeof roles)[number];
 export type UserPreferences = Readonly<{
-  locale: 'en' | 'pt-BR';
+  locale: 'en' | 'pt-BR' | 'es';
   timezone: string;
   currency: 'USD' | 'BRL' | 'EUR';
 }>;
@@ -25,4 +25,5 @@ export type LoginTransaction = Readonly<{
   verifier: string;
   returnTo: string;
   createdAt: number;
+  locale?: 'en' | 'pt-BR' | 'es';
 }>;

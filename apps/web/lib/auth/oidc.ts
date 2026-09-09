@@ -30,12 +30,13 @@ export class OidcFlowError extends Error {
   }
 }
 
-export function createLoginTransaction(returnTo: string): LoginTransaction {
+export function createLoginTransaction(returnTo: string, locale?: LoginTransaction['locale']): LoginTransaction {
   return {
     state: randomBytes(24).toString('base64url'),
     verifier: randomBytes(48).toString('base64url'),
     returnTo: safeReturnTo(returnTo),
     createdAt: Date.now(),
+    ...(locale ? { locale } : {}),
   };
 }
 export function authorizationUrl(
@@ -57,6 +58,7 @@ export function authorizationUrl(
     state: transaction.state,
     code_challenge: challenge,
     code_challenge_method: 'S256',
+    ...(transaction.locale ? { ui_locales: transaction.locale } : {}),
   }).toString();
   if (action === 'recover') url.searchParams.set('kc_action', 'UPDATE_PASSWORD');
   return url;

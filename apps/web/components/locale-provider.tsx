@@ -11,7 +11,7 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const cookie = document.cookie.split('; ').find((item) => item.startsWith('rx-locale='))?.split('=')[1];
     const stored = cookie ?? localStorage.getItem('rx-locale') ?? undefined;
-    const next = normalizeLocale(stored);
+    const next = stored ? normalizeLocale(stored) : normalizeLocale(window.navigator.language);
     setValue(next);
     document.documentElement.lang = next;
   }, []);

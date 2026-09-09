@@ -3,7 +3,7 @@ import { authConfig } from '../../../lib/auth/config';
 import { updatePreferences } from '../../../lib/auth/session';
 import type { UserPreferences } from '../../../lib/auth/types';
 
-const locales = new Set(['en', 'pt-BR']);
+const locales = new Set(['en', 'pt-BR', 'es']);
 const currencies = new Set(['USD', 'BRL', 'EUR']);
 export async function PUT(request: Request) {
   if (request.headers.get('origin') !== authConfig().baseUrl)
