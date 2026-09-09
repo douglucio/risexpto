@@ -21,6 +21,14 @@ Esta é a matriz vigente. `CODE_IMPLEMENTED` indica caminho implementado; `LOCAL
 
 O caminho atual está em `TESTABLE MVP READINESS`, não em `PRODUCTION_READY`. Binance Production e Stripe Live continuam proibidos.
 
+### Current status — nova rodada de estabilização pública
+
+Regressões confirmadas no último teste manual: `IntersectionObserver` com `rootMargin` inválido em `rem`, `/api/public/plans` interceptado pelo proxy, consulta anônima obrigatória de `/auth/session` na landing e i18n ainda parcial. As fases 58–68 do plano tratam esses pontos. Até sua validação, os domínios afetados permanecem `CODE_IMPLEMENTED`/`LOCALLY_VALIDATED` conforme evidência, nunca `BROWSER_VALIDATED` por inferência.
+
+### Historical audit notes
+
+O texto de auditorias anteriores abaixo é histórico. Quando mencionar ausência de runtime ou integração que já foi corrigida, vale o estado atual acima e a matriz vigente; não são dois estados simultâneos.
+
 ### Manual browser findings
 
 - Keycloak login, callback and `/auth/session` succeeded, but authenticated domain requests repeatedly returned `401`.
@@ -28,6 +36,7 @@ O caminho atual está em `TESTABLE MVP READINESS`, não em `PRODUCTION_READY`. B
 - Phase 49 now refreshes the access token before API calls, gives the session token precedence over forwarded headers, and emits only safe diagnostics (`missing/present`, token kind, audience, issuer host and expiry; never the token).
 - Browser validation must still confirm `/profile`, `/strategies`, `/bots`, `/exchange-connections`, `/trades`, `/positions` and `/billing` against the live local stack.
 - The first browser regression also identified routing/navigation, provider-neutral Connections, locale persistence and public pricing gaps; these are tracked as phases 50–57 in the implementation plan.
+- The current stabilization browser run passed the four public Playwright scenarios (locale, section navigation, Back from login, no page exception, and anonymous pricing) against the local Web. Authenticated endpoint browser validation still requires a configured Keycloak user/session.
 - Phase 49 is code-validated, but browser confirmation of all authenticated endpoints remains required; no browser or external-test checkbox is being promoted from code evidence alone.
 
 ## Historical audit notes

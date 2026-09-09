@@ -5,7 +5,9 @@ import { writeTransaction } from '../../../lib/auth/session';
 
 export async function GET(request: NextRequest) {
   const action = request.nextUrl.searchParams.get('action');
-  const transaction = createLoginTransaction(request.nextUrl.searchParams.get('returnTo') ?? '/dashboard');
+  const requestedLocale = request.nextUrl.searchParams.get('locale');
+  const locale = requestedLocale === 'pt-BR' || requestedLocale === 'es' || requestedLocale === 'en' ? requestedLocale : undefined;
+  const transaction = createLoginTransaction(request.nextUrl.searchParams.get('returnTo') ?? '/dashboard', locale);
   await writeTransaction(transaction);
   return NextResponse.redirect(
     authorizationUrl(

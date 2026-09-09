@@ -1,63 +1,63 @@
 import { Alert, Card } from '@risexpto/ui';
+import { normalizeLocale, translate } from '@risexpto/i18n';
 
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; returnTo?: string }>;
+  searchParams: Promise<{ error?: string; returnTo?: string; locale?: string }>;
 }) {
-  const { error, returnTo = '/dashboard' } = await searchParams;
+  const { error, returnTo = '/dashboard', locale: requestedLocale } = await searchParams;
+  const locale = normalizeLocale(requestedLocale);
+  const t = (key: string) => translate(key, locale);
   const encodedReturnTo = encodeURIComponent(returnTo);
   return (
     <div className="auth-page">
       <Card className="auth-card">
         <div className="auth-mark">R</div>
-        <h1>Welcome to RiseXPTO</h1>
-        <p>
-          Sign in through our secure identity service. Your trading credentials are never part of
-          your login.
-        </p>
+        <h1>{t('auth.welcome')}</h1>
+        <p>{t('auth.description')}</p>
         {error && (
-          <Alert tone="negative" title={errorTitle(error)}>
-            {errorMessage(error)}
+          <Alert tone="negative" title={t(errorTitleKey(error ?? ''))}>
+            {t(errorMessageKey(error ?? ''))}
           </Alert>
         )}
-        <a className="rx-button auth-action" href={`/auth/login?returnTo=${encodedReturnTo}`}>
-          Sign in
+        <a className="rx-button auth-action" href={`/auth/login?returnTo=${encodedReturnTo}&locale=${locale}`}>
+          {t('auth.signIn')}
         </a>
-        <a className="auth-link" href={`/auth/login?action=register&returnTo=${encodedReturnTo}`}>
-          Create account
+        <a className="auth-link" href={`/auth/login?action=register&returnTo=${encodedReturnTo}&locale=${locale}`}>
+          {t('auth.createAccount')}
         </a>
-        <a className="auth-link" href="/auth/login?action=recover">
-          Recover password
+        <a className="auth-link" href={`/auth/login?action=recover&locale=${locale}`}>
+          {t('auth.recover')}
         </a>
         <small>
-          By continuing, you acknowledge that trading involves risk and returns are not guaranteed.
+          {t('auth.disclaimer')}
         </small>
       </Card>
     </div>
   );
 }
 
-function errorTitle(error: string): string {
-  if (error === 'email_not_verified') return 'Email verification required';
-  if (error === 'code_expired') return 'Login expired';
-  if (error === 'invalid_state_or_pkce') return 'Login session invalid';
-  if (error === 'identity_claims_missing') return 'Profile incomplete';
-  return 'Authentication failed';
+function errorTitleKey(error: string): string {
+  if (error === 'email_not_verified') return 'auth.error.emailTitle';
+  if (error === 'code_expired') return 'auth.error.expiredTitle';
+  if (error === 'invalid_state_or_pkce') return 'auth.error.sessionTitle';
+  if (error === 'identity_claims_missing') return 'auth.error.profileTitle';
+  return 'auth.error.failedTitle';
 }
 
-function errorMessage(error: string): string {
-  if (error === 'email_not_verified') return 'Verify your email in Keycloak before continuing.';
-  if (error === 'code_expired') return 'This login attempt expired. Start a new sign-in attempt.';
+function errorMessageKey(error: string): string {
+  if (error === 'email_not_verified') return 'auth.error.emailMessage';
+  if (error === 'code_expired') return 'auth.error.expiredMessage';
   if (error === 'invalid_state_or_pkce')
-    return 'The login session was invalid or expired. Try again.';
+    return 'auth.error.sessionMessage';
   if (error === 'identity_claims_missing')
-    return 'Your Keycloak profile is missing a valid email. Update it and try again.';
+    return 'auth.error.profileMessage';
   if (error === 'access_token_audience_invalid')
-    return 'The identity service returned a token for the wrong application.';
+    return 'auth.error.audienceMessage';
   if (error === 'id_token_invalid' || error === 'token_invalid')
-    return 'The identity token could not be validated safely.';
+    return 'auth.error.tokenMessage';
   if (error === 'token_exchange_failed')
-    return 'The authorization code could not be exchanged. Start a new sign-in attempt.';
-  return 'The login could not be completed safely. Please try again.';
+    return 'auth.error.exchangeMessage';
+  return 'auth.error.genericMessage';
 }

@@ -3,13 +3,15 @@
 import { Alert, Button, Card, Checkbox, FormField, Select, Switch } from '@risexpto/ui';
 import { useEffect, useState, type FormEvent } from 'react';
 import { useLocale } from './locale-provider';
+import { translate } from '@risexpto/i18n';
 
 type Preferences = { locale: 'en' | 'pt-BR' | 'es'; timezone: string; currency: 'USD' | 'BRL' | 'EUR' };
 type Profile = { name: string; email: string; emailVerified: boolean };
 const defaults: Preferences = { locale: 'en', timezone: 'UTC', currency: 'USD' };
 
 export function PreferencesForm() {
-  const { setLocale } = useLocale();
+  const { locale, setLocale } = useLocale();
+  const t = (key: string) => translate(key, locale);
   const [preferences, setPreferences] = useState(defaults);
   const [user, setUser] = useState<Profile | null>(null);
   const [status, setStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
@@ -38,28 +40,28 @@ export function PreferencesForm() {
   return (
     <form className="settings-grid" onSubmit={(event) => void submit(event)}>
       <Card>
-        <h2>Profile</h2>
+        <h2>{t('settings.profile')}</h2>
         <dl className="profile-list">
           <div>
-            <dt>Name</dt>
+            <dt>{t('settings.name')}</dt>
             <dd>{user?.name ?? 'Loading…'}</dd>
           </div>
           <div>
-            <dt>Email</dt>
+            <dt>{t('settings.email')}</dt>
             <dd>{user?.email ?? 'Loading…'}</dd>
           </div>
           <div>
-            <dt>Verification</dt>
-            <dd>{user?.emailVerified ? 'Verified' : 'Required'}</dd>
+            <dt>{t('settings.verification')}</dt>
+            <dd>{user?.emailVerified ? t('settings.verified') : t('settings.required')}</dd>
           </div>
         </dl>
         <a className="auth-link" href="/auth/login?action=recover">
-          Change password securely
+          {t('settings.changePassword')}
         </a>
       </Card>
       <Card>
-        <h2>Regional preferences</h2>
-        <FormField label="Language">
+        <h2>{t('settings.regional')}</h2>
+        <FormField label={t('settings.language')}>
           <Select
             value={preferences.locale}
             onChange={(event) => {
@@ -75,7 +77,7 @@ export function PreferencesForm() {
             <option value="es">Español</option>
           </Select>
         </FormField>
-        <FormField label="Timezone">
+        <FormField label={t('settings.timezone')}>
           <Select
             value={preferences.timezone}
             onChange={(event) => setPreferences({ ...preferences, timezone: event.target.value })}
@@ -86,7 +88,7 @@ export function PreferencesForm() {
             <option value="Europe/London">Europe/London</option>
           </Select>
         </FormField>
-        <FormField label="Reference currency">
+        <FormField label={t('settings.currency')}>
           <Select
             value={preferences.currency}
             onChange={(event) =>
@@ -104,22 +106,22 @@ export function PreferencesForm() {
         <Switch label="Dark theme" defaultChecked />
       </Card>
       <Card>
-        <h2>Notifications</h2>
-        <Checkbox label="Critical risk alerts" defaultChecked disabled />
-        <Checkbox label="Bot lifecycle events" defaultChecked />
-        <Checkbox label="Weekly performance summary" />
+        <h2>{t('nav.notifications')}</h2>
+        <Checkbox label={t('settings.criticalAlerts')} defaultChecked disabled />
+        <Checkbox label={t('settings.botEvents')} defaultChecked />
+        <Checkbox label={t('settings.weeklySummary')} />
         {status === 'saved' && (
-          <Alert tone="positive" title="Preferences saved">
-            Your secure session was updated.
+            <Alert tone="positive" title={t('settings.saved')}>
+            {t('settings.sessionUpdated')}
           </Alert>
         )}
         {status === 'error' && (
-          <Alert tone="negative" title="Unable to save">
-            No preference was changed.
+          <Alert tone="negative" title={t('settings.saveError')}>
+            {t('settings.noChange')}
           </Alert>
         )}
         <Button disabled={status === 'saving'}>
-          {status === 'saving' ? 'Saving…' : 'Save preferences'}
+          {status === 'saving' ? t('settings.saving') : t('settings.save')}
         </Button>
       </Card>
     </form>

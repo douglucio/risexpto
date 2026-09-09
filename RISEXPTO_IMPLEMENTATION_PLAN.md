@@ -3367,3 +3367,32 @@ Validação final desta rodada:
 - `pnpm build`: OK após limpar cache Turbopack corrompido; Web compilou e gerou 28 páginas/rotas;
 - `pnpm test:e2e`: preparado, mas browser real requer `E2E_STORAGE_STATE` e serviços locais ativos;
 - Docker/Keycloak/PostgreSQL/Redis/Binance Testnet/Stripe Test continuam `BLOCKED_EXTERNAL` nesta execução.
+
+## 2026-09-09 — Auditoria da nova rodada de regressões públicas
+
+### Achados confirmados antes da implementação
+
+- `apps/web/app/page.tsx` usava `IntersectionObserver.rootMargin` com `rem`, unidade inválida para a API do browser, causando exceção durante mount/remount e quebrando o retorno por Back/Forward.
+- `apps/web/proxy.ts` protegia `/api/public/plans` porque o matcher tratava a rota como autenticada; pricing público deslogado era redirecionado para `/login`.
+- `AppShell` buscava `/auth/session` na landing pública. O `401` anônimo é semanticamente esperado, mas era uma requisição desnecessária e gerava ruído.
+- A cobertura i18n da fase 55 era parcial: landing, login, shell e páginas autenticadas ainda continham textos em inglês fora dos catálogos.
+
+As notas acima são atuais. Auditorias anteriores permanecem abaixo como histórico; a implementação da rodada não altera o requisito de que Binance Production e Stripe Live permaneçam proibidos.
+
+### Fases desta rodada
+
+| Fase | Escopo | Estado | Evidência exigida |
+|---|---|---|---|
+| 58 | Public runtime stability | ✅ CODE_IMPLEMENTED / LOCALLY_VALIDATED | observer válido/limpo, favicon, teste de configuração; browser Back ainda requer execução E2E |
+| 59 | Public/auth route boundary | ✅ CODE_IMPLEMENTED / LOCALLY_VALIDATED | política explícita e testes de classificação; HTTP anônimo real requer stack Web |
+| 60 | Public session behavior | ✅ CODE_IMPLEMENTED / LOCALLY_VALIDATED | landing não dispara sessão obrigatória; teste Web confirma caminhos públicos |
+| 61 | Complete application i18n | 🟨 | catálogos en/pt-BR/es cobrem landing, login, shell, pricing e settings; páginas de domínio ainda requerem migração integral |
+| 62 | Language selector UX | ✅ CODE_IMPLEMENTED / LOCALLY_VALIDATED | bandeiras acessíveis e troca imediata nos seletores público/autenticado |
+| 63 | Locale persistence | ✅ CODE_IMPLEMENTED / LOCALLY_VALIDATED | cookie/localStorage/browser fallback e Settings/profile update |
+| 64 | Keycloak locale propagation | ✅ CODE_IMPLEMENTED / LOCALLY_VALIDATED | `ui_locales` validado no authorization URL e locale seguro |
+| 65 | Public pricing regression | ✅ CODE_IMPLEMENTED / LOCALLY_VALIDATED | pricing anônimo com loading/success/empty/error e `Intl.NumberFormat` |
+| 66 | Auth session on public pages | ✅ CODE_IMPLEMENTED / LOCALLY_VALIDATED | landing não consulta sessão obrigatoriamente; `401` anônimo não é erro de UI |
+| 67 | Browser regression suite | ✅ CODE_IMPLEMENTED / LOCALLY_VALIDATED / BROWSER_VALIDATED | 4 testes públicos passaram com Chromium e Web local: locale, hashes, Back, ausência de exception e pricing anônimo |
+| 68 | Authenticated MVP regression | ✅ CODE_IMPLEMENTED / LOCALLY_VALIDATED; ⛔ BROWSER_VALIDATED | contratos e propagação de token cobertos; validação real dos endpoints depende de login Keycloak local e sessão autenticada |
+
+Os estados `CODE_IMPLEMENTED`, `LOCALLY_VALIDATED`, `BROWSER_VALIDATED`, `EXTERNAL_TEST_VALIDATED` e `PRODUCTION_READY` continuam sendo independentes; nenhum teste unitário promove automaticamente uma feature a validação de browser ou externa.

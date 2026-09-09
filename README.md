@@ -54,3 +54,7 @@ Authentication is provided by Keycloak using OIDC Authorization Code with PKCE. 
 The public site is always `/`; authenticated users enter at `/dashboard`. The Web BFF refreshes the session access token before forwarding it to the API and never accepts a caller-provided `Authorization` override. Routing and provider-neutral trading decisions are recorded in [`docs/architecture/ADR-014-routing-auth.md`](./docs/architecture/ADR-014-routing-auth.md), [`docs/architecture/ADR-012-trading-provider-registry.md`](./docs/architecture/ADR-012-trading-provider-registry.md), and [`docs/architecture/ADR-013-i18n.md`](./docs/architecture/ADR-013-i18n.md).
 
 All work flows from `feature/*` to `develop`. Only the owner may update `main`.
+
+## Current browser stabilization round
+
+The current work addresses four confirmed regressions: invalid landing `IntersectionObserver` margins, authentication middleware intercepting anonymous `/api/public/*`, unnecessary anonymous session requests on `/`, and incomplete English/Portuguese/Spanish coverage. Track implementation versus local, browser, and external validation in [`RISEXPTO_IMPLEMENTATION_PLAN.md`](./RISEXPTO_IMPLEMENTATION_PLAN.md). Binance Production and Stripe Live are not used.
