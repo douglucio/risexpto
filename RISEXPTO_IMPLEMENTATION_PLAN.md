@@ -3357,3 +3357,13 @@ Limites mantidos: nenhum secret real foi versionado, nenhuma ordem foi enviada e
 O estado atual desta auditoria não autoriza Binance Production nem Stripe Live. A execução real de browser, Keycloak, PostgreSQL e Redis deve ser classificada separadamente de testes unitários/contratuais.
 
 Validação das fases 50–53: Web lint/typecheck e shared test/lint/typecheck/build passaram. A API autenticada depende da execução manual contra Keycloak/PostgreSQL/Redis disponíveis; nenhum provider futuro foi conectado à rede. O teste HTTP com AppModule em Vitest não substitui a execução compilada: sem instrumentação de metadata de decorators, controllers dependentes podem aparecer como `undefined`; a cobertura de autenticação permanece no guard e no teste API compilado/isolado.
+
+Validação final desta rodada:
+
+- `pnpm install --frozen-lockfile`: OK;
+- `pnpm lint`: OK (29 tarefas);
+- `pnpm typecheck`: OK (30 pacotes);
+- `pnpm exec turbo run test --concurrency=1`: OK (39 tarefas; API 28 testes passando, 1 skip; Web 8 passando; worker 18 passando, 4 skips);
+- `pnpm build`: OK após limpar cache Turbopack corrompido; Web compilou e gerou 28 páginas/rotas;
+- `pnpm test:e2e`: preparado, mas browser real requer `E2E_STORAGE_STATE` e serviços locais ativos;
+- Docker/Keycloak/PostgreSQL/Redis/Binance Testnet/Stripe Test continuam `BLOCKED_EXTERNAL` nesta execução.

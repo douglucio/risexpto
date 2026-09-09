@@ -18,6 +18,16 @@ pnpm dev
 
 Serviços esperados: Web `http://localhost:3000`, API `http://localhost:3001`, Keycloak `http://localhost:8080`, PostgreSQL `localhost:5432` e Redis `localhost:6379`.
 
+Após o login, o destino esperado é `http://localhost:3000/dashboard`. O browser chama as rotas `/api/*` do Web; o BFF lê a sessão, renova o access token quando necessário e o encaminha para NestJS como `Authorization: Bearer <access-token>`. Não copie ID Token para chamadas da API. Se ocorrer `401`, consulte os logs por `web_api_auth_failed` e `api_authentication_failed`; eles informam apenas presença, tipo, audience, host do issuer e expiração, nunca o token.
+
+Valide manualmente, sem alterar o cookie ou inserir bearer no DevTools:
+
+```text
+/profile · /strategies · /bots · /exchange-connections · /trades · /positions · /billing
+```
+
+Uma lista vazia deve aparecer como estado vazio (`No ... yet`), enquanto indisponibilidade de API deve aparecer como erro. `GET /` deve permanecer no site público, mesmo com sessão existente.
+
 Valide a API:
 
 ```bash
