@@ -24,7 +24,7 @@ export class AuthGuard implements CanActivate {
   constructor(
     @Inject(Reflector) private readonly reflector: Reflector,
     @Inject(TOKEN_VERIFIER) private readonly verifier: TokenVerifier,
-    private readonly provisioning: UserProvisioningService,
+    @Inject(UserProvisioningService) private readonly provisioning: UserProvisioningService,
   ) {}
   async canActivate(context: ExecutionContext): Promise<boolean> {
     if (

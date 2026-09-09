@@ -10,7 +10,7 @@ export class UsersModule {
   static withDatabase(database: object) {
     return {
       module: UsersModule,
-      providers: [{ provide: DATABASE, useValue: database }],
+      providers: [UserProvisioningService, { provide: DATABASE, useValue: database }],
       exports: [UserProvisioningService, DATABASE],
     };
   }
