@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { authorizationUrl, createLoginTransaction, OidcFlowError } from './oidc';
+import { authorizationUrl, createLoginTransaction, OidcFlowError, summarizeAccessToken } from './oidc';
 import type { AuthConfig } from './config';
 
 const config: AuthConfig = {
@@ -11,6 +11,19 @@ const config: AuthConfig = {
   secureCookies: true,
 };
 describe('OIDC authorization', () => {
+  const token = (payload: Record<string, unknown>) =>
+    `eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.${Buffer.from(JSON.stringify(payload)).toString('base64url')}.signature`;
+
+  it('summarizes access tokens without logging token contents', () => {
+    expect(summarizeAccessToken(token({ typ: 'Bearer', aud: 'risexpto-api', iss: 'http://localhost:8080/realms/risexpto', exp: Math.floor(Date.now() / 1000) + 60 }))).toMatchObject({
+      present: true,
+      kind: 'access',
+      audience: ['risexpto-api'],
+      issuerHost: 'localhost:8080',
+      expired: false,
+    });
+    expect(summarizeAccessToken(token({ typ: 'ID', aud: 'risexpto-web', iss: 'http://localhost:8080/realms/risexpto' })).kind).toBe('id');
+  });
   it('uses authorization code with PKCE and state', () => {
     const transaction = createLoginTransaction('/bots?tab=active');
     const url = authorizationUrl(config, transaction);

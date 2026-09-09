@@ -17,6 +17,7 @@ import {
 } from './auth.types';
 import { appRoles, type AppRole } from './roles';
 import { UserProvisioningError, UserProvisioningService } from '../users/user-provisioning.service';
+import { KeycloakTokenVerificationError } from './keycloak-jwt.verifier';
 
 type RequestLike = { headers: { authorization?: string }; user?: AuthenticatedUser };
 @Injectable()
@@ -36,12 +37,19 @@ export class AuthGuard implements CanActivate {
       return true;
     const request = context.switchToHttp().getRequest<RequestLike>();
     const header = request.headers.authorization;
-    if (!header?.startsWith('Bearer ') || header.length <= 7)
+    if (!header?.startsWith('Bearer ') || header.length <= 7) {
+      logAuthFailure('MISSING_AUTHORIZATION', Boolean(header));
       throw new UnauthorizedException('Authentication required');
+    }
     let claims: VerifiedClaims;
     try {
       claims = await this.verifier.verify(header.slice(7));
-    } catch {
+    } catch (error) {
+      logAuthFailure(
+        error instanceof KeycloakTokenVerificationError ? error.reason : 'INVALID',
+        true,
+        error instanceof KeycloakTokenVerificationError ? error.tokenKind : 'unknown',
+      );
       throw new UnauthorizedException('Invalid or expired access token');
     }
     const realmRoles = claims.realm_access?.roles ?? [];
@@ -62,4 +70,12 @@ export class AuthGuard implements CanActivate {
     }
     return true;
   }
+}
+
+function logAuthFailure(
+  reason: string,
+  authorizationPresent: boolean,
+  tokenKind: 'access' | 'id' | 'unknown' = 'unknown',
+): void {
+  console.warn(JSON.stringify({ event: 'api_authentication_failed', reason, authorizationPresent, tokenKind }));
 }

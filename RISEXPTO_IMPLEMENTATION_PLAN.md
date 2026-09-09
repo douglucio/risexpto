@@ -3328,3 +3328,30 @@ Validações desta rodada:
 - `AuthGuard` passou a declarar explicitamente `UserProvisioningService`, corrigindo o teste de provisioning no `AppModule`.
 
 Limites mantidos: nenhum secret real foi versionado, nenhuma ordem foi enviada e Binance Production/Stripe Live continuam proibidos.
+
+## 2026-09-09 — Auditoria do primeiro teste manual de navegador
+
+### Problemas reais registrados antes da implementação
+
+- `/auth/session` retornava `200`, enquanto páginas autenticadas faziam chamadas diretas à API com `readSession(false)`; após refresh ou expiração do access token, a UI podia propagar um token antigo e receber `401`.
+- O BFF montava o objeto de headers com uma ordem que permitia a um `Authorization` recebido em `init.headers` substituir o bearer derivado da sessão.
+- O diagnóstico do API guard reduzia ausência de header, ID Token, audience, issuer e token expirado a uma mensagem genérica, sem classificação segura para operação.
+- `/` e o destino pós-login ainda usavam `/` como default em partes do fluxo; a sidebar autenticada apontava Dashboard para `/`.
+- As páginas autenticadas misturavam erro de transporte/autorização com estado vazio e algumas respostas exibiam apenas `Unable to load ...`.
+- O catálogo, Connections, locale, pricing público e dashboard ainda não fechavam o fluxo real observado no navegador.
+
+### Novas fases desta rodada
+
+| Fase | Escopo | Estado inicial | Critério de conclusão |
+|---|---|---|---|
+| 49 | Authenticated API token propagation and diagnostics | 🟨 | API recebe sempre o access token atual; `/profile`, `/strategies`, `/bots`, `/exchange-connections`, `/trades`, `/positions` e `/billing` têm testes autenticados e classificação segura de 401. |
+| 50 | Public/auth routing and dashboard | ⬜ | `/` permanece público, pós-login vai para `/dashboard`, `returnTo` é seguro, dashboard é autenticado e logout retorna a `/`. |
+| 51 | Authenticated navigation, RBAC and state UX | ⬜ | Admin é role-aware e protegido no servidor; loading, empty e error são distintos nos domínios autenticados. |
+| 52 | Strategy catalog and bot wizard regression | ⬜ | Catálogo seedado é carregado da API, sem criação arbitrária por USER, e o wizard exige estratégia válida. |
+| 53 | Trading provider foundation and Connections UX | ⬜ | `TradingProvider`/registry/capabilities e picker multi-provider Coming Soon existem; Binance continua o único provider operacional. |
+| 54 | Keycloak visual theme | ⬜ | Tema próprio RiseXPTO cobre telas principais e documentação de seleção está disponível. |
+| 55 | i18n EN/pt-BR/es | ⬜ | Catálogos, seletor público, Settings e área autenticada mudam idioma e persistem locale. |
+| 56 | Landing navigation and public pricing | ⬜ | Header sticky, seção ativa, hash navigation e catálogo público de planos funcionam sem autenticação. |
+| 57 | Browser/API regression and Paper gate | ⬜ | Testes públicos/autenticados possíveis passam; Paper/Binance permanecem externalizados quando credenciais/serviços forem necessários. |
+
+O estado atual desta auditoria não autoriza Binance Production nem Stripe Live. A execução real de browser, Keycloak, PostgreSQL e Redis deve ser classificada separadamente de testes unitários/contratuais.

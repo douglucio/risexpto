@@ -40,7 +40,7 @@ export async function writeSession(session: AuthSession): Promise<void> {
     cookieOptions(config.secureCookies, maxAge),
   );
 }
-export async function readSession(refresh = true): Promise<AuthSession | null> {
+export async function readSession(refresh = true, persistRefresh = true): Promise<AuthSession | null> {
   const config = authConfig();
   const token = (await cookies()).get(sessionCookieName(config.secureCookies))?.value;
   if (!token) return null;
@@ -49,7 +49,7 @@ export async function readSession(refresh = true): Promise<AuthSession | null> {
     if (session.refreshExpiresAt <= Date.now()) return null;
     if (refresh && session.accessExpiresAt <= Date.now() + 60_000) {
       const next = await refreshSession(config, session);
-      await writeSession({ ...next, preferences: session.preferences });
+      if (persistRefresh) await writeSession({ ...next, preferences: session.preferences });
       return { ...next, preferences: session.preferences };
     }
     return session;

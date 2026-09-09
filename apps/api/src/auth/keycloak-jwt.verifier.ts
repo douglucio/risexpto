@@ -3,6 +3,27 @@ import jwt, { type JwtPayload } from 'jsonwebtoken';
 import jwksClient, { type JwksClient } from 'jwks-rsa';
 import type { TokenVerifier, VerifiedClaims } from './auth.types';
 
+export type TokenFailureReason =
+  | 'MALFORMED'
+  | 'ID_TOKEN'
+  | 'AUDIENCE'
+  | 'ISSUER'
+  | 'EXPIRED'
+  | 'SIGNATURE'
+  | 'CLAIMS'
+  | 'INVALID';
+
+export class KeycloakTokenVerificationError extends Error {
+  constructor(
+    readonly reason: TokenFailureReason,
+    readonly tokenKind: 'access' | 'id' | 'unknown' = 'unknown',
+    cause?: unknown,
+  ) {
+    super(reason, { cause });
+    this.name = 'KeycloakTokenVerificationError';
+  }
+}
+
 @Injectable()
 export class KeycloakJwtVerifier implements TokenVerifier {
   private readonly issuer: string;
@@ -25,17 +46,32 @@ export class KeycloakJwtVerifier implements TokenVerifier {
   }
   async verify(token: string): Promise<VerifiedClaims> {
     const decoded = jwt.decode(token, { complete: true });
+    const payload = decoded && typeof decoded !== 'string' && typeof decoded.payload === 'object'
+      ? decoded.payload
+      : undefined;
+    const tokenKind = payload?.typ === 'ID' ? 'id' : payload?.typ === 'Bearer' ? 'access' : 'unknown';
     if (!decoded || typeof decoded === 'string' || !decoded.header.kid)
-      throw new Error('Malformed token');
+      throw new KeycloakTokenVerificationError('MALFORMED', tokenKind);
     const key = await this.client.getSigningKey(decoded.header.kid);
-    const result = jwt.verify(token, key.getPublicKey(), {
-      algorithms: ['RS256'],
-      audience: this.audience,
-      issuer: this.issuer,
-      clockTolerance: 5,
-    }) as JwtPayload;
+    let result: JwtPayload;
+    try {
+      result = jwt.verify(token, key.getPublicKey(), {
+        algorithms: ['RS256'],
+        audience: this.audience,
+        issuer: this.issuer,
+        clockTolerance: 5,
+      }) as JwtPayload;
+    } catch (error) {
+      const message = error instanceof Error ? error.message.toLowerCase() : '';
+      const reason = message.includes('audience') ? 'AUDIENCE'
+        : message.includes('issuer') ? 'ISSUER'
+        : message.includes('expired') ? 'EXPIRED'
+        : message.includes('signature') ? 'SIGNATURE'
+        : 'INVALID';
+      throw new KeycloakTokenVerificationError(reason, tokenKind, error);
+    }
     if (typeof result.sub !== 'string' || typeof result.email !== 'string')
-      throw new Error('Required claims missing');
+      throw new KeycloakTokenVerificationError('CLAIMS', tokenKind);
     return result as VerifiedClaims;
   }
 }

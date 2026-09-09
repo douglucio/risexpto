@@ -1,6 +1,6 @@
 # RiseXPTO — Pre-Live Readiness
 
-## Current status — 2026-09-09
+## Current status — 2026-09-09 browser regression audit
 
 Esta é a matriz vigente. `CODE_IMPLEMENTED` indica caminho implementado; `LOCALLY_VALIDATED` exige teste ou execução local; `BROWSER_VALIDATED` exige fluxo autenticado no navegador; `EXTERNAL_TEST_VALIDATED` exige exercício da dependência externa; `PRODUCTION_READY` exige todos os gates e aprovação humana.
 
@@ -20,6 +20,13 @@ Esta é a matriz vigente. `CODE_IMPLEMENTED` indica caminho implementado; `LOCAL
 | Admin/auditoria/observabilidade | 🟨 parcial | 🟨 contratos/pacotes | ⬜ | ⬜ operação integrada | ❌ |
 
 O caminho atual está em `TESTABLE MVP READINESS`, não em `PRODUCTION_READY`. Binance Production e Stripe Live continuam proibidos.
+
+### Manual browser findings
+
+- Keycloak login, callback and `/auth/session` succeeded, but authenticated domain requests repeatedly returned `401`.
+- The shared cause was the Web server-rendered section loader reading the sealed session with refresh disabled, while `/auth/session` refreshed the access token. The API proxy also allowed an incoming `Authorization` header to override the session token.
+- Phase 49 now refreshes the access token before API calls, gives the session token precedence over forwarded headers, and emits only safe diagnostics (`missing/present`, token kind, audience, issuer host and expiry; never the token).
+- Browser validation must still confirm `/profile`, `/strategies`, `/bots`, `/exchange-connections`, `/trades`, `/positions` and `/billing` against the live local stack.
 
 ## Historical audit notes
 

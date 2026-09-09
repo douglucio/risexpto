@@ -163,6 +163,33 @@ export function logoutUrl(config: AuthConfig): URL {
 export function unsafeTokenExpiry(token: string): number | undefined {
   return decodeJwt(token).exp;
 }
+export function summarizeAccessToken(token: string): {
+  present: boolean;
+  kind: 'access' | 'id' | 'unknown';
+  audience: string[];
+  issuerHost: string | null;
+  expired: boolean | null;
+} {
+  if (!token) return { present: false, kind: 'unknown', audience: [], issuerHost: null, expired: null };
+  try {
+    const payload = decodeJwt(token);
+    const audiences = Array.isArray(payload.aud)
+      ? payload.aud.filter((value): value is string => typeof value === 'string')
+      : typeof payload.aud === 'string' ? [payload.aud] : [];
+    let issuerHost: string | null = null;
+    try { issuerHost = payload.iss ? new URL(payload.iss).host : null; } catch { /* safe summary */ }
+    const type = payload.typ;
+    return {
+      present: true,
+      kind: type === 'ID' ? 'id' : type === 'Bearer' ? 'access' : 'unknown',
+      audience: audiences,
+      issuerHost,
+      expired: typeof payload.exp === 'number' ? payload.exp <= Math.floor(Date.now() / 1000) : null,
+    };
+  } catch {
+    return { present: true, kind: 'unknown', audience: [], issuerHost: null, expired: null };
+  }
+}
 function safeReturnTo(value: string): string {
   return value.startsWith('/') && !value.startsWith('//') ? value : '/';
 }
