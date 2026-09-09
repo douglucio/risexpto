@@ -3345,9 +3345,9 @@ Limites mantidos: nenhum secret real foi versionado, nenhuma ordem foi enviada e
 | Fase | Escopo | Estado inicial | Critério de conclusão |
 |---|---|---|---|
 | 49 | Authenticated API token propagation and diagnostics | 🟨 | API recebe sempre o access token atual; `/profile`, `/strategies`, `/bots`, `/exchange-connections`, `/trades`, `/positions` e `/billing` têm testes autenticados e classificação segura de 401. |
-| 50 | Public/auth routing and dashboard | ⬜ | `/` permanece público, pós-login vai para `/dashboard`, `returnTo` é seguro, dashboard é autenticado e logout retorna a `/`. |
-| 51 | Authenticated navigation, RBAC and state UX | ⬜ | Admin é role-aware e protegido no servidor; loading, empty e error são distintos nos domínios autenticados. |
-| 52 | Strategy catalog and bot wizard regression | ⬜ | Catálogo seedado é carregado da API, sem criação arbitrária por USER, e o wizard exige estratégia válida. |
+| 50 | Public/auth routing and dashboard | ✅ | `/` permanece público, pós-login vai para `/dashboard`, `returnTo` é seguro, dashboard é autenticado e logout retorna a `/`. |
+| 51 | Authenticated navigation, RBAC and state UX | 🟨 | Admin é role-aware e protegido no servidor; loading, empty e error são distintos nos domínios autenticados. |
+| 52 | Strategy catalog and bot wizard regression | 🟨 | Catálogo seedado é carregado da API, sem criação arbitrária por USER, e o wizard exige estratégia válida. |
 | 53 | Trading provider foundation and Connections UX | ⬜ | `TradingProvider`/registry/capabilities e picker multi-provider Coming Soon existem; Binance continua o único provider operacional. |
 | 54 | Keycloak visual theme | ⬜ | Tema próprio RiseXPTO cobre telas principais e documentação de seleção está disponível. |
 | 55 | i18n EN/pt-BR/es | ⬜ | Catálogos, seletor público, Settings e área autenticada mudam idioma e persistem locale. |

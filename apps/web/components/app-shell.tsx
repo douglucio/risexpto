@@ -5,24 +5,23 @@ import { usePathname } from 'next/navigation';
 import { useEffect, useState, type ReactNode } from 'react';
 
 const navigation = [
-  ['Dashboard', '/'],
+  ['Dashboard', '/dashboard'],
   ['Bots', '/bots'],
   ['Strategies', '/strategies'],
-  ['Exchanges', '/exchange-connections'],
+  ['Connections', '/exchange-connections'],
   ['Backtests', '/backtests'],
   ['Trades', '/trades'],
   ['Risk', '/risk'],
   ['Notifications', '/notifications'],
   ['Billing', '/billing'],
   ['Settings', '/settings'],
-  ['Admin', '/admin'],
 ] as const;
 
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [theme, setTheme] = useState<'light' | 'dark'>('dark');
-  const [user, setUser] = useState<{ name: string; email: string } | null>(null);
+  const [user, setUser] = useState<{ name: string; email: string; roles: string[] } | null>(null);
   useEffect(() => {
     const saved = localStorage.getItem('rx-theme');
     const next = saved === 'light' || saved === 'dark' ? saved : 'dark';
@@ -33,7 +32,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     if (pathname === '/login') return;
     void fetch('/auth/session', { cache: 'no-store' }).then(async (response) => {
       if (response.ok) {
-        const body = (await response.json()) as { user: { name: string; email: string } };
+        const body = (await response.json()) as { user: { name: string; email: string; roles: string[] } };
         setUser(body.user);
       }
     });
@@ -67,6 +66,11 @@ export function AppShell({ children }: { children: ReactNode }) {
               {label}
             </Link>
           ))}
+          {user?.roles.includes('ADMIN') ? (
+            <Link href="/admin" aria-current={pathname === '/admin' ? 'page' : undefined} onClick={() => setMobileOpen(false)}>
+              Admin Console
+            </Link>
+          ) : null}
         </nav>
         <div className="mode-guard">
           <small>TRADING MODE</small>
@@ -104,10 +108,16 @@ export function AppShell({ children }: { children: ReactNode }) {
               {theme === 'dark' ? '☀' : '☾'}
             </button>
             <button aria-label="Open notifications">●</button>
-            <span className="avatar" title={user?.email}>
-              {user ? initials(user.name) : 'RX'}
-            </span>
-            <form action="/auth/logout" method="post">
+            <details className="avatar-menu">
+              <summary className="avatar" title={user?.email}>{user ? initials(user.name) : 'RX'}</summary>
+              <div className="avatar-menu-items">
+                <Link href="/settings">Profile</Link>
+                <Link href="/settings">Settings</Link>
+                {user?.roles.includes('ADMIN') ? <Link href="/admin">Admin Console</Link> : null}
+                <button type="button" onClick={() => document.querySelector<HTMLFormElement>('[data-logout-form]')?.requestSubmit()}>Logout</button>
+              </div>
+            </details>
+            <form action="/auth/logout" method="post" data-logout-form>
               <button type="submit" aria-label="Sign out">
                 ↪
               </button>

@@ -418,6 +418,43 @@ p {
   font-size: var(--rx-text-xs);
   font-weight: 700;
 }
+.avatar-menu {
+  position: relative;
+}
+.avatar-menu summary {
+  cursor: pointer;
+  list-style: none;
+}
+.avatar-menu summary::-webkit-details-marker {
+  display: none;
+}
+.avatar-menu-items {
+  position: absolute;
+  top: 2.6rem;
+  right: 0;
+  z-index: 2;
+  display: grid;
+  min-width: 10rem;
+  padding: 0.4rem;
+  border: 1px solid var(--rx-color-border);
+  border-radius: var(--rx-radius-md);
+  background: var(--rx-color-surface);
+  box-shadow: 0 1rem 2rem rgb(0 0 0 / 0.25);
+}
+.avatar-menu-items a,
+.avatar-menu-items button {
+  padding: 0.55rem 0.7rem;
+  border: 0;
+  background: transparent;
+  color: var(--rx-color-text);
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+}
+.avatar-menu-items a:hover,
+.avatar-menu-items button:hover {
+  background: var(--rx-color-brand-soft);
+}
 .menu-button {
   display: none;
 }

@@ -62,7 +62,8 @@ export function ExchangeConnectionsPanel({ initial }: { initial: Connection[] })
 
   return <div className="content-stack">
     <Card className="content-stack">
-      <div className="section-heading"><h2>Add Binance connection</h2><Badge tone="warning">TESTNET</Badge></div>
+      <div className="section-heading"><h2>Your connections</h2><Badge tone="warning">TESTNET</Badge></div>
+      <p>Choose a trading provider. Binance is available now; other providers are coming soon.</p>
       <p>Use a Spot Testnet key with withdrawals disabled. The API secret is encrypted and never returned.</p>
       <FormField label="Label"><Input value={label} onChange={(event) => setLabel(event.target.value)} /></FormField>
       <FormField label="API key"><Input value={apiKey} onChange={(event) => setApiKey(event.target.value)} autoComplete="off" /></FormField>

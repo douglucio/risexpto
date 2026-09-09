@@ -5,6 +5,7 @@ import { sessionCookieName } from './lib/auth/session';
 import type { AuthSession } from './lib/auth/types';
 
 export async function proxy(request: NextRequest) {
+  if (request.nextUrl.pathname === '/') return NextResponse.next();
   try {
     const config = authConfig();
     const token = request.cookies.get(sessionCookieName(config.secureCookies))?.value;

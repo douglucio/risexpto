@@ -157,7 +157,7 @@ async function verify(
 export function logoutUrl(config: AuthConfig): URL {
   const url = new URL(`${config.issuer}/protocol/openid-connect/logout`);
   url.searchParams.set('client_id', config.clientId);
-  url.searchParams.set('post_logout_redirect_uri', `${config.baseUrl}/login`);
+  url.searchParams.set('post_logout_redirect_uri', `${config.baseUrl}/`);
   return url;
 }
 export function unsafeTokenExpiry(token: string): number | undefined {
@@ -191,5 +191,5 @@ export function summarizeAccessToken(token: string): {
   }
 }
 function safeReturnTo(value: string): string {
-  return value.startsWith('/') && !value.startsWith('//') ? value : '/';
+  return value.startsWith('/') && !value.startsWith('//') ? value : '/dashboard';
 }

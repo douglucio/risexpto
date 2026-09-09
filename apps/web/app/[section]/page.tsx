@@ -16,6 +16,8 @@ import { BotCreateWizard } from '../../components/bot-create-wizard';
 import { RiskPanel } from '../../components/risk-panel';
 import { ExchangeConnectionsPanel } from '../../components/exchange-connections-panel';
 import { BillingPanel } from '../../components/billing-panel';
+import { redirect } from 'next/navigation';
+import Link from 'next/link';
 
 const pages = {
   bots: ['Automation', 'Bots', 'Create, monitor, and control automated strategy instances.'],
@@ -47,6 +49,10 @@ export default async function SectionPage({ params }: { params: Promise<{ sectio
   const { section } = await params;
   const page = pages[section as keyof typeof pages];
   if (!page) notFound();
+  if (section === 'admin') {
+    const session = await readSession(true, false);
+    if (!session?.user.roles.includes('ADMIN')) redirect('/dashboard');
+  }
   const data =
     section === 'bots' || section === 'strategies' || section === 'exchange-connections' || section === 'trades' || section === 'portfolio' || section === 'billing'
       ? await loadSectionData(section)
@@ -117,7 +123,9 @@ type BillingRecord = { mode: string; subscription: { status: string; plan: strin
 async function loadSectionData(
   section: 'bots' | 'strategies' | 'exchange-connections' | 'trades' | 'portfolio' | 'billing',
 ): Promise<SectionData> {
-  const session = await readSession(false);
+  // Server Components cannot persist refreshed cookies. They still use a fresh
+  // access token for this request; BFF route handlers persist refresh results.
+  const session = await readSession(true, false);
   if (!session)
     return { kind: 'error', message: 'Your session is no longer available. Sign in again.' };
   try {
@@ -207,6 +215,7 @@ function SectionContent({ section, data }: { section: string; data: SectionData 
                 {strategy.versions[0] ? (
                   <small>Version {strategy.versions[0].version}</small>
                 ) : null}
+                <Link className="rx-button" href="/bots">Use strategy</Link>
               </Card>
             ))
           : null}

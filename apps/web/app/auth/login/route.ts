@@ -5,7 +5,7 @@ import { writeTransaction } from '../../../lib/auth/session';
 
 export async function GET(request: NextRequest) {
   const action = request.nextUrl.searchParams.get('action');
-  const transaction = createLoginTransaction(request.nextUrl.searchParams.get('returnTo') ?? '/');
+  const transaction = createLoginTransaction(request.nextUrl.searchParams.get('returnTo') ?? '/dashboard');
   await writeTransaction(transaction);
   return NextResponse.redirect(
     authorizationUrl(

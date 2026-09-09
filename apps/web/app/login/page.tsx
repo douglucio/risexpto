@@ -5,7 +5,7 @@ export default async function LoginPage({
 }: {
   searchParams: Promise<{ error?: string; returnTo?: string }>;
 }) {
-  const { error, returnTo = '/' } = await searchParams;
+  const { error, returnTo = '/dashboard' } = await searchParams;
   const encodedReturnTo = encodeURIComponent(returnTo);
   return (
     <div className="auth-page">
