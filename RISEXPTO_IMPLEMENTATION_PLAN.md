@@ -3411,26 +3411,35 @@ As fases 01–68 permanecem preservadas. Os itens abaixo registram correções d
 | 74 | Inicialização de locale da sessão OIDC | ✅ CODE_IMPLEMENTED / TESTED |
 | 75 | Persistência do locale na topbar | ✅ CODE_IMPLEMENTED / TYPECHECKED |
 | 76 | Remoção do override por pathname | ✅ CODE_IMPLEMENTED / TYPECHECKED |
-| 77 | i18n do workspace EN/pt-BR/es | 🟨 CODE_IMPLEMENTED; browser autenticado ainda depende da stack |
+| 77 | i18n do workspace EN/pt-BR/es | ✅ CODE_IMPLEMENTED / BROWSER_VALIDATED; catálogo completo e workspace autenticado navegável em PT-BR/ES, com EN coberto pelo catálogo e shell |
 | 78 | Limpeza de i18n em Settings e componentes | ✅ CODE_IMPLEMENTED / TYPECHECKED |
-| 79 | Locale end-to-end no Keycloak | 🟨 `ui_locales` testado no código; Keycloak real pendente |
-| 80 | Tema Keycloak RiseXPTO V2 | 🟨 asset/CSS implementados; validação visual Keycloak 26.3 pendente |
+| 79 | Locale end-to-end no Keycloak | ✅ KEYCLOAK_BROWSER_VALIDATED; EN, PT-BR→pt e ES confirmados no Keycloak 26.3 real |
+| 80 | Tema Keycloak RiseXPTO V2 | ✅ KEYCLOAK_BROWSER_SCREENSHOT_VALIDATED; logo [R], fundo navy, superfícies e hierarquia RiseXPTO confirmados em Chromium |
 | 81 | Navbar full-bleed | ✅ CODE_IMPLEMENTED / TYPECHECKED |
-| 82 | Estados auth/empty/error | 🟨 contratos implementados; browser autenticado pendente |
+| 82 | Estados auth/empty/error | ✅ CODE_AND_BROWSER_VALIDATED; 401/403/500/503 preservados/diferenciados, 200 vazio confirmado e regressão USDT corrigida |
 | 83 | Investigação `reportAllChanges/startTime` | ✅ CLASSIFIED_EXTERNAL_BROWSER_SCRIPT quando ausente do bundle local |
 | 84 | Regressão browser auth + i18n | ✅ BROWSER_VALIDATED; login Keycloak real e locale PT-BR sobreviveram navegação/reload |
 | 85 | Regressão de dados autenticados | ✅ BROWSER_VALIDATED; strategies/bots/connections/billing sem 401 |
-| 86 | Gate PAPER MVP | 🟨 aguardando fases externas e teste manual do proprietário |
+| 86 | Gate PAPER MVP | ✅ PAPER_BROWSER_AND_DB_VALIDATED; bot DCA PAPER criado, promovido a READY, iniciado, ciclo enfileirado e worker persistiu snapshots, propostas, ordens FILLED, trades, posição e saldos |
 
 Regressões registradas: `Previously implemented. Manual browser regression found on 2026-09-10. Superseded by Phases 69–86.` O `AppShell` não reimpõe mais o locale a cada navegação; a persistência atualiza UI, cookie, sessão e `UserProfile`. O diagnóstico nunca registra token, refresh token ou segredo de sessão. Binance Production e Stripe Live permanecem proibidos.
 
 Na validação autenticada, um `503` inicial foi comprovadamente causado por uma
 conta temporária de teste cujo email já existia no banco com outro `externalAuthId`
 do Keycloak. O diagnóstico development-only registrou apenas a mensagem sanitizada
-da falha; a conta e seu vínculo Starter foram removidos ao final do teste. A
+da falha; o usuário Keycloak foi removido e o bot PAPER local foi parado e
+arquivado ao final do teste. A
 regressão final usou as chaves seed reais `dca`, `grid` e `trend-following` e
 confirmou a persistência PT-BR após troca PT-BR → ES → navegação → Settings →
 PT-BR → reload.
+
+O gate PAPER foi executado somente com `LIVE_TRADING_ENABLED=false` e o worker
+com `BINANCE_MARKET_DATA_BASE_URL=https://testnet.binance.vision`; não houve
+ordem Binance, credencial de exchange ou Stripe Live. A validação encontrou e
+corrigiu duas regressões operacionais: o wizard não promovia o bot recém-criado
+de `DRAFT` para `READY`, e `Intl.NumberFormat` lançava erro para `USDT`. Após as
+correções, o banco local confirmou `2` propostas `EXECUTED`, `2` ordens `FILLED`,
+`2` trades, uma posição PAPER aberta e saldos BTC/USDT.
 
 ### Evidência operacional posterior — Keycloak local ativo
 

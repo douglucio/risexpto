@@ -49,12 +49,19 @@ export async function submitLiveOrder(database: PrismaClient, orderId: string): 
     maxAllocatedCapital: Number(order.bot.riskProfile.maxAllocatedCapital),
     maxTradeAmount: Number(order.bot.riskProfile.maxTradeAmount),
     maxExposure:
-      Number(order.bot.riskProfile.maxAllocatedCapital) *
-      Number(order.bot.riskProfile.maxExposurePercent),
-    maxPositionPercent: Number(order.bot.riskProfile.maxPositionPercent),
+      (Number(order.bot.riskProfile.maxAllocatedCapital) *
+        Number(order.bot.riskProfile.maxExposurePercent)) /
+      100,
+    maxPositionPercent: Number(order.bot.riskProfile.maxPositionPercent) / 100,
     maxPositions: order.bot.riskProfile.maxPositions,
-    maxDailyLoss: Number(order.bot.riskProfile.maxDailyLossPercent),
-    maxDrawdown: Number(order.bot.riskProfile.maxDrawdownPercent),
+    maxDailyLoss:
+      (Number(order.bot.riskProfile.maxAllocatedCapital) *
+        Number(order.bot.riskProfile.maxDailyLossPercent)) /
+      100,
+    maxDrawdown:
+      (Number(order.bot.riskProfile.maxAllocatedCapital) *
+        Number(order.bot.riskProfile.maxDrawdownPercent)) /
+      100,
     allowedSymbols: order.bot.riskProfile.allowedSymbols,
     cooldownMs: order.bot.riskProfile.cooldownSeconds * 1000,
     allowLive: true,

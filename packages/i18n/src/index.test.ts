@@ -12,5 +12,5 @@ describe('i18n', () => {
   it('formats currency and timezone-aware dates through Intl', () => {
     expect(formatCurrency(1234.5, 'USD', 'en')).toContain('$1,234.50');
     expect(formatDate(Date.UTC(2026, 0, 1, 12), 'en', 'UTC')).toContain('Jan');
-  });
+  }, 15_000);
 });

@@ -72,7 +72,7 @@ type SectionData =
   | { kind: 'trades'; value: TradeRecord[] }
   | { kind: 'positions'; value: PositionRecord[] }
   | { kind: 'billing'; value: BillingRecord }
-  | { kind: 'error'; message: string };
+  | { kind: 'error'; message: string; status: number };
 type BotRecord = {
   id: string;
   name: string;
@@ -124,7 +124,7 @@ async function loadSectionData(
   // Server Components cannot persist refreshed cookies. They still use a fresh
   // access token for this request; BFF route handlers persist refresh results.
   const session = await readSession(true, false);
-  if (!session) return { kind: 'error', message: 'dashboard.signInAgain' };
+  if (!session) return { kind: 'error', message: 'dashboard.signInAgain', status: 401 };
   try {
     const apiBaseUrl =
       process.env.API_BASE_URL ?? `http://localhost:${process.env.API_PORT ?? '3001'}`;
@@ -132,20 +132,7 @@ async function loadSectionData(
       headers: { authorization: `Bearer ${session.accessToken}` },
       cache: 'no-store',
     });
-    if (!response.ok)
-      return {
-        kind: 'error',
-        message:
-          section === 'bots'
-            ? 'workspace.loadBotsError'
-            : section === 'strategies'
-              ? 'workspace.loadStrategiesError'
-              : section === 'exchange-connections'
-                ? 'workspace.loadConnectionsError'
-                : section === 'trades'
-                  ? 'workspace.loadTradesError'
-                  : 'error.generic',
-      };
+    if (!response.ok) return sectionError(section, response.status);
     const payload: unknown = await response.json();
     if (section === 'bots') return { kind: 'bots', value: payload as BotRecord[] };
     if (section === 'strategies') return { kind: 'strategies', value: payload as StrategyRecord[] };
@@ -155,8 +142,31 @@ async function loadSectionData(
     if (section === 'billing') return { kind: 'billing', value: payload as BillingRecord };
     return { kind: 'positions', value: payload as PositionRecord[] };
   } catch {
-    return { kind: 'error', message: 'error.generic' };
+    return { kind: 'error', message: 'error.unavailable', status: 503 };
   }
+}
+
+function sectionError(
+  section: 'bots' | 'strategies' | 'exchange-connections' | 'trades' | 'portfolio' | 'billing',
+  status: number,
+): SectionData {
+  if (status === 401) return { kind: 'error', message: 'dashboard.signInAgain', status };
+  if (status === 403) return { kind: 'error', message: 'error.forbidden', status };
+  if (status === 503) return { kind: 'error', message: 'error.unavailable', status };
+  return {
+    kind: 'error',
+    message:
+      section === 'bots'
+        ? 'workspace.loadBotsError'
+        : section === 'strategies'
+          ? 'workspace.loadStrategiesError'
+          : section === 'exchange-connections'
+            ? 'workspace.loadConnectionsError'
+            : section === 'trades'
+              ? 'workspace.loadTradesError'
+              : 'error.generic',
+    status,
+  };
 }
 
 function SectionContent({

@@ -56,7 +56,7 @@ export function authorizationUrl(
   const endpoint = action === 'register' ? 'registrations' : 'auth';
   const url = new URL(`${config.issuer}/protocol/openid-connect/${endpoint}`);
   const challenge = createHash('sha256').update(transaction.verifier).digest('base64url');
-  url.search = new URLSearchParams({
+  const authorizationParams: Record<string, string> = {
     client_id: config.clientId,
     redirect_uri: `${config.baseUrl}/auth/callback`,
     response_type: 'code',
@@ -67,10 +67,17 @@ export function authorizationUrl(
     state: transaction.state,
     code_challenge: challenge,
     code_challenge_method: 'S256',
-    ...(transaction.locale ? { ui_locales: transaction.locale } : {}),
-  }).toString();
+  };
+  const locale = keycloakLocale(transaction.locale);
+  if (locale) authorizationParams.ui_locales = locale;
+  url.search = new URLSearchParams(authorizationParams).toString();
   if (action === 'recover') url.searchParams.set('kc_action', 'UPDATE_PASSWORD');
   return url;
+}
+
+export function keycloakLocale(locale: LoginTransaction['locale']): string | undefined {
+  if (!locale) return undefined;
+  return locale === 'pt-BR' ? 'pt' : locale;
 }
 export async function exchangeCode(
   config: AuthConfig,

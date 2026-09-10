@@ -191,10 +191,13 @@ separado. O erro `reportAllChanges/startTime` deve ser tratado como script
 externo se não existir no código/bundle local.
 
 Validação real posterior: Keycloak 26.3, PostgreSQL e Redis locais ficaram
-saudáveis; o realm foi reconciliado sem apagar usuários; o mapper `sub` ausente
-foi identificado e aplicado; login real e BFF autenticado retornaram `200` para
-session, strategies, bots, connections e billing. Binance Production e Stripe
-Live continuam fora do teste.
+saudáveis; o realm foi reconciliado sem apagar usuários; internacionalização,
+tema, mapper `sub` e locale `ui_locales` foram validados no Chromium; login real
+e BFF autenticado retornaram `200` para session, strategies, bots, connections e
+billing. O gate PAPER também persistiu snapshots, propostas, ordens, trades,
+posição e saldos usando exclusivamente o endpoint público Spot Testnet, com
+`LIVE_TRADING_ENABLED=false`. Binance Production e Stripe Live continuam fora
+do teste.
 
 ## Validações executadas
 

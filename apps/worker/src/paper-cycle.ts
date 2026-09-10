@@ -120,11 +120,12 @@ export async function processPaperCycle(
     const risk = new RiskEngine({
       maxAllocatedCapital: Number(profile.maxAllocatedCapital),
       maxTradeAmount: Number(profile.maxTradeAmount),
-      maxExposure: Number(profile.maxAllocatedCapital) * Number(profile.maxExposurePercent),
-      maxPositionPercent: Number(profile.maxPositionPercent),
+      maxExposure: (Number(profile.maxAllocatedCapital) * Number(profile.maxExposurePercent)) / 100,
+      maxPositionPercent: Number(profile.maxPositionPercent) / 100,
       maxPositions: profile.maxPositions,
-      maxDailyLoss: Number(profile.maxDailyLossPercent),
-      maxDrawdown: Number(profile.maxDrawdownPercent),
+      maxDailyLoss:
+        (Number(profile.maxAllocatedCapital) * Number(profile.maxDailyLossPercent)) / 100,
+      maxDrawdown: (Number(profile.maxAllocatedCapital) * Number(profile.maxDrawdownPercent)) / 100,
       allowedSymbols: profile.allowedSymbols,
       cooldownMs: profile.cooldownSeconds * 1000,
       allowLive: false,

@@ -10,11 +10,17 @@ export function CurrencyDisplay({
   currency?: string;
   locale?: string;
 }) {
-  return (
-    <span className="rx-number">
-      {new Intl.NumberFormat(locale, { style: 'currency', currency }).format(value)}
-    </span>
-  );
+  const normalizedCurrency = currency.toUpperCase();
+  const isIsoCurrency =
+    /^[A-Z]{3}$/.test(normalizedCurrency) &&
+    ['USD', 'BRL', 'EUR', 'GBP', 'JPY'].includes(normalizedCurrency);
+  const formatted = isIsoCurrency
+    ? new Intl.NumberFormat(locale, {
+        style: 'currency',
+        currency: normalizedCurrency,
+      }).format(value)
+    : `${new Intl.NumberFormat(locale, { maximumFractionDigits: 8 }).format(value)} ${normalizedCurrency}`;
+  return <span className="rx-number">{formatted}</span>;
 }
 export function PercentageDisplay({ value }: { value: number }) {
   return (

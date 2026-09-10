@@ -108,7 +108,17 @@ O login exige e-mail verificado; não remova essa exigência para facilitar o te
 
 4. Em `Bots`, crie um bot DCA `PAPER` para `BTCUSDT`, revise capital e risco, e crie-o.
 5. Faça `Start` e aguarde o worker: `market-data-sync`, `paper-scheduler` e o ciclo do bot.
-6. Confirme em `Bots`, `Trades` e `Portfolio` os dados persistidos. A primeira execução DCA exige um `MarketSnapshot` recente; sem sinal ou mercado disponível o bot deve mostrar o estado correspondente, não dados fictícios.
+6. Use `Run cycle` para forçar um ciclo depois de um snapshot recente e confirme em `Bots`, `Trades` e `Portfolio` os dados persistidos. O gate validado em 2026-09-10 persistiu propostas `EXECUTED`, ordens `FILLED`, trades, posição PAPER e saldos BTC/USDT.
+7. A primeira execução DCA exige um `MarketSnapshot` recente; sem sinal ou mercado disponível o bot deve mostrar o estado correspondente, não dados fictícios.
+
+Para validar o worker sem Binance Production, inicie-o explicitamente com:
+
+```bash
+BINANCE_MARKET_DATA_BASE_URL=https://testnet.binance.vision pnpm --filter @risexpto/worker start
+```
+
+Mantenha `LIVE_TRADING_ENABLED=false`; não são necessárias credenciais Binance
+para candles públicos da Testnet e nenhuma ordem é enviada.
 
 Para verificar persistência diretamente, use PostgreSQL e procure `MarketSnapshot`, `TradeProposal`, `RiskEvent`, `Order`, `Trade`, `Position` e `PaperBalance` associados ao usuário/bot.
 

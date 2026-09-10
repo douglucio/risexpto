@@ -130,6 +130,20 @@ export function BotCreateWizard() {
       setStatus(t('workspace.createBotError'));
       return;
     }
+    const created = (await response.json()) as { id?: string };
+    if (!created.id) {
+      setStatus(t('workspace.createBotError'));
+      return;
+    }
+    const readyResponse = await fetch(`/api/bots/${encodeURIComponent(created.id)}/status`, {
+      method: 'PATCH',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ status: 'READY' }),
+    });
+    if (!readyResponse.ok) {
+      setStatus(t('workspace.createBotError'));
+      return;
+    }
     window.location.reload();
   }
   return (

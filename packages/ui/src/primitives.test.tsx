@@ -9,6 +9,10 @@ describe('financial UI primitives', () => {
     render(<CurrencyDisplay value={1284.5} />);
     expect(screen.getByText('$1,284.50')).toHaveClass('rx-number');
   });
+  it('formats crypto assets without passing non-ISO codes to Intl', () => {
+    render(<CurrencyDisplay value={10} currency="USDT" />);
+    expect(screen.getByText('10 USDT')).toHaveClass('rx-number');
+  });
   it('exposes progress semantics and clamps unsafe values', () => {
     render(<Progress value={120} label="Risk capacity" />);
     expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '100');

@@ -66,6 +66,9 @@ async function reconcile(currentRealm, currentClient, currentScopes, expectedRea
   const realmPatch = {
     enabled: expectedRealm.enabled,
     loginTheme: expectedRealm.loginTheme,
+    internationalizationEnabled: expectedRealm.internationalizationEnabled,
+    supportedLocales: expectedRealm.supportedLocales,
+    defaultLocale: expectedRealm.defaultLocale,
     verifyEmail: expectedRealm.verifyEmail,
     registrationAllowed: expectedRealm.registrationAllowed,
     registrationEmailAsUsername: expectedRealm.registrationEmailAsUsername,
@@ -146,6 +149,9 @@ async function summarize(currentRealm, client, scopes, roles) {
   return {
     verifyEmail: currentRealm.verifyEmail,
     loginTheme: currentRealm.loginTheme,
+    internationalizationEnabled: currentRealm.internationalizationEnabled,
+    supportedLocales: [...(currentRealm.supportedLocales ?? [])].sort(),
+    defaultLocale: currentRealm.defaultLocale,
     client: client.clientId,
     defaultScopes: expectedScopeNames.filter((name) => names.has(name)).sort(),
     emailMapper: mapperSummary.email?.includes('email') ?? false,
@@ -167,6 +173,9 @@ function expectedSummary(value) {
   return {
     verifyEmail: value.verifyEmail,
     loginTheme: value.loginTheme,
+    internationalizationEnabled: value.internationalizationEnabled,
+    supportedLocales: [...(value.supportedLocales ?? [])].sort(),
+    defaultLocale: value.defaultLocale,
     client: web?.clientId,
     defaultScopes: [...(web?.defaultClientScopes ?? [])].sort(),
     emailMapper: true,
