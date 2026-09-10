@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useLocale } from './locale-provider';
 import { translate } from '@risexpto/i18n';
+import { BrandLockup } from './brand-lockup';
 
 const navigation = [
   ['nav.dashboard', '/dashboard'],
@@ -99,7 +100,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         aria-label="Primary navigation"
       >
         <Link href="/" className="app-brand" onClick={() => setMobileOpen(false)}>
-          <span aria-hidden="true">R</span>
+          <BrandLockup variant="compact" />
           <b>RiseXPTO</b>
         </Link>
         <nav>

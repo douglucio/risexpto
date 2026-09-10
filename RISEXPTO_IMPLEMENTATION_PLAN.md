@@ -2847,6 +2847,111 @@ Commits:
 Status:
 ✅ Fases 88–95 concluídas e integradas em `develop`. `main` não foi alterada.
 
+## 2026-09-10 — Nova auditoria manual de autenticação, locale e branding
+
+### Bugs confirmados
+
+- troca de idioma na Home pública dispara `PUT /auth/preferences` e recebe
+  `401`; a persistência autenticada não está separada da persistência pública;
+- `/login` referencia `/brand/risexpto-auth.svg`, mas `/brand/*` não estava
+  declarado como público no proxy e a imagem chega quebrada;
+- o locale selector nativo do Keycloak 26.3 aparece permanentemente aberto,
+  cobre o formulário e não fecha de forma confiável após seleção;
+- Keycloak Login, Register e Forgot Password usam proporções, background,
+  espaçamento e escala de logo diferentes do `/login` RiseXPTO;
+- o wordmark pode ser cortado no header do theme;
+- credencial inválida pinta o formulário inteiro de vermelho, em vez de
+  apresentar erro discreto no campo/alerta.
+
+Essas regressões foram encontradas após as fases 88–95 e supersedem somente a
+apresentação visual correspondente; o histórico anterior permanece intacto.
+Como a Fase 95 já era `Documentation Reconciliation`, a solicitação de Fase
+95 desta rodada é preservada como escopo e executada na sequência nova abaixo.
+
+| Fase | Escopo | Estado inicial | Critério de conclusão |
+|---|---|---|---|
+| 96 | Public Locale Persistence Boundary | ✅ | Landing anônima persiste cookie/localStorage sem chamadas autenticadas; workspace autenticado atualiza sessão e UserProfile. |
+| 97 | Shared Brand Asset Fix | ✅ | `/login`, landing, shell e Keycloak usam assets locais válidos, com dimensões seguras e wordmark sem clipping. |
+| 98 | Keycloak Locale Dropdown Behavior | ✅ | Dropdown fechado por padrão, abre por clique, fecha por seleção/outside/Escape e mantém EN/PT/ES + `ui_locales`. |
+| 99 | Keycloak Visual Consistency | ✅ | Background, superfície, tokens, card, logo e densidade visual continuam a linguagem do `/login`. |
+| 100 | Registration & Recovery Layout Polish | ✅ | Register, recovery, reset e required actions compactos, legíveis, responsivos e sem sobreposição. |
+| 101 | Authentication Error States | ✅ | Erro de login/validação usa field/form error discreto, sem vermelho aplicado ao formulário inteiro. |
+| 102 | Auth Responsive & Interaction Regression | ✅ | Desktop/tablet/mobile cobertos por assertions estruturais e interação real do Keycloak. |
+
+Restrições mantidas: nenhum teste usa Binance Production, nenhuma ordem é
+enviada e Stripe Live permanece proibido.
+
+### Fase 96 — Public Locale Persistence Boundary
+
+Resumo:
+- `persistLocaleSelection` centraliza a decisão entre superfície pública e workspace autenticado;
+- `/`, `/login` e `/auth/*` atualizam cookie/localStorage/`<html lang>` sem chamar `/auth/preferences` ou UserProfile;
+- rotas autenticadas confirmam `/auth/session` antes de persistir AuthSession e `UserProfile.locale`;
+- `/brand/*` passou a ser público no proxy para servir assets de autenticação sem redirect.
+
+Validações:
+- Web typecheck/lint: OK;
+- testes de boundary/policy: OK (30 testes Web);
+- assets público/Keycloak idênticos: OK;
+- sem 401 público por persistência de locale: coberto por teste de requests E2E.
+
+### Fase 97 — Shared Brand Asset Fix
+
+Resumo:
+- `BrandLockup` reutiliza o asset local `[R] RiseXPTO` na landing, shell e auth;
+- `/login` mantém a mesma referência pública e o proxy libera `/brand/*`;
+- variantes compact/header/auth controlam dimensões com `object-fit` e `object-position`, sem distorção ou clipping;
+- a cópia Keycloak permanece byte-a-byte equivalente à cópia pública.
+
+Validações:
+- Web typecheck/lint: OK;
+- `cmp` entre assets público e Keycloak: OK;
+- `git diff --check`: OK.
+
+### Fase 98 — Keycloak Locale Dropdown Behavior
+
+Resumo:
+- CSS controla o menu PatternFly nativo como fechado por padrão e o exibe apenas quando o script Keycloak aplica `style="display: block"`;
+- posicionamento absoluto, z-index, largura e max-height impedem sobreposição persistente do formulário;
+- o mecanismo nativo mantém foco, Escape, clique externo, seleção e links `kc_locale`;
+- EN/PT/ES foram exercitados no Keycloak 26.3 real.
+
+Validações:
+- Playwright real: dropdown abre/fecha e seleciona Espanhol: OK;
+- Login EN/PT/ES e locale público: OK (7 testes);
+- `git diff --check`: OK.
+
+### Fases 99–101 — Visual, registration/recovery e errors
+
+Resumo:
+- background do `.login-pf-page` substitui o background dominante do parent por navy RiseXPTO equivalente ao `/login`;
+- lockup recebeu viewBox seguro, escala menor e wordmark completo;
+- input password visibility herda surface dark, não PatternFly branco;
+- Register usa card até 540px, gaps reduzidos e margens seguras; Recovery usa o card compacto do login;
+- erros de credencial/validação usam alertas e bordas de campo discretos, mantendo card e inputs dark.
+
+Validações:
+- screenshot real Keycloak Login revisado: background, logo e wordmark alinhados;
+- Register, Forgot Password e invalid credentials: OK no Playwright;
+- nenhuma superfície de formulário recebeu vermelho integral.
+
+### Fase 102 — Auth Responsive & Interaction Regression
+
+Validações reais:
+- desktop wide `1440x900`: OK;
+- desktop normal `1366x768`: OK;
+- tablet `834x1112`: OK;
+- mobile `390x844`: OK;
+- sem overflow horizontal, logo visível, card dentro de margens seguras e
+  locale menu fechado por padrão em todos os breakpoints;
+- Login EN/PT/ES, Register, Forgot Password, locale selection, outside/Escape
+  e invalid credentials cobertos pelo Playwright local.
+
+Status:
+✅ Fases 96–102 concluídas e validadas localmente. Lint, typecheck, testes,
+build, `git diff --check` e a suíte E2E focada passaram; integração final em
+`develop` será registrada após o merge local desta rodada.
+
 ## 2026-09-06 — Binance Testnet connector (primeira fatia do Gate 1)
 
 Resumo:

@@ -63,3 +63,8 @@ All work flows from `feature/*` to `develop`. Only the owner may update `main`.
 ## Current browser stabilization round
 
 The current work addresses four confirmed regressions: invalid landing `IntersectionObserver` margins, authentication middleware intercepting anonymous `/api/public/*`, unnecessary anonymous session requests on `/`, and incomplete English/Portuguese/Spanish coverage. Track implementation versus local, browser, and external validation in [`RISEXPTO_IMPLEMENTATION_PLAN.md`](./RISEXPTO_IMPLEMENTATION_PLAN.md). Binance Production and Stripe Live are not used.
+
+Public locale changes are browser-only; authenticated locale changes are
+persisted only after the sealed session is confirmed. The local auth smoke
+tests cover Keycloak 26.3 Login/Register/Recovery, locale dropdown, invalid
+credentials and responsive viewports.

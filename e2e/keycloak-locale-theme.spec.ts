@@ -17,6 +17,16 @@ test.describe('Keycloak locale and RiseXPTO theme', () => {
         'background-image',
         /risexpto-auth/,
       );
+      const localeButton = page.locator('#kc-current-locale-link');
+      const localeMenu = page.locator('#kc-locale [role="menu"]');
+      await expect(localeButton).toHaveAttribute('aria-expanded', 'false');
+      await expect(localeMenu).toBeHidden();
+      await localeButton.click();
+      await expect(localeButton).toHaveAttribute('aria-expanded', 'true');
+      await expect(localeMenu).toBeVisible();
+      await page.keyboard.press('Escape');
+      await expect(localeButton).toHaveAttribute('aria-expanded', 'false');
+      await expect(localeMenu).toBeHidden();
       await expect(page.locator('body')).toContainText(/RiseXPTO/i);
       const card = page.locator('.login-pf-page .card-pf, .kc-form-card, #kc-form-wrapper').first();
       await expect(card).toBeVisible();

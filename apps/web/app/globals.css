@@ -75,16 +75,10 @@ body {
   gap: 0.65rem;
   font-size: 1.1rem;
 }
-.marketing-brand span {
-  display: grid;
-  place-items: center;
-  width: 2rem;
-  height: 2rem;
-  border-radius: 0.6rem;
-  background: var(--rx-color-brand);
-  color: white;
-  font-weight: 700;
-}
+.rx-brand-lockup { display: block; flex: none; object-fit: cover; object-position: left center; }
+.rx-brand-lockup--compact { width: 2rem; height: 2rem; border-radius: .6rem; }
+.rx-brand-lockup--header { width: 8.8rem; height: 2.1rem; object-fit: contain; }
+.rx-brand-lockup--auth { width: min(16.75rem, 100%); height: auto; object-fit: contain; }
 .marketing-nav > div {
   display: flex;
   align-items: center;
@@ -664,6 +658,7 @@ p {
   display: block;
   width: min(16.75rem, 100%);
   height: auto;
+  object-fit: contain;
   margin: auto;
 }
 .auth-action {

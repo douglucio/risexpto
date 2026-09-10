@@ -27,6 +27,7 @@ This retains mature identity lifecycle features without storing passwords in Ris
 
 - Login, registration, email verification, and password recovery screens are Keycloak-hosted and branded separately.
 - Hosted screens use the same local RiseXPTO authentication lockup and tokens as the web login; theme CSS targets the Keycloak 26.3 structure and remains CDN-independent.
+- The Keycloak locale control remains the provider-native accessible menu; RiseXPTO CSS keeps it closed until the Keycloak menu script opens it, preserving `kc_locale`, keyboard navigation, outside-click and Escape behavior.
 - Web sessions require a 32-byte-or-longer encryption secret and HTTPS in production.
 - API authorization does not trust web cookies or Keycloak UI state.
 - Profile preferences move from the encrypted session to PostgreSQL in Feature 05 without changing their public contract.

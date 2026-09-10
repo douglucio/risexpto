@@ -30,6 +30,13 @@ actions in the authenticated topbar. V3 is local/CDN-independent, targets the
 Keycloak 26.3 DOM, and keeps OIDC/PKCE, `ui_locales`, RBAC and logout behavior
 unchanged. Binance Production and Stripe Live remain prohibited.
 
+The follow-up browser validation also found and corrected an anonymous locale
+mutation (`PUT /auth/preferences` returning 401), a protected `/brand` asset,
+an always-open Keycloak locale menu, clipped auth wordmark, inherited parent
+background, and over-broad invalid-login error styling. The fixes are covered
+by local Keycloak 26.3 Playwright tests; no trading or billing external gate
+was exercised.
+
 ### Current status — nova rodada de estabilização pública
 
 Regressões confirmadas no último teste manual: `IntersectionObserver` com `rootMargin` inválido em `rem`, `/api/public/plans` interceptado pelo proxy, consulta anônima obrigatória de `/auth/session` na landing e i18n ainda parcial. As fases 58–68 do plano tratam esses pontos. Até sua validação, os domínios afetados permanecem `CODE_IMPLEMENTED`/`LOCALLY_VALIDATED` conforme evidência, nunca `BROWSER_VALIDATED` por inferência.

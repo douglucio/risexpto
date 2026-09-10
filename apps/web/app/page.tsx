@@ -6,6 +6,7 @@ import { useLocale } from '../components/locale-provider';
 import { PublicPricing } from '../components/public-pricing';
 import { marketingObserverOptions } from '../lib/marketing-observer';
 import { useEffect, useState } from 'react';
+import { BrandLockup } from '../components/brand-lockup';
 
 export default function MarketingPage() {
   const { locale, setLocale } = useLocale();
@@ -30,8 +31,7 @@ export default function MarketingPage() {
     <main className="marketing-page">
       <nav className="marketing-nav" aria-label="Marketing navigation">
         <Link href="/" className="marketing-brand">
-          <span>R</span>
-          <b>RiseXPTO</b>
+          <BrandLockup variant="header" />
         </Link>
         <div>
           <Link className={navClass('how-it-works')} href="#how-it-works">

@@ -2,11 +2,14 @@
 
 import { normalizeLocale, type Locale } from '@risexpto/i18n';
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
+import { usePathname } from 'next/navigation';
+import { persistLocaleSelection } from '../lib/locale-persistence';
 
 type LocaleContextValue = { locale: Locale; setLocale: (locale: Locale) => void };
 const LocaleContext = createContext<LocaleContextValue | null>(null);
 
 export function LocaleProvider({ children }: { children: ReactNode }) {
+  const pathname = usePathname();
   const [locale, setValue] = useState<Locale>('en');
   useEffect(() => {
     const cookie = document.cookie
@@ -20,20 +23,8 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
   }, []);
   const setLocale = useCallback((next: Locale) => {
     setValue(next);
-    document.cookie = `rx-locale=${encodeURIComponent(next)}; Path=/; Max-Age=31536000; SameSite=Lax`;
-    localStorage.setItem('rx-locale', next);
-    document.documentElement.lang = next;
-    void fetch('/auth/preferences', {
-      method: 'PUT',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ locale: next }),
-    }).catch(() => undefined);
-    void fetch('/api/profile/preferences', {
-      method: 'PATCH',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ locale: next }),
-    }).catch(() => undefined);
-  }, []);
+    void persistLocaleSelection(next, pathname);
+  }, [pathname]);
   return <LocaleContext.Provider value={{ locale, setLocale }}>{children}</LocaleContext.Provider>;
 }
 
