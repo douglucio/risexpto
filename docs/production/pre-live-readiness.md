@@ -21,6 +21,15 @@ Esta é a matriz vigente. `CODE_IMPLEMENTED` indica caminho implementado; `LOCAL
 
 O caminho atual está em `TESTABLE MVP READINESS`, não em `PRODUCTION_READY`. Binance Production e Stripe Live continuam proibidos.
 
+### Authentication UX validation note — 2026-09-10
+
+The previous Keycloak theme foundation (historical V2) was superseded by the
+V3 refinement after manual browser validation found an oversized auth layout,
+incomplete branding, an intrusive native locale selector, and duplicate logout
+actions in the authenticated topbar. V3 is local/CDN-independent, targets the
+Keycloak 26.3 DOM, and keeps OIDC/PKCE, `ui_locales`, RBAC and logout behavior
+unchanged. Binance Production and Stripe Live remain prohibited.
+
 ### Current status — nova rodada de estabilização pública
 
 Regressões confirmadas no último teste manual: `IntersectionObserver` com `rootMargin` inválido em `rem`, `/api/public/plans` interceptado pelo proxy, consulta anônima obrigatória de `/auth/session` na landing e i18n ainda parcial. As fases 58–68 do plano tratam esses pontos. Até sua validação, os domínios afetados permanecem `CODE_IMPLEMENTED`/`LOCALLY_VALIDATED` conforme evidência, nunca `BROWSER_VALIDATED` por inferência.
