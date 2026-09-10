@@ -76,6 +76,7 @@ export async function exchangeCode(
   config: AuthConfig,
   code: string,
   verifier: string,
+  locale?: LoginTransaction['locale'],
 ): Promise<AuthSession> {
   const tokens = await tokenRequest(config, {
     grant_type: 'authorization_code',
@@ -84,7 +85,7 @@ export async function exchangeCode(
     code_verifier: verifier,
     client_id: config.clientId,
   });
-  return sessionFromTokens(config, tokens);
+  return sessionFromTokens(config, tokens, locale);
 }
 export async function refreshSession(
   config: AuthConfig,
@@ -95,7 +96,7 @@ export async function refreshSession(
     refresh_token: session.refreshToken,
     client_id: config.clientId,
   });
-  return sessionFromTokens(config, tokens);
+  return sessionFromTokens(config, tokens, session.preferences.locale);
 }
 async function tokenRequest(
   config: AuthConfig,
@@ -111,7 +112,11 @@ async function tokenRequest(
   if (!response.ok) throw new OidcFlowError('TOKEN_EXCHANGE_FAILED');
   return response.json() as Promise<TokenResponse>;
 }
-async function sessionFromTokens(config: AuthConfig, tokens: TokenResponse): Promise<AuthSession> {
+async function sessionFromTokens(
+  config: AuthConfig,
+  tokens: TokenResponse,
+  locale: LoginTransaction['locale'] = 'en',
+): Promise<AuthSession> {
   const access = await verify(config, tokens.access_token, config.apiAudience, 'access');
   const identity = tokens.id_token
     ? await verify(config, tokens.id_token, config.clientId, 'id')
@@ -133,7 +138,7 @@ async function sessionFromTokens(config: AuthConfig, tokens: TokenResponse): Pro
       emailVerified: identity.email_verified === true,
       roles: assigned,
     },
-    preferences: { locale: 'en', timezone: 'UTC', currency: 'USD' },
+    preferences: { locale: locale ?? 'en', timezone: 'UTC', currency: 'USD' },
     accessToken: tokens.access_token,
     refreshToken: tokens.refresh_token,
     accessExpiresAt: Date.now() + tokens.expires_in * 1000,

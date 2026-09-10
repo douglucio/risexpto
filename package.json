@@ -13,6 +13,8 @@
     "dev:secrets": "node scripts/dev-secrets.mjs",
     "dev:grant-plan": "node scripts/dev-grant-plan.mjs",
     "db:setup": "node scripts/db-setup.mjs",
+    "keycloak:check": "node scripts/keycloak-realm.mjs check",
+    "keycloak:reconcile": "node scripts/keycloak-realm.mjs reconcile",
     "lint": "turbo run lint",
     "test": "turbo run test",
     "typecheck": "turbo run typecheck",

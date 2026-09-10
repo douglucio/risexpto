@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { Alert, Badge, Button, Card, Progress } from '@risexpto/ui';
+import { translate } from '@risexpto/i18n';
+import { useLocale } from './locale-provider';
 
 type Billing = {
   mode: string;
@@ -9,13 +11,15 @@ type Billing = {
 };
 
 export function BillingPanel() {
+  const { locale } = useLocale();
+  const t = (key: string) => translate(key, locale);
   const [billing, setBilling] = useState<Billing | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   useEffect(() => {
     void fetch('/api/billing').then(async (response) =>
       response.ok
         ? setBilling((await response.json()) as Billing)
-        : setMessage('Could not load billing data.'),
+        : setMessage(t('workspace.billingUnavailable')),
     );
   }, []);
   async function checkout(planKey: string) {
@@ -27,7 +31,7 @@ export function BillingPanel() {
     });
     const payload = (await response.json()) as { url?: string; message?: string };
     if (!response.ok || !payload.url) {
-      setMessage(payload.message ?? 'Checkout is unavailable.');
+      setMessage(payload.message ?? t('workspace.checkoutUnavailable'));
       return;
     }
     window.location.assign(payload.url);
@@ -36,50 +40,52 @@ export function BillingPanel() {
     const response = await fetch('/api/billing/portal', { method: 'POST' });
     const payload = (await response.json()) as { url?: string; message?: string };
     if (!response.ok || !payload.url) {
-      setMessage(payload.message ?? 'Billing portal is unavailable.');
+      setMessage(payload.message ?? t('workspace.portalUnavailable'));
       return;
     }
     window.location.assign(payload.url);
   }
   if (!billing)
     return message ? (
-      <Alert tone="negative" title="Billing">
+      <Alert tone="negative" title={t('nav.billing')}>
         {message}
       </Alert>
     ) : (
-      <Card>Loading billing…</Card>
+      <Card>{t('workspace.loadingBilling')}</Card>
     );
   const subscription = billing.subscription;
   const maxBots =
     typeof subscription?.entitlements.maxBots === 'number'
       ? subscription.entitlements.maxBots
-      : 'not available';
+      : t('dashboard.unavailable');
   return (
     <div className="settings-grid content-stack">
       <Card className="content-stack">
         <div className="section-heading">
-          <h2>{subscription?.plan ?? 'No active plan'}</h2>
+          <h2>{subscription?.plan ?? t('workspace.noActivePlan')}</h2>
           <Badge tone="warning">{billing.mode} MODE</Badge>
         </div>
         <p>
           {subscription
-            ? `Subscription status: ${subscription.status}`
-            : 'Choose a plan to enable account entitlements.'}
+            ? `${t('workspace.subscriptionStatus')}: ${subscription.status}`
+            : t('workspace.choosePlan')}
         </p>
         {subscription ? (
           <>
-            <Progress value={0} label={`Bot limit: ${maxBots}`} />
-            <Button onClick={() => void portal()}>Manage subscription</Button>
+            <Progress value={0} label={`${t('workspace.botLimit')}: ${maxBots}`} />
+            <Button onClick={() => void portal()}>{t('workspace.manageSubscription')}</Button>
           </>
         ) : (
           <>
-            <Button onClick={() => void checkout('STARTER')}>Start Starter Test plan</Button>
-            <Button onClick={() => void checkout('PRO')}>Choose Professional Test plan</Button>
+            <Button onClick={() => void checkout('STARTER')}>{t('workspace.startStarter')}</Button>
+            <Button onClick={() => void checkout('PRO')}>
+              {t('workspace.chooseProfessional')}
+            </Button>
           </>
         )}
       </Card>
       {message ? (
-        <Alert tone="negative" title="Billing">
+        <Alert tone="negative" title={t('nav.billing')}>
           {message}
         </Alert>
       ) : null}

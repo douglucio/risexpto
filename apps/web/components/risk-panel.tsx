@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { Alert, Button, Card, EmptyState, FormField, Input } from '@risexpto/ui';
+import { translate } from '@risexpto/i18n';
+import { useLocale } from './locale-provider';
 
 type Bot = { id: string; name: string; status: string; tradingMode: string };
 type RiskProfile = {
@@ -18,6 +20,8 @@ type RiskProfile = {
 };
 
 export function RiskPanel() {
+  const { locale } = useLocale();
+  const t = (key: string) => translate(key, locale);
   const [bots, setBots] = useState<Bot[]>([]);
   const [selected, setSelected] = useState('');
   const [risk, setRisk] = useState<RiskProfile | null>(null);
@@ -37,7 +41,7 @@ export function RiskPanel() {
     void fetch(`/api/bots/${encodeURIComponent(selected)}/risk-profile`).then(async (response) =>
       response.ok
         ? setRisk((await response.json()) as RiskProfile)
-        : setStatus('Risk profile unavailable.'),
+        : setStatus(t('workspace.riskUnavailable')),
     );
   }, [selected]);
   function update(key: keyof RiskProfile, value: string) {
@@ -45,19 +49,19 @@ export function RiskPanel() {
   }
   async function save() {
     if (!risk || !selected) return;
-    setStatus('Saving…');
+    setStatus(t('workspace.saving'));
     const response = await fetch(`/api/bots/${encodeURIComponent(selected)}/risk-profile`, {
       method: 'PATCH',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify(risk),
     });
-    setStatus(response.ok ? 'Risk profile saved.' : 'Could not save risk profile.');
+    setStatus(response.ok ? t('workspace.riskSaved') : t('workspace.riskUnavailable'));
   }
   if (bots.length === 0)
     return (
       <EmptyState
-        title="No bot risk profiles"
-        description="Create a PAPER bot to configure its risk limits."
+        title={t('workspace.noRiskProfiles')}
+        description={t('workspace.createPaperForRisk')}
       />
     );
   return (
@@ -84,29 +88,29 @@ export function RiskPanel() {
         <>
           <div className="settings-grid">
             <Card>
-              <h2>Allocation and exposure</h2>
-              <FormField label="Maximum allocation">
+              <h2>{t('workspace.allocationExposure')}</h2>
+              <FormField label={t('workspace.maximumAllocation')}>
                 <Input
                   value={risk.maxAllocatedCapital}
                   onChange={(event) => update('maxAllocatedCapital', event.target.value)}
                   inputMode="decimal"
                 />
               </FormField>
-              <FormField label="Maximum per trade">
+              <FormField label={t('workspace.maximumTrade')}>
                 <Input
                   value={risk.maxTradeAmount}
                   onChange={(event) => update('maxTradeAmount', event.target.value)}
                   inputMode="decimal"
                 />
               </FormField>
-              <FormField label="Maximum exposure (%)">
+              <FormField label={t('workspace.maximumExposure')}>
                 <Input
                   value={risk.maxExposurePercent}
                   onChange={(event) => update('maxExposurePercent', event.target.value)}
                   inputMode="decimal"
                 />
               </FormField>
-              <FormField label="Maximum position (%)">
+              <FormField label={t('workspace.maximumPosition')}>
                 <Input
                   value={risk.maxPositionPercent}
                   onChange={(event) => update('maxPositionPercent', event.target.value)}
@@ -115,29 +119,29 @@ export function RiskPanel() {
               </FormField>
             </Card>
             <Card>
-              <h2>Loss controls</h2>
-              <FormField label="Maximum daily loss (%)">
+              <h2>{t('workspace.lossControls')}</h2>
+              <FormField label={t('workspace.maximumDailyLoss')}>
                 <Input
                   value={risk.maxDailyLossPercent}
                   onChange={(event) => update('maxDailyLossPercent', event.target.value)}
                   inputMode="decimal"
                 />
               </FormField>
-              <FormField label="Maximum drawdown (%)">
+              <FormField label={t('workspace.maximumDrawdown')}>
                 <Input
                   value={risk.maxDrawdownPercent}
                   onChange={(event) => update('maxDrawdownPercent', event.target.value)}
                   inputMode="decimal"
                 />
               </FormField>
-              <FormField label="Maximum positions">
+              <FormField label={t('workspace.maximumPositions')}>
                 <Input
                   value={String(risk.maxPositions)}
                   onChange={(event) => update('maxPositions', event.target.value)}
                   inputMode="numeric"
                 />
               </FormField>
-              <FormField label="Cooldown (seconds)">
+              <FormField label={t('workspace.cooldown')}>
                 <Input
                   value={String(risk.cooldownSeconds)}
                   onChange={(event) => update('cooldownSeconds', event.target.value)}
@@ -147,15 +151,15 @@ export function RiskPanel() {
             </Card>
           </div>
           <Card>
-            <h2>Allowed symbols</h2>
+            <h2>{t('workspace.allowedSymbols')}</h2>
             <p>{risk.allowedSymbols.join(', ')}</p>
-            <p>Changes to risk limits are blocked while the bot is RUNNING.</p>
-            <Button onClick={() => void save()} disabled={status === 'Saving…'}>
-              {status === 'Saving…' ? 'Saving…' : 'Save risk profile'}
+            <p>{t('workspace.riskRunning')}</p>
+            <Button onClick={() => void save()} disabled={status === t('workspace.saving')}>
+              {status === t('workspace.saving') ? t('workspace.saving') : t('workspace.saveRisk')}
             </Button>
-            {status === 'Risk profile saved.' ? (
-              <Alert tone="positive" title="Saved">
-                The API accepted the updated limits.
+            {status === t('workspace.riskSaved') ? (
+              <Alert tone="positive" title={t('workspace.saved')}>
+                {t('workspace.riskAccepted')}
               </Alert>
             ) : null}
           </Card>

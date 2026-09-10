@@ -60,7 +60,7 @@ export default async function SectionPage({ params }: { params: Promise<{ sectio
         description={translate(page[2], locale)}
         action={section === 'bots' ? <BotCreateWizard /> : null}
       />
-      <SectionContent section={section} data={data} />
+      <SectionContent section={section} data={data} locale={locale} />
     </>
   );
 }
@@ -124,8 +124,7 @@ async function loadSectionData(
   // Server Components cannot persist refreshed cookies. They still use a fresh
   // access token for this request; BFF route handlers persist refresh results.
   const session = await readSession(true, false);
-  if (!session)
-    return { kind: 'error', message: 'Your session is no longer available. Sign in again.' };
+  if (!session) return { kind: 'error', message: 'dashboard.signInAgain' };
   try {
     const apiBaseUrl =
       process.env.API_BASE_URL ?? `http://localhost:${process.env.API_PORT ?? '3001'}`;
@@ -134,7 +133,19 @@ async function loadSectionData(
       cache: 'no-store',
     });
     if (!response.ok)
-      return { kind: 'error', message: `Could not load ${section}. Try again shortly.` };
+      return {
+        kind: 'error',
+        message:
+          section === 'bots'
+            ? 'workspace.loadBotsError'
+            : section === 'strategies'
+              ? 'workspace.loadStrategiesError'
+              : section === 'exchange-connections'
+                ? 'workspace.loadConnectionsError'
+                : section === 'trades'
+                  ? 'workspace.loadTradesError'
+                  : 'error.generic',
+      };
     const payload: unknown = await response.json();
     if (section === 'bots') return { kind: 'bots', value: payload as BotRecord[] };
     if (section === 'strategies') return { kind: 'strategies', value: payload as StrategyRecord[] };
@@ -144,37 +155,52 @@ async function loadSectionData(
     if (section === 'billing') return { kind: 'billing', value: payload as BillingRecord };
     return { kind: 'positions', value: payload as PositionRecord[] };
   } catch {
-    return { kind: 'error', message: `Could not connect to the API. Try again shortly.` };
+    return { kind: 'error', message: 'error.generic' };
   }
 }
 
-function SectionContent({ section, data }: { section: string; data: SectionData | null }) {
+function SectionContent({
+  section,
+  data,
+  locale,
+}: {
+  section: string;
+  data: SectionData | null;
+  locale: Locale;
+}) {
+  const t = (key: string) => translate(key, locale);
   if (section === 'bots')
     return (
       <>
         <Tabs
           active="active"
           tabs={[
-            { id: 'active', label: 'Active' },
-            { id: 'drafts', label: 'Drafts' },
-            { id: 'archived', label: 'Archived' },
+            { id: 'active', label: t('workspace.active') },
+            { id: 'drafts', label: t('workspace.drafts') },
+            { id: 'archived', label: t('workspace.archived') },
           ]}
         />
         {data?.kind === 'error' ? (
-          <Alert tone="negative" title="Unable to load bots">
-            {data.message}
+          <Alert tone="negative" title={t('workspace.loadBotsError')}>
+            {t(data.message)}
           </Alert>
         ) : null}
         {data?.kind === 'bots' && data.value.length === 0 ? (
           <EmptyState
-            title="No bots yet"
-            description="Create a bot after selecting an active strategy."
+            title={t('workspace.noBots')}
+            description={t('workspace.noBotsDescription')}
           />
         ) : null}
         {data?.kind === 'bots' && data.value.length > 0 ? (
           <div className="content-stack">
             <DataTable
-              columns={['Name', 'Mode', 'Capital', 'Status', 'Actions']}
+              columns={[
+                t('workspace.name'),
+                t('workspace.mode'),
+                t('workspace.capital'),
+                t('workspace.status'),
+                t('workspace.actions'),
+              ]}
               rows={data.value.map((bot) => [
                 <b key={`${bot.id}-name`}>{bot.name}</b>,
                 <Badge key={`${bot.id}-mode`} tone="brand">
@@ -200,13 +226,13 @@ function SectionContent({ section, data }: { section: string; data: SectionData 
     );
   if (section === 'strategies')
     return data?.kind === 'error' ? (
-      <Alert tone="negative" title="Unable to load strategies">
-        {data.message}
+      <Alert tone="negative" title={t('workspace.loadStrategiesError')}>
+        {t(data.message)}
       </Alert>
     ) : data?.kind === 'strategies' && data.value.length === 0 ? (
       <EmptyState
-        title="No active strategies"
-        description="Strategies will appear here when enabled by the platform."
+        title={t('workspace.noStrategies')}
+        description={t('workspace.noStrategiesDescription')}
       />
     ) : (
       <div className="card-grid">
@@ -217,10 +243,12 @@ function SectionContent({ section, data }: { section: string; data: SectionData 
                 <h2>{strategy.name}</h2>
                 <p>{strategy.description}</p>
                 {strategy.versions[0] ? (
-                  <small>Version {strategy.versions[0].version}</small>
+                  <small>
+                    {t('workspace.version')} {strategy.versions[0].version}
+                  </small>
                 ) : null}
                 <Link className="rx-button" href="/bots">
-                  Use strategy
+                  {t('workspace.useStrategy')}
                 </Link>
               </Card>
             ))
@@ -230,12 +258,12 @@ function SectionContent({ section, data }: { section: string; data: SectionData 
   if (section === 'exchange-connections')
     return (
       <>
-        <Alert tone="warning" title="Trade-only access">
-          Never enable withdrawals on an API key connected to RiseXPTO.
+        <Alert tone="warning" title={t('workspace.tradeOnlyAccess')}>
+          {t('workspace.withdrawalsWarning')}
         </Alert>
         {data?.kind === 'error' ? (
-          <Alert tone="negative" title="Unable to load connections">
-            {data.message}
+          <Alert tone="negative" title={t('workspace.loadConnectionsError')}>
+            {t(data.message)}
           </Alert>
         ) : null}
         {data?.kind === 'exchange-connections' ? (
@@ -246,25 +274,35 @@ function SectionContent({ section, data }: { section: string; data: SectionData 
   if (section === 'backtests')
     return (
       <>
-        <Alert title="Historical results">
-          Past performance does not guarantee future results.
+        <Alert title={t('workspace.historicalResults')}>
+          {t('workspace.performanceDisclaimer')}
         </Alert>
         <EmptyState
-          title="Backtesting is coming soon"
-          description="The backtest engine is not connected to this workspace yet. No simulated results are shown."
+          title={t('workspace.backtestsSoon')}
+          description={t('workspace.backtestsSoonDescription')}
         />
       </>
     );
   if (section === 'trades')
     return data?.kind === 'error' ? (
-      <Alert tone="negative" title="Unable to load trades">
-        {data.message}
+      <Alert tone="negative" title={t('workspace.loadTradesError')}>
+        {t(data.message)}
       </Alert>
     ) : data?.kind === 'trades' && data.value.length === 0 ? (
-      <EmptyState title="No trades yet" description="Executed Paper trades will appear here." />
+      <EmptyState
+        title={t('workspace.noTrades')}
+        description={t('workspace.noTradesDescription')}
+      />
     ) : (
       <DataTable
-        columns={['Time', 'Pair', 'Side', 'Quantity', 'Price', 'Mode']}
+        columns={[
+          t('workspace.time'),
+          t('workspace.pair'),
+          t('workspace.side'),
+          t('workspace.quantity'),
+          t('workspace.price'),
+          t('workspace.mode'),
+        ]}
         rows={
           data?.kind === 'trades'
             ? data.value.map((trade) => [
@@ -295,12 +333,19 @@ function SectionContent({ section, data }: { section: string; data: SectionData 
       </Alert>
     ) : data?.kind === 'positions' && data.value.length === 0 ? (
       <EmptyState
-        title="No positions yet"
-        description="Persisted Paper positions will appear here."
+        title={t('workspace.noPositions')}
+        description={t('workspace.noPositionsDescription')}
       />
     ) : (
       <DataTable
-        columns={['Symbol', 'Quantity', 'Average price', 'P&L', 'Status', 'Mode']}
+        columns={[
+          t('workspace.symbol'),
+          t('workspace.quantity'),
+          t('workspace.averagePrice'),
+          t('workspace.pnl'),
+          t('workspace.status'),
+          t('workspace.mode'),
+        ]}
         rows={
           data?.kind === 'positions'
             ? data.value.map((position) => [
@@ -324,27 +369,27 @@ function SectionContent({ section, data }: { section: string; data: SectionData 
   if (section === 'notifications')
     return (
       <EmptyState
-        title="Notifications are coming soon"
-        description="Operational and risk events will appear here after the notification outbox is connected. No sample events are displayed."
+        title={t('workspace.notificationsSoon')}
+        description={t('workspace.notificationsSoonDescription')}
       />
     );
   if (section === 'billing')
     return data?.kind === 'billing' ? (
       <BillingPanel />
     ) : (
-      <Alert tone="negative" title="Unable to load billing">
-        {data?.kind === 'error' ? data.message : 'Billing is unavailable.'}
+      <Alert tone="negative" title={t('error.generic')}>
+        {data?.kind === 'error' ? t(data.message) : t('error.generic')}
       </Alert>
     );
   if (section === 'settings') return <PreferencesForm />;
   return (
     <>
-      <Alert tone="warning" title="Restricted area">
-        Admin access requires an explicit privileged role and audited actions.
+      <Alert tone="warning" title={t('workspace.restrictedArea')}>
+        {t('workspace.adminRoleRequired')}
       </Alert>
       <EmptyState
-        title="Admin console is coming soon"
-        description="Operational health, queues, risk events, exchange status, and kill-switch controls are not connected to this screen yet."
+        title={t('workspace.adminSoon')}
+        description={t('workspace.adminSoonDescription')}
       />
     </>
   );

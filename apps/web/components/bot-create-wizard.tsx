@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { Alert, Button, Card, FormField, Input, Select } from '@risexpto/ui';
+import { translate } from '@risexpto/i18n';
+import { useLocale } from './locale-provider';
 
 type Strategy = {
   id: string;
@@ -40,6 +42,8 @@ const initial: FormState = {
 };
 
 export function BotCreateWizard() {
+  const { locale } = useLocale();
+  const t = (key: string) => translate(key, locale);
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState(0);
   const [form, setForm] = useState(initial);
@@ -50,7 +54,7 @@ export function BotCreateWizard() {
     void fetch('/api/strategies').then(async (response) =>
       response.ok
         ? setStrategies((await response.json()) as Strategy[])
-        : setStatus('Could not load strategies.'),
+        : setStatus(t('workspace.loadStrategiesError')),
     );
   }, [open]);
   function update(key: keyof FormState, value: string) {
@@ -91,7 +95,7 @@ export function BotCreateWizard() {
     setForm((current) => ({ ...current, ...(presets[value] ?? {}) }));
   }
   async function create() {
-    setStatus('Creating…');
+    setStatus(t('workspace.creating'));
     const response = await fetch('/api/bots', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
@@ -123,7 +127,7 @@ export function BotCreateWizard() {
       }),
     });
     if (!response.ok) {
-      setStatus('Bot could not be created. Review the values and try again.');
+      setStatus(t('workspace.createBotError'));
       return;
     }
     window.location.reload();
@@ -136,20 +140,21 @@ export function BotCreateWizard() {
           setStatus(null);
         }}
       >
-        Create bot
+        {t('workspace.createBot')}
       </Button>
       {open ? (
         <Card className="content-stack">
           <div className="section-heading">
-            <h2>Create PAPER bot</h2>
-            <Button onClick={() => setOpen(false)}>Close</Button>
+            <h2>{t('workspace.createPaper')}</h2>
+            <Button onClick={() => setOpen(false)}>{t('workspace.close')}</Button>
           </div>
-          <p>Step {step + 1} of 5 · PAPER Trading only</p>
+          <p>
+            {t('workspace.step')} {step + 1} {t('workspace.of')} 5 ·{' '}
+            {t('workspace.paperTradingOnly')}
+          </p>
           {status ? (
             <Alert tone={status === 'Creating…' ? 'info' : 'negative'} title={status}>
-              {status === 'Creating…'
-                ? 'Validating configuration and risk limits.'
-                : 'No changes were made.'}
+              {status === 'Creating…' ? t('workspace.validatingConfig') : t('workspace.noChanges')}
             </Alert>
           ) : null}
           {step === 0 ? (
@@ -158,7 +163,7 @@ export function BotCreateWizard() {
                 value={form.strategyVersionId}
                 onChange={(event) => chooseStrategy(event.target.value)}
               >
-                <option value="">Select a strategy</option>
+                <option value="">{t('workspace.selectStrategy')}</option>
                 {strategies.map((strategy) => (
                   <option key={strategy.id} value={strategy.versions[0]?.id}>
                     {strategy.name}
@@ -169,11 +174,11 @@ export function BotCreateWizard() {
           ) : null}
           {step === 1 ? (
             <>
-              <FormField label="Bot name">
+              <FormField label={t('workspace.botName')}>
                 <Input
                   value={form.name}
                   onChange={(event) => update('name', event.target.value)}
-                  placeholder="My Paper bot"
+                  placeholder={t('workspace.myPaperBot')}
                 />
               </FormField>
               <FormField label="Symbol">
@@ -189,7 +194,7 @@ export function BotCreateWizard() {
           ) : null}
           {step === 2 ? (
             <>
-              <FormField label="Authorized capital (USDT)">
+              <FormField label={t('workspace.authorizedCapital')}>
                 <Input
                   value={form.capital}
                   onChange={(event) => update('capital', event.target.value)}
@@ -207,15 +212,15 @@ export function BotCreateWizard() {
           ) : null}
           {step === 3 ? (
             <>
-              <FormField label="Risk preset">
+              <FormField label={t('workspace.riskPreset')}>
                 <Select
                   defaultValue="balanced"
                   onChange={(event) => applyPreset(event.target.value)}
                 >
-                  <option value="conservative">Conservative</option>
-                  <option value="balanced">Balanced</option>
-                  <option value="aggressive">Aggressive</option>
-                  <option value="custom">Custom</option>
+                  <option value="conservative">{t('workspace.conservative')}</option>
+                  <option value="balanced">{t('workspace.balanced')}</option>
+                  <option value="aggressive">{t('workspace.aggressive')}</option>
+                  <option value="custom">{t('workspace.custom')}</option>
                 </Select>
               </FormField>
               <FormField label="Maximum exposure (%)">
@@ -239,14 +244,14 @@ export function BotCreateWizard() {
                   inputMode="numeric"
                 />
               </FormField>
-              <FormField label="Daily loss limit (%)">
+              <FormField label={t('workspace.dailyLossLimit')}>
                 <Input
                   value={form.dailyLoss}
                   onChange={(event) => update('dailyLoss', event.target.value)}
                   inputMode="decimal"
                 />
               </FormField>
-              <FormField label="Drawdown limit (%)">
+              <FormField label={t('workspace.drawdownLimit')}>
                 <Input
                   value={form.drawdown}
                   onChange={(event) => update('drawdown', event.target.value)}
@@ -264,7 +269,7 @@ export function BotCreateWizard() {
           ) : null}
           {step === 4 ? (
             <div className="content-stack">
-              <h3>Review</h3>
+              <h3>{t('workspace.review')}</h3>
               <p>
                 <strong>{form.name}</strong> · {form.strategyKey} · {form.symbol}
               </p>
@@ -279,20 +284,20 @@ export function BotCreateWizard() {
                 onClick={() => void create()}
                 disabled={!form.strategyVersionId || !form.name}
               >
-                Create PAPER bot
+                {t('workspace.createPaper')}
               </Button>
             </div>
           ) : null}
           <div className="section-heading">
             <Button disabled={step === 0} onClick={() => setStep((value) => value - 1)}>
-              Back
+              {t('workspace.back')}
             </Button>
             {step < 4 ? (
               <Button
                 onClick={() => setStep((value) => value + 1)}
                 disabled={step === 0 && !form.strategyVersionId}
               >
-                Next
+                {t('workspace.next')}
               </Button>
             ) : null}
           </div>

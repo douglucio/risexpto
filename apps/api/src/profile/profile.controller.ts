@@ -22,7 +22,25 @@ export class ProfileController {
   @Patch('preferences')
   async preferences(@CurrentUser() user: AuthenticatedUser, @Body() body: unknown) {
     const userId = user.applicationUserId;
-    if (!userId || !isPreferences(body)) throw new BadRequestException('Invalid preferences');
+    if (!userId) throw new BadRequestException('Invalid preferences');
+    if (isLocaleOnly(body)) {
+      const profile = await this.db.userProfile.upsert({
+        where: { userId },
+        update: { locale: body.locale },
+        create: {
+          userId,
+          locale: body.locale,
+          timezone: 'UTC',
+          referenceCurrency: 'USD',
+        },
+      });
+      return {
+        locale: profile.locale,
+        timezone: profile.timezone,
+        currency: profile.referenceCurrency,
+      };
+    }
+    if (!isPreferences(body)) throw new BadRequestException('Invalid preferences');
     const profile = await this.db.userProfile.upsert({
       where: { userId },
       update: { locale: body.locale, timezone: body.timezone, referenceCurrency: body.currency },
@@ -39,6 +57,15 @@ export class ProfileController {
       currency: profile.referenceCurrency,
     };
   }
+}
+
+function isLocaleOnly(value: unknown): value is { locale: 'en' | 'pt-BR' | 'es' } {
+  return Boolean(
+    value &&
+      typeof value === 'object' &&
+      Object.keys(value).length === 1 &&
+      ['en', 'pt-BR', 'es'].includes(String((value as Record<string, unknown>).locale)),
+  );
 }
 
 function isPreferences(

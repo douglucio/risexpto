@@ -179,6 +179,17 @@ Classificação: `PARTIALLY_IMPLEMENTED`, `BLOCKED_EXTERNAL`; não é `PRODUCTIO
 
 Nenhuma ordem Binance foi enviada, nenhuma credencial real foi usada e Stripe Live não foi habilitado. A tentativa de criar a branch local de auditoria falhou porque o ambiente bloqueou a escrita em `.git/refs`; as alterações de trabalho permanecem preservadas na branch `develop` e devem ser movidas para uma branch `feature/*` em um ambiente com Git gravável antes de commit/merge.
 
+### Regressões manuais do review(6) — 2026-09-10
+
+Previously implemented. Manual browser regression found on 2026-09-10.
+Superseded by Phases 69–86. O Access Token pode ser assinado e ter audience
+correta, mas ainda falhar por claims ausentes; use `pnpm keycloak:check` e o
+diagnóstico development-only antes de qualquer teste autenticado. Locale,
+conteúdo interno do workspace, tema e full-bleed navbar receberam correções de
+código nesta rodada, mas validação de browser/Keycloak real continua um gate
+separado. O erro `reportAllChanges/startTime` deve ser tratado como script
+externo se não existir no código/bundle local.
+
 ## Validações executadas
 
 - `git status` e branch: executados; branch atual `develop`, com alterações locais pré-existentes preservadas.

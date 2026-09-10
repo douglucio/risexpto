@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { authConfig } from '../../../lib/auth/config';
-import { updatePreferences } from '../../../lib/auth/session';
+import { readSession, updatePreferences } from '../../../lib/auth/session';
 import type { UserPreferences } from '../../../lib/auth/types';
 
 const locales = new Set(['en', 'pt-BR', 'es']);
@@ -14,12 +14,30 @@ export async function PUT(request: Request) {
   } catch {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }
+  if (isLocaleOnly(value)) {
+    const current = await updatePreferencesFromLocale(value.locale);
+    return current
+      ? NextResponse.json({ preferences: current.preferences })
+      : NextResponse.json({ error: 'Unauthenticated' }, { status: 401 });
+  }
   if (!isPreferences(value))
     return NextResponse.json({ error: 'Invalid preferences' }, { status: 400 });
   const session = await updatePreferences(value);
   return session
     ? NextResponse.json({ preferences: session.preferences })
     : NextResponse.json({ error: 'Unauthenticated' }, { status: 401 });
+}
+async function updatePreferencesFromLocale(locale: UserPreferences['locale']) {
+  const current = await readSession();
+  return current ? updatePreferences({ ...current.preferences, locale }) : null;
+}
+function isLocaleOnly(value: unknown): value is { locale: UserPreferences['locale'] } {
+  return Boolean(
+    value &&
+      typeof value === 'object' &&
+      Object.keys(value).length === 1 &&
+      locales.has(String((value as Record<string, unknown>).locale)),
+  );
 }
 function isPreferences(value: unknown): value is UserPreferences {
   if (!value || typeof value !== 'object') return false;

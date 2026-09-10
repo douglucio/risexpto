@@ -22,6 +22,30 @@ Após o login, o destino esperado é `http://localhost:3000/dashboard`. O browse
 
 Na landing pública, `/auth/session` não é uma dependência obrigatória e `GET /api/public/plans` deve funcionar sem cookie e sem redirecionar para `/login`. Para reproduzir a regressão corrigida, abra `/`, entre em `/login`, use Back e confirme que a landing retorna sem erro de runtime; depois navegue até Pricing e confirme que os planos carregam anonimamente.
 
+## Claims e realm efetivo
+
+Depois de subir o Keycloak, compare o realm versionado com o realm efetivo:
+
+```bash
+pnpm keycloak:check
+pnpm keycloak:reconcile
+pnpm keycloak:check
+```
+
+`reconcile` é não destrutivo: atualiza cliente, scopes, mappers e roles ausentes,
+mas nunca remove usuários. O diagnóstico da API registra somente `typ`, presença
+de claims, audience, issuer, `azp`, scope, roles e expiração quando
+`NODE_ENV=development`; nunca copie ou registre o token completo.
+
+Para a regressão de locale, selecione `PT-BR` ou `ES` na landing, faça login,
+navegue por Dashboard → Bots → Strategies → Connections → Trades → Settings e
+recarregue a página. O idioma escolhido deve permanecer; o mesmo seletor da
+topbar e Settings atualiza cookie, sessão e `UserProfile`.
+
+Se `rg -n "reportAllChanges|startTime" . --glob '!node_modules'` não encontrar
+ocorrência no código e o teste Chromium limpo não reproduzir o erro, classifique
+o achado como `EXTERNAL_BROWSER_SCRIPT`, sem alterar a aplicação às cegas.
+
 Para executar os testes de browser pela primeira vez, instale o navegador do Playwright com `pnpm exec playwright install chromium` e então rode `pnpm test:e2e`. Nesta rodada o Chromium foi instalado e os quatro cenários públicos passaram; ambientes sem o binário devem classificar essa evidência como `BLOCKED_EXTERNAL`.
 
 Com a stack local ativa, `E2E_WEB_URL=http://localhost:3000 pnpm exec playwright test e2e/public-navigation.spec.ts --workers=1` deve concluir quatro testes públicos. O teste autenticado opt-in exige `E2E_STORAGE_STATE` gerado após o usuário Keycloak verificado.

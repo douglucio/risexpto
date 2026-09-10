@@ -1,7 +1,7 @@
 'use client';
 
 import { normalizeLocale, type Locale } from '@risexpto/i18n';
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
 
 type LocaleContextValue = { locale: Locale; setLocale: (locale: Locale) => void };
 const LocaleContext = createContext<LocaleContextValue | null>(null);
@@ -18,12 +18,22 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
     setValue(next);
     document.documentElement.lang = next;
   }, []);
-  function setLocale(next: Locale) {
+  const setLocale = useCallback((next: Locale) => {
     setValue(next);
     document.cookie = `rx-locale=${encodeURIComponent(next)}; Path=/; Max-Age=31536000; SameSite=Lax`;
     localStorage.setItem('rx-locale', next);
     document.documentElement.lang = next;
-  }
+    void fetch('/auth/preferences', {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ locale: next }),
+    }).catch(() => undefined);
+    void fetch('/api/profile/preferences', {
+      method: 'PATCH',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ locale: next }),
+    }).catch(() => undefined);
+  }, []);
   return <LocaleContext.Provider value={{ locale, setLocale }}>{children}</LocaleContext.Provider>;
 }
 

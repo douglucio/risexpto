@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useLocale } from './locale-provider';
 import { translate } from '@risexpto/i18n';
 
@@ -26,6 +26,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [theme, setTheme] = useState<'light' | 'dark'>('dark');
   const [user, setUser] = useState<{ name: string; email: string; roles: string[] } | null>(null);
+  const sessionLoaded = useRef(false);
   useEffect(() => {
     const saved = localStorage.getItem('rx-theme');
     const next = saved === 'light' || saved === 'dark' ? saved : 'dark';
@@ -35,7 +36,8 @@ export function AppShell({ children }: { children: ReactNode }) {
   useEffect(() => {
     // The public landing page does not need an anonymous session probe. This
     // avoids an expected 401 and keeps the public runtime free of auth noise.
-    if (pathname === '/' || pathname === '/login') return;
+    if (pathname === '/' || pathname === '/login' || sessionLoaded.current) return;
+    sessionLoaded.current = true;
     void fetch('/auth/session', { cache: 'no-store' }).then(async (response) => {
       if (response.ok) {
         const body = (await response.json()) as {

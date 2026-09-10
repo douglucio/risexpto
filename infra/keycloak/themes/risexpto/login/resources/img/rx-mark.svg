@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" role="img" aria-label="RiseXPTO">
+  <defs><linearGradient id="rx" x1="12" x2="84" y1="84" y2="12" gradientUnits="userSpaceOnUse"><stop stop-color="#6f8cff"/><stop offset="1" stop-color="#35d4ff"/></linearGradient></defs>
+  <rect width="96" height="96" rx="24" fill="#101827"/>
+  <path d="M25 67V29h24c11 0 18 5 18 14 0 7-4 12-11 14l14 10H55L43 59h-7v8H25Zm11-17h12c5 0 8-2 8-6s-3-6-8-6H36v12Z" fill="url(#rx)"/>
+</svg>

@@ -50,6 +50,10 @@ describe('OIDC authorization', () => {
     expect(url.searchParams.get('state')).toBe(transaction.state);
     expect(url.searchParams.get('code_challenge')).toHaveLength(43);
   });
+  it('carries the selected locale to the identity provider', () => {
+    const transaction = createLoginTransaction('/dashboard', 'pt-BR');
+    expect(authorizationUrl(config, transaction).searchParams.get('ui_locales')).toBe('pt-BR');
+  });
   it('exposes a safe diagnostic for incomplete identity claims', () => {
     const error = new OidcFlowError('IDENTITY_CLAIMS_MISSING');
     expect(error.code).toBe('IDENTITY_CLAIMS_MISSING');

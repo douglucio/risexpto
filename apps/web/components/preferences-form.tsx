@@ -51,11 +51,11 @@ export function PreferencesForm() {
         <dl className="profile-list">
           <div>
             <dt>{t('settings.name')}</dt>
-            <dd>{user?.name ?? 'Loading…'}</dd>
+            <dd>{user?.name ?? t('workspace.loading')}</dd>
           </div>
           <div>
             <dt>{t('settings.email')}</dt>
-            <dd>{user?.email ?? 'Loading…'}</dd>
+            <dd>{user?.email ?? t('workspace.loading')}</dd>
           </div>
           <div>
             <dt>{t('settings.verification')}</dt>
@@ -110,7 +110,7 @@ export function PreferencesForm() {
             <option>EUR</option>
           </Select>
         </FormField>
-        <Switch label="Dark theme" defaultChecked />
+        <Switch label={t('workspace.darkTheme')} defaultChecked />
       </Card>
       <Card>
         <h2>{t('nav.notifications')}</h2>

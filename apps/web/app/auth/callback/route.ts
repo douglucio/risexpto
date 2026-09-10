@@ -28,7 +28,12 @@ export async function GET(request: NextRequest) {
     return redirectWithError(request, 'INVALID_STATE_OR_PKCE', correlationId);
   }
   try {
-    const session = await exchangeCode(authConfig(), code, transaction.verifier);
+    const session = await exchangeCode(
+      authConfig(),
+      code,
+      transaction.verifier,
+      transaction.locale,
+    );
     if (!session.user.emailVerified) {
       logAuthFailure(correlationId, 'EMAIL_NOT_VERIFIED');
       await clearTransaction();

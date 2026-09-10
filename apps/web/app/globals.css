@@ -54,13 +54,15 @@ body {
   color: var(--rx-color-text-muted);
 }
 .marketing-nav {
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
   position: sticky;
   top: 0;
   z-index: var(--rx-z-sticky);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 1.5rem 0;
+  padding: 1.5rem max(1.5rem, calc((100vw - 70rem) / 2));
   background: color-mix(in srgb, var(--rx-color-canvas) 90%, transparent);
   backdrop-filter: blur(12px);
 }
@@ -304,6 +306,11 @@ body {
   .marketing-pricing,
   .marketing-footer {
     width: min(100% - 2rem, 40rem);
+  }
+  .marketing-nav {
+    width: 100vw;
+    padding-left: 1rem;
+    padding-right: 1rem;
   }
   .marketing-nav > div a:not(.marketing-login) {
     display: none;

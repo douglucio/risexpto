@@ -49,6 +49,7 @@ export class AuthGuard implements CanActivate {
         error instanceof KeycloakTokenVerificationError ? error.reason : 'INVALID',
         true,
         error instanceof KeycloakTokenVerificationError ? error.tokenKind : 'unknown',
+        error instanceof KeycloakTokenVerificationError ? error.diagnostics : undefined,
       );
       throw new UnauthorizedException('Invalid or expired access token');
     }
@@ -76,8 +77,15 @@ function logAuthFailure(
   reason: string,
   authorizationPresent: boolean,
   tokenKind: 'access' | 'id' | 'unknown' = 'unknown',
+  diagnostics?: KeycloakTokenVerificationError['diagnostics'],
 ): void {
   console.warn(
-    JSON.stringify({ event: 'api_authentication_failed', reason, authorizationPresent, tokenKind }),
+    JSON.stringify({
+      event: 'api_authentication_failed',
+      reason,
+      authorizationPresent,
+      tokenKind,
+      ...(diagnostics ? { diagnostics } : {}),
+    }),
   );
 }

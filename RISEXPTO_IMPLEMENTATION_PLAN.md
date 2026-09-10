@@ -3396,3 +3396,30 @@ As notas acima são atuais. Auditorias anteriores permanecem abaixo como histór
 | 68 | Authenticated MVP regression | ✅ CODE_IMPLEMENTED / LOCALLY_VALIDATED; ⛔ BROWSER_VALIDATED | contratos e propagação de token cobertos; validação real dos endpoints depende de login Keycloak local e sessão autenticada |
 
 Os estados `CODE_IMPLEMENTED`, `LOCALLY_VALIDATED`, `BROWSER_VALIDATED`, `EXTERNAL_TEST_VALIDATED` e `PRODUCTION_READY` continuam sendo independentes; nenhum teste unitário promove automaticamente uma feature a validação de browser ou externa.
+
+## 2026-09-10 — Fases 69–86: regressões manuais do review(6)
+
+As fases 01–68 permanecem preservadas. Os itens abaixo registram correções descobertas no teste manual, sem reescrever a conclusão histórica.
+
+| Fase | Escopo | Estado desta rodada |
+|---|---|---|
+| 69 | Diagnóstico sanitizado de claims do Access Token | 🟨 CODE_IMPLEMENTED / LOCAL_TESTED; token real depende de Keycloak ativo |
+| 70 | Check/reconcile determinístico do realm Keycloak | 🟨 CODE_IMPLEMENTED; execução externa depende de Keycloak/admin local |
+| 71 | Recuperação da API autenticada | 🟨 contratos e guard cobertos; endpoints reais dependem da stack |
+| 72 | ADR e hardening do modelo de token | ✅ CODE_IMPLEMENTED / TYPECHECKED |
+| 73 | Locale como fonte única de verdade | ✅ CODE_IMPLEMENTED / TYPECHECKED |
+| 74 | Inicialização de locale da sessão OIDC | ✅ CODE_IMPLEMENTED / TESTED |
+| 75 | Persistência do locale na topbar | ✅ CODE_IMPLEMENTED / TYPECHECKED |
+| 76 | Remoção do override por pathname | ✅ CODE_IMPLEMENTED / TYPECHECKED |
+| 77 | i18n do workspace EN/pt-BR/es | 🟨 CODE_IMPLEMENTED; browser autenticado ainda depende da stack |
+| 78 | Limpeza de i18n em Settings e componentes | ✅ CODE_IMPLEMENTED / TYPECHECKED |
+| 79 | Locale end-to-end no Keycloak | 🟨 `ui_locales` testado no código; Keycloak real pendente |
+| 80 | Tema Keycloak RiseXPTO V2 | 🟨 asset/CSS implementados; validação visual Keycloak 26.3 pendente |
+| 81 | Navbar full-bleed | ✅ CODE_IMPLEMENTED / TYPECHECKED |
+| 82 | Estados auth/empty/error | 🟨 contratos implementados; browser autenticado pendente |
+| 83 | Investigação `reportAllChanges/startTime` | ✅ CLASSIFIED_EXTERNAL_BROWSER_SCRIPT quando ausente do bundle local |
+| 84 | Regressão browser auth + i18n | 🟨 testes locais preparados; execução real requer sessão/serviços |
+| 85 | Regressão de dados autenticados | 🟨 critérios documentados; execução real requer API/DB/Keycloak |
+| 86 | Gate PAPER MVP | 🟨 aguardando fases externas e teste manual do proprietário |
+
+Regressões registradas: `Previously implemented. Manual browser regression found on 2026-09-10. Superseded by Phases 69–86.` O `AppShell` não reimpõe mais o locale a cada navegação; a persistência atualiza UI, cookie, sessão e `UserProfile`. O diagnóstico nunca registra token, refresh token ou segredo de sessão. Binance Production e Stripe Live permanecem proibidos.

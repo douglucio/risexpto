@@ -14,6 +14,12 @@ Keycloak runs in development mode in this compose file. Production requires TLS,
 
 The development realm is imported from `infra/keycloak/risexpto-realm.json`. It enables self-registration, verified email, password recovery, brute-force protection, and the `USER`, `SUPPORT`, and `ADMIN` realm roles. The web client uses Authorization Code with PKCE; password/direct grants and service accounts are disabled.
 
-The repository includes the RiseXPTO-owned Keycloak login theme at `infra/keycloak/themes/risexpto/`. In Keycloak Admin select `Realm Settings → Themes → Login Theme → risexpto` and save. The theme inherits maintained Keycloak templates and applies the RiseXPTO dark fintech visual layer to login, registration, recovery, verification and required-action/error screens. Locale options are declared as `en`, `pt-BR` and `es`; the realm/operator remains responsible for enabling the matching localized messages.
+`start-dev --import-realm` does not reconcile an already persisted realm. With
+the local `.env` loaded, use `pnpm keycloak:check` to inspect the effective
+client/scopes/mappers/roles and `pnpm keycloak:reconcile` to apply missing
+versioned settings without deleting users. A full reset of volumes is a
+separate, explicitly destructive operator action and is not part of CI.
+
+The repository includes the RiseXPTO-owned Keycloak login theme at `infra/keycloak/themes/risexpto/`, including the local `[R]` mark asset. In Keycloak Admin select `Realm Settings → Themes → Login Theme → risexpto` and save. The theme inherits maintained Keycloak templates and applies the RiseXPTO dark fintech visual layer to login, registration, recovery, verification and required-action/error screens. Locale options are declared as `en`, `pt-BR` and `es`; the realm/operator remains responsible for enabling the matching localized messages.
 
 Keycloak needs SMTP configuration before verification and recovery emails can be delivered. Never disable email verification as a shortcut. Production redirect URIs and web origins must be replaced with exact HTTPS origins—wildcards are not accepted for the web client.
