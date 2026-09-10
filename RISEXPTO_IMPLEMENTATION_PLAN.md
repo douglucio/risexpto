@@ -2872,7 +2872,7 @@ Como a Fase 95 já era `Documentation Reconciliation`, a solicitação de Fase
 |---|---|---|---|
 | 96 | Public Locale Persistence Boundary | ✅ | Landing anônima persiste cookie/localStorage sem chamadas autenticadas; workspace autenticado atualiza sessão e UserProfile. |
 | 97 | Shared Brand Asset Fix | ✅ | `/login`, landing, shell e Keycloak usam assets locais válidos, com dimensões seguras e wordmark sem clipping. |
-| 98 | Keycloak Locale Dropdown Behavior | ⬜ | Dropdown fechado por padrão, abre por clique, fecha por seleção/outside/Escape e mantém EN/PT/ES + `ui_locales`. |
+| 98 | Keycloak Locale Dropdown Behavior | ✅ | Dropdown fechado por padrão, abre por clique, fecha por seleção/outside/Escape e mantém EN/PT/ES + `ui_locales`. |
 | 99 | Keycloak Visual Consistency | ⬜ | Background, superfície, tokens, card, logo e densidade visual continuam a linguagem do `/login`. |
 | 100 | Registration & Recovery Layout Polish | ⬜ | Register, recovery, reset e required actions compactos, legíveis, responsivos e sem sobreposição. |
 | 101 | Authentication Error States | ⬜ | Erro de login/validação usa field/form error discreto, sem vermelho aplicado ao formulário inteiro. |
@@ -2906,6 +2906,19 @@ Resumo:
 Validações:
 - Web typecheck/lint: OK;
 - `cmp` entre assets público e Keycloak: OK;
+- `git diff --check`: OK.
+
+### Fase 98 — Keycloak Locale Dropdown Behavior
+
+Resumo:
+- CSS controla o menu PatternFly nativo como fechado por padrão e o exibe apenas quando o script Keycloak aplica `style="display: block"`;
+- posicionamento absoluto, z-index, largura e max-height impedem sobreposição persistente do formulário;
+- o mecanismo nativo mantém foco, Escape, clique externo, seleção e links `kc_locale`;
+- EN/PT/ES foram exercitados no Keycloak 26.3 real.
+
+Validações:
+- Playwright real: dropdown abre/fecha e seleciona Espanhol: OK;
+- Login EN/PT/ES e locale público: OK (7 testes);
 - `git diff --check`: OK.
 
 ## 2026-09-06 — Binance Testnet connector (primeira fatia do Gate 1)

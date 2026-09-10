@@ -42,4 +42,19 @@ test.describe('Keycloak registration and recovery layout', () => {
     await expect(page.locator('#kc-current-locale-link')).toContainText(/Español|Spanish/i);
     await expect(page.locator('#kc-locale [role="menu"]')).toBeHidden();
   });
+
+  test('invalid credentials keep the card and inputs dark with a scoped error', async ({ page }) => {
+    await openKeycloakLogin(page);
+    await page.locator('#username').fill('invalid@example.com');
+    await page.locator('#password').fill('invalid-password');
+    await page.locator('#kc-login').click();
+    await expect(page.locator('#kc-error-message, .alert-error, .kc-feedback-text').first()).toBeVisible();
+    const colors = await page.evaluate(() => {
+      const card = document.querySelector<HTMLElement>('.card-pf');
+      const input = document.querySelector<HTMLElement>('#password');
+      return { card: card ? getComputedStyle(card).backgroundColor : '', input: input ? getComputedStyle(input).backgroundColor : '' };
+    });
+    expect(colors.card).not.toMatch(/255, 102, 125/);
+    expect(colors.input).not.toMatch(/255, 102, 125/);
+  });
 });
