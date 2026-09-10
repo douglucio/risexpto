@@ -45,7 +45,17 @@ export function AppShell({ children }: { children: ReactNode }) {
           preferences?: { locale?: 'en' | 'pt-BR' | 'es' };
         };
         setUser(body.user);
-        if (body.preferences?.locale) setLocale(body.preferences.locale);
+        const explicitLocale = document.cookie
+          .split('; ')
+          .find((item) => item.startsWith('rx-locale='))
+          ?.split('=')[1];
+        if (explicitLocale) {
+          // An explicit visitor/user selection wins over a stale persisted
+          // profile. setLocale also reconciles the session and profile.
+          if (explicitLocale !== body.preferences?.locale) setLocale(locale);
+        } else if (body.preferences?.locale) {
+          setLocale(body.preferences.locale);
+        }
       }
     });
   }, [pathname]);

@@ -65,6 +65,7 @@ if (mode === 'check') {
 async function reconcile(currentRealm, currentClient, currentScopes, expectedRealm) {
   const realmPatch = {
     enabled: expectedRealm.enabled,
+    loginTheme: expectedRealm.loginTheme,
     verifyEmail: expectedRealm.verifyEmail,
     registrationAllowed: expectedRealm.registrationAllowed,
     registrationEmailAsUsername: expectedRealm.registrationEmailAsUsername,
@@ -144,8 +145,9 @@ async function summarize(currentRealm, client, scopes, roles) {
   }
   return {
     verifyEmail: currentRealm.verifyEmail,
+    loginTheme: currentRealm.loginTheme,
     client: client.clientId,
-    defaultScopes: expectedScopeNames.filter((name) => names.has(name)),
+    defaultScopes: expectedScopeNames.filter((name) => names.has(name)).sort(),
     emailMapper: mapperSummary.email?.includes('email') ?? false,
     emailVerifiedMapper: mapperSummary.email?.includes('email verified') ?? false,
     audienceMapper:
@@ -163,6 +165,7 @@ function expectedSummary(value) {
   const web = value.clients.find((client) => client.clientId === 'risexpto-web');
   return {
     verifyEmail: value.verifyEmail,
+    loginTheme: value.loginTheme,
     client: web?.clientId,
     defaultScopes: [...(web?.defaultClientScopes ?? [])].sort(),
     emailMapper: true,

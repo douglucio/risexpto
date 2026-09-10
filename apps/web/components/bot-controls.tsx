@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import { Alert, Button } from '@risexpto/ui';
+import { translate } from '@risexpto/i18n';
+import { useLocale } from './locale-provider';
 
 export function BotControls({
   id,
@@ -12,6 +14,8 @@ export function BotControls({
   status: string;
   tradingMode: string;
 }) {
+  const { locale } = useLocale();
+  const t = (key: string) => translate(key, locale);
   const [currentStatus, setCurrentStatus] = useState(status);
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -25,10 +29,10 @@ export function BotControls({
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ status: nextStatus }),
       });
-      if (!response.ok) throw new Error('Could not update bot status');
+      if (!response.ok) throw new Error(t('workspace.updateBotError'));
       setCurrentStatus(nextStatus);
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Could not update bot status');
+      setMessage(error instanceof Error ? error.message : t('workspace.updateBotError'));
     } finally {
       setBusy(false);
     }
@@ -42,10 +46,10 @@ export function BotControls({
         method: 'POST',
         body: '{}',
       });
-      if (!response.ok) throw new Error('Could not enqueue bot cycle');
-      setMessage('Paper cycle queued.');
+      if (!response.ok) throw new Error(t('workspace.enqueueCycleError'));
+      setMessage(t('workspace.cycleQueued'));
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Could not enqueue bot cycle');
+      setMessage(error instanceof Error ? error.message : t('workspace.enqueueCycleError'));
     } finally {
       setBusy(false);
     }
@@ -55,31 +59,31 @@ export function BotControls({
     <div className="content-stack">
       {tradingMode === 'PAPER' && currentStatus === 'READY' ? (
         <Button disabled={busy} onClick={() => void change('RUNNING')}>
-          Start
+          {t('workspace.start')}
         </Button>
       ) : null}
       {tradingMode === 'PAPER' && currentStatus === 'RUNNING' ? (
         <>
           <Button disabled={busy} onClick={() => void cycle()}>
-            Run cycle
+            {t('workspace.runCycle')}
           </Button>
           <Button disabled={busy} onClick={() => void change('PAUSED')}>
-            Pause
+            {t('workspace.pause')}
           </Button>
         </>
       ) : null}
       {tradingMode === 'PAPER' && currentStatus === 'PAUSED' ? (
         <Button disabled={busy} onClick={() => void change('RUNNING')}>
-          Resume
+          {t('workspace.resume')}
         </Button>
       ) : null}
       {tradingMode === 'PAPER' && (currentStatus === 'RUNNING' || currentStatus === 'PAUSED') ? (
         <Button disabled={busy} onClick={() => void change('STOPPED')}>
-          Stop
+          {t('workspace.stop')}
         </Button>
       ) : null}
       {message ? (
-        <Alert tone="negative" title="Bot action">
+        <Alert tone="negative" title={t('workspace.botAction')}>
           {message}
         </Alert>
       ) : null}

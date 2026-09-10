@@ -66,7 +66,7 @@ export function RiskPanel() {
     );
   return (
     <div className="content-stack">
-      <FormField label="Bot">
+      <FormField label={t('workspace.bot')}>
         <select
           className="rx-input rx-select"
           value={selected}
@@ -80,7 +80,7 @@ export function RiskPanel() {
         </select>
       </FormField>
       {status && !risk ? (
-        <Alert tone="negative" title="Risk unavailable">
+        <Alert tone="negative" title={t('workspace.riskUnavailable')}>
           {status}
         </Alert>
       ) : null}

@@ -158,7 +158,7 @@ export function BotCreateWizard() {
             </Alert>
           ) : null}
           {step === 0 ? (
-            <FormField label="Strategy">
+            <FormField label={t('workspace.strategy')}>
               <Select
                 value={form.strategyVersionId}
                 onChange={(event) => chooseStrategy(event.target.value)}
@@ -181,15 +181,13 @@ export function BotCreateWizard() {
                   placeholder={t('workspace.myPaperBot')}
                 />
               </FormField>
-              <FormField label="Symbol">
+              <FormField label={t('workspace.symbol')}>
                 <Input
                   value={form.symbol}
                   onChange={(event) => update('symbol', event.target.value.toUpperCase())}
                 />
               </FormField>
-              <p>
-                Trading mode: <strong>PAPER</strong>. LIVE is unavailable in this wizard.
-              </p>
+              <p>{t('workspace.liveUnavailable')}</p>
             </>
           ) : null}
           {step === 2 ? (
@@ -201,7 +199,7 @@ export function BotCreateWizard() {
                   inputMode="decimal"
                 />
               </FormField>
-              <FormField label="Maximum per trade (USDT)">
+              <FormField label={t('workspace.maximumTradeUsdt')}>
                 <Input
                   value={form.trade}
                   onChange={(event) => update('trade', event.target.value)}
@@ -223,21 +221,21 @@ export function BotCreateWizard() {
                   <option value="custom">{t('workspace.custom')}</option>
                 </Select>
               </FormField>
-              <FormField label="Maximum exposure (%)">
+              <FormField label={t('workspace.maximumExposurePercent')}>
                 <Input
                   value={form.exposure}
                   onChange={(event) => update('exposure', event.target.value)}
                   inputMode="decimal"
                 />
               </FormField>
-              <FormField label="Maximum position (%)">
+              <FormField label={t('workspace.maximumPositionPercent')}>
                 <Input
                   value={form.position}
                   onChange={(event) => update('position', event.target.value)}
                   inputMode="decimal"
                 />
               </FormField>
-              <FormField label="Maximum positions">
+              <FormField label={t('workspace.maximumPositions')}>
                 <Input
                   value={form.positions}
                   onChange={(event) => update('positions', event.target.value)}
@@ -258,7 +256,7 @@ export function BotCreateWizard() {
                   inputMode="decimal"
                 />
               </FormField>
-              <FormField label="Cooldown (seconds)">
+              <FormField label={t('workspace.cooldown')}>
                 <Input
                   value={form.cooldown}
                   onChange={(event) => update('cooldown', event.target.value)}

@@ -328,7 +328,7 @@ function SectionContent({
     );
   if (section === 'portfolio')
     return data?.kind === 'error' ? (
-      <Alert tone="negative" title="Unable to load portfolio">
+      <Alert tone="negative" title={t('workspace.portfolioLoadError')}>
         {data.message}
       </Alert>
     ) : data?.kind === 'positions' && data.value.length === 0 ? (
