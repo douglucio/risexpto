@@ -26,6 +26,9 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [theme, setTheme] = useState<'light' | 'dark'>('dark');
   const [user, setUser] = useState<{ name: string; email: string; roles: string[] } | null>(null);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement>(null);
+  const userMenuItemsRef = useRef<HTMLDivElement>(null);
   const sessionLoaded = useRef(false);
   useEffect(() => {
     const saved = localStorage.getItem('rx-theme');
@@ -59,6 +62,28 @@ export function AppShell({ children }: { children: ReactNode }) {
       }
     });
   }, [pathname]);
+  useEffect(() => {
+    setUserMenuOpen(false);
+  }, [pathname]);
+  useEffect(() => {
+    if (!userMenuOpen) return;
+    const closeOnOutsideClick = (event: MouseEvent) => {
+      if (!userMenuRef.current?.contains(event.target as Node)) setUserMenuOpen(false);
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setUserMenuOpen(false);
+    };
+    document.addEventListener('mousedown', closeOnOutsideClick);
+    document.addEventListener('keydown', closeOnEscape);
+    return () => {
+      document.removeEventListener('mousedown', closeOnOutsideClick);
+      document.removeEventListener('keydown', closeOnEscape);
+    };
+  }, [userMenuOpen]);
+  useEffect(() => {
+    if (userMenuOpen)
+      userMenuItemsRef.current?.querySelector<HTMLElement>('[role="menuitem"]')?.focus();
+  }, [userMenuOpen]);
   const toggleTheme = () => {
     const next = theme === 'dark' ? 'light' : 'dark';
     setTheme(next);
@@ -143,29 +168,64 @@ export function AppShell({ children }: { children: ReactNode }) {
               {theme === 'dark' ? '☀' : '☾'}
             </button>
             <button aria-label="Open notifications">●</button>
-            <details className="avatar-menu">
-              <summary className="avatar" title={user?.email}>
+            <div className="avatar-menu" ref={userMenuRef}>
+              <button
+                className="avatar"
+                type="button"
+                title={user?.email}
+                aria-label={user?.email ? `Open user menu for ${user.email}` : 'Open user menu'}
+                aria-expanded={userMenuOpen}
+                aria-haspopup="menu"
+                onClick={() => setUserMenuOpen((open) => !open)}
+              >
                 {user ? initials(user.name) : 'RX'}
-              </summary>
-              <div className="avatar-menu-items">
-                <Link href="/settings">{t('nav.profile')}</Link>
-                <Link href="/settings">{t('nav.settings')}</Link>
-                {user?.roles.includes('ADMIN') ? <Link href="/admin">{t('nav.admin')}</Link> : null}
-                <button
-                  type="button"
-                  onClick={() =>
-                    document.querySelector<HTMLFormElement>('[data-logout-form]')?.requestSubmit()
-                  }
-                >
-                  {t('nav.logout')}
-                </button>
-              </div>
-            </details>
-            <form action="/auth/logout" method="post" data-logout-form>
-              <button type="submit" aria-label="Sign out">
-                ↪
               </button>
-            </form>
+              {userMenuOpen ? (
+                <div
+                  className="avatar-menu-items"
+                  ref={userMenuItemsRef}
+                  role="menu"
+                  onKeyDown={(event) => {
+                    const items = Array.from(
+                      event.currentTarget.querySelectorAll<HTMLElement>('[role="menuitem"]'),
+                    );
+                    const current = items.indexOf(document.activeElement as HTMLElement);
+                    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+                      event.preventDefault();
+                      const offset = event.key === 'ArrowDown' ? 1 : -1;
+                      items[(current + offset + items.length) % items.length]?.focus();
+                    }
+                    if (event.key === 'Home' || event.key === 'End') {
+                      event.preventDefault();
+                      items[event.key === 'Home' ? 0 : items.length - 1]?.focus();
+                    }
+                  }}
+                >
+                  <Link href="/settings" role="menuitem">
+                    {t('nav.profile')}
+                  </Link>
+                  <Link href="/settings" role="menuitem">
+                    {t('nav.settings')}
+                  </Link>
+                  {user?.roles.includes('ADMIN') ? (
+                    <Link href="/admin" role="menuitem">
+                      {t('nav.admin')}
+                    </Link>
+                  ) : null}
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() => (
+                      setUserMenuOpen(false),
+                      document.querySelector<HTMLFormElement>('[data-logout-form]')?.requestSubmit()
+                    )}
+                  >
+                    {t('nav.logout')}
+                  </button>
+                </div>
+              ) : null}
+            </div>
+            <form action="/auth/logout" method="post" data-logout-form hidden />
           </div>
         </header>
         <main className="app-content">{children}</main>

@@ -56,5 +56,16 @@ test.describe('authenticated auth and locale regression', () => {
     await page.getByRole('button', { name: /Save preferences|Salvar preferências/ }).click();
     await page.reload();
     await expect(page.locator('html')).toHaveAttribute('lang', 'pt-BR');
+
+    const avatar = page.getByRole('button', { name: /Open user menu/i });
+    await avatar.click();
+    await expect(avatar).toHaveAttribute('aria-expanded', 'true');
+    await expect(page.getByRole('menu')).toBeVisible();
+    await expect(
+      page.getByRole('menu').getByRole('button', { name: /Sair|Sign out|Cerrar sesión/i }),
+    ).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(page.getByRole('menu')).toHaveCount(0);
+    await expect(page.locator('[data-logout-form] button')).toHaveCount(0);
   });
 });
