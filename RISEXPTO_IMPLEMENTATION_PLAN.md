@@ -3424,6 +3424,14 @@ As fases 01–68 permanecem preservadas. Os itens abaixo registram correções d
 
 Regressões registradas: `Previously implemented. Manual browser regression found on 2026-09-10. Superseded by Phases 69–86.` O `AppShell` não reimpõe mais o locale a cada navegação; a persistência atualiza UI, cookie, sessão e `UserProfile`. O diagnóstico nunca registra token, refresh token ou segredo de sessão. Binance Production e Stripe Live permanecem proibidos.
 
+Na validação autenticada, um `503` inicial foi comprovadamente causado por uma
+conta temporária de teste cujo email já existia no banco com outro `externalAuthId`
+do Keycloak. O diagnóstico development-only registrou apenas a mensagem sanitizada
+da falha; a conta e seu vínculo Starter foram removidos ao final do teste. A
+regressão final usou as chaves seed reais `dca`, `grid` e `trend-following` e
+confirmou a persistência PT-BR após troca PT-BR → ES → navegação → Settings →
+PT-BR → reload.
+
 ### Evidência operacional posterior — Keycloak local ativo
 
 Com Keycloak 26.3, PostgreSQL e Redis saudáveis, o primeiro check comparou o

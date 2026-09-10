@@ -42,11 +42,27 @@ export class UserProvisioningService {
         select: { id: true, deletedAt: true },
       });
     } catch (error) {
+      this.logProvisioningFailure(error);
       throw new UserProvisioningError('UNAVAILABLE', error);
     }
     if (stored.deletedAt) throw new UserProvisioningError('DEACTIVATED');
-    await this.ensureStarterPlan(stored.id);
+    try {
+      await this.ensureStarterPlan(stored.id);
+    } catch (error) {
+      this.logProvisioningFailure(error);
+      throw new UserProvisioningError('UNAVAILABLE', error);
+    }
     return { ...user, applicationUserId: stored.id };
+  }
+
+  private logProvisioningFailure(error: unknown): void {
+    if (process.env.NODE_ENV !== 'development') return;
+    console.error(
+      JSON.stringify({
+        event: 'user_provisioning_failed',
+        error: error instanceof Error ? error.message : 'unknown',
+      }),
+    );
   }
 
   private async ensureStarterPlan(userId: string): Promise<void> {

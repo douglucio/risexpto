@@ -30,16 +30,17 @@ export function PreferencesForm() {
   async function submit(event: FormEvent) {
     event.preventDefault();
     setStatus('saving');
+    const nextPreferences = { ...preferences, locale };
     const [sessionResponse, profileResponse] = await Promise.all([
       fetch('/auth/preferences', {
         method: 'PUT',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify(preferences),
+        body: JSON.stringify(nextPreferences),
       }),
       fetch('/api/profile/preferences', {
         method: 'PATCH',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify(preferences),
+        body: JSON.stringify(nextPreferences),
       }),
     ]);
     setStatus(sessionResponse.ok && profileResponse.ok ? 'saved' : 'error');

@@ -20,21 +20,40 @@ test.describe('authenticated auth and locale regression', () => {
     await page.locator('input[type="submit"], button[type="submit"]').first().click();
     await page.waitForURL(/\/dashboard$/);
 
-    for (const endpoint of [
-      '/auth/session',
-      '/api/strategies',
-      '/api/bots',
-      '/api/exchange-connections',
-      '/api/billing',
-    ]) {
-      await expect((await page.request.get(endpoint)).status(), endpoint).toBe(200);
+    const sessionResponse = await page.request.get('/auth/session');
+    const strategiesResponse = await page.request.get('/api/strategies');
+    const botsResponse = await page.request.get('/api/bots');
+    const connectionsResponse = await page.request.get('/api/exchange-connections');
+    const billingResponse = await page.request.get('/api/billing');
+    for (const [endpoint, response] of [
+      ['/auth/session', sessionResponse],
+      ['/api/strategies', strategiesResponse],
+      ['/api/bots', botsResponse],
+      ['/api/exchange-connections', connectionsResponse],
+      ['/api/billing', billingResponse],
+    ] as const) {
+      await expect(response.status(), endpoint).toBe(200);
     }
+    const strategies = (await strategiesResponse.json()) as Array<{ key?: string }>;
+    expect(strategies.map((strategy) => strategy.key)).toEqual(
+      expect.arrayContaining(['dca', 'grid', 'trend-following']),
+    );
+    await expect(botsResponse.json()).resolves.toEqual([]);
+    await expect(connectionsResponse.json()).resolves.toEqual([]);
+    await expect(billingResponse.json()).resolves.toMatchObject({ mode: expect.any(String) });
 
     const routes = ['/bots', '/strategies', '/exchange-connections', '/trades', '/settings'];
     for (const route of routes) {
       await page.goto(route);
       await expect(page.locator('html')).toHaveAttribute('lang', 'pt-BR');
     }
+    await page.locator('.app-topbar select').selectOption('es');
+    await expect(page.locator('html')).toHaveAttribute('lang', 'es');
+    await page.goto('/bots');
+    await expect(page.locator('html')).toHaveAttribute('lang', 'es');
+    await page.goto('/settings');
+    await page.locator('form.settings-grid select').first().selectOption('pt-BR');
+    await page.getByRole('button', { name: /Save preferences|Salvar preferências/ }).click();
     await page.reload();
     await expect(page.locator('html')).toHaveAttribute('lang', 'pt-BR');
   });

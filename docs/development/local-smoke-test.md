@@ -53,7 +53,18 @@ o achado como `EXTERNAL_BROWSER_SCRIPT`, sem alterar a aplicação às cegas.
 
 Para executar os testes de browser pela primeira vez, instale o navegador do Playwright com `pnpm exec playwright install chromium` e então rode `pnpm test:e2e`. Nesta rodada o Chromium foi instalado e os quatro cenários públicos passaram; ambientes sem o binário devem classificar essa evidência como `BLOCKED_EXTERNAL`.
 
-Com a stack local ativa, `E2E_WEB_URL=http://localhost:3000 pnpm exec playwright test e2e/public-navigation.spec.ts --workers=1` deve concluir quatro testes públicos. O teste autenticado opt-in exige `E2E_STORAGE_STATE` gerado após o usuário Keycloak verificado.
+Com a stack local ativa, `E2E_WEB_URL=http://localhost:3000 pnpm exec playwright test e2e/public-navigation.spec.ts --workers=1` deve concluir quatro testes públicos. O teste autenticado opt-in usa um usuário Keycloak local verificado:
+
+```bash
+E2E_WEB_URL=http://localhost:3000 \
+E2E_AUTH_USERNAME='usuario-local@risexpto.test' \
+E2E_AUTH_PASSWORD='senha-local' \
+pnpm exec playwright test e2e/authenticated-regression.spec.ts --workers=1
+```
+
+O cenário confirma `200` em session/strategies/bots/connections/billing, seeds
+`dca`, `grid` e `trend-following`, estados vazios e locale PT-BR após
+PT-BR → ES → navegação → Settings → PT-BR → reload.
 
 Valide manualmente, sem alterar o cookie ou inserir bearer no DevTools:
 
