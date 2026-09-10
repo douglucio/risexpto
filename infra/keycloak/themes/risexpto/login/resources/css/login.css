@@ -1,68 +1,48 @@
-/* RiseXPTO-owned visual layer over the Keycloak login templates. */
+/* RiseXPTO authentication theme for Keycloak 26.x maintained templates. */
 :root {
   --rx-bg: #080d18;
   --rx-surface: #101827;
+  --rx-surface-raised: #172235;
   --rx-border: #28364b;
   --rx-text: #f1f5f9;
   --rx-muted: #9aa8bc;
   --rx-brand: #6f8cff;
+  --rx-brand-strong: #9aadff;
+  --rx-danger: #ff667d;
+  --rx-radius: 14px;
+  --rx-focus: 0 0 0 3px rgb(111 140 255 / 35%);
 }
-body.kcBody {
-  background:
-    radial-gradient(circle at 50% 0, rgb(111 140 255 / 0.2), transparent 42%), var(--rx-bg);
-  color: var(--rx-text);
-  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
-}
-#kc-header-wrapper {
-  color: transparent;
-  font-size: 0;
-  min-height: 72px;
-  position: relative;
-}
-#kc-header-wrapper::before {
-  background: url('../img/rx-mark.svg') center / 56px 56px no-repeat;
-  content: '';
-  inset: 0;
-  position: absolute;
-}
-.login-pf-page .card-pf,
-.kc-form-card {
-  border: 1px solid var(--rx-border);
-  border-radius: 14px;
-  background: var(--rx-surface);
-  box-shadow: 0 20px 60px rgb(0 0 0 / 0.35);
-}
-.login-pf-page .card-pf h1,
-#kc-page-title {
-  color: var(--rx-text);
-  letter-spacing: -0.03em;
-}
-input[type='text'],
-input[type='password'],
-input[type='email'],
-select {
-  border: 1px solid var(--rx-border);
-  border-radius: 8px;
-  background: #172235;
-  color: var(--rx-text);
-}
-.btn-primary {
-  border: 0;
-  border-radius: 8px;
-  background: var(--rx-brand);
-  color: #080d18;
-  font-weight: 700;
-}
-a {
-  color: var(--rx-brand);
-}
-.alert {
-  border-radius: 8px;
-}
-@media (max-width: 520px) {
-  .login-pf-page .card-pf,
-  .kc-form-card {
-    margin: 16px;
-    padding: 24px 20px;
-  }
-}
+*, *::before, *::after { box-sizing: border-box; }
+html, body { min-height: 100%; }
+body { margin: 0; min-width: 320px; background: radial-gradient(circle at 50% 0, rgb(111 140 255 / 20%), transparent 42%), var(--rx-bg); color: var(--rx-text); font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+#kc-header { padding: 48px 16px 24px; }
+#kc-header-wrapper { width: min(268px, 100%); height: 96px; margin: 0 auto; background: url('../img/risexpto-auth.svg') center / contain no-repeat; color: transparent; font-size: 0; }
+#kc-content, #kc-content-wrapper { width: 100%; max-width: none; }
+.login-pf-page .card-pf, .kc-form-card { width: min(100% - 32px, 460px); margin-inline: auto; border: 1px solid var(--rx-border); border-radius: var(--rx-radius); background: var(--rx-surface); box-shadow: 0 20px 60px rgb(0 0 0 / 35%); }
+.login-pf-page .card-pf { padding: 32px; }
+.login-pf-page #kc-form-wrapper, .login-pf-page #kc-register-form, .login-pf-page #kc-passwd-update-form { width: 100%; margin: 0; }
+#kc-page-title, .login-pf-page .card-pf h1 { margin: 0 0 24px; color: var(--rx-text); font-size: clamp(1.5rem, 3vw, 1.85rem); font-weight: 650; letter-spacing: -0.03em; }
+.form-group { margin-bottom: 18px; }
+label, .control-label { display: block; margin-bottom: 8px; color: var(--rx-text); font-size: .875rem; font-weight: 600; }
+input[type='text'], input[type='password'], input[type='email'], input[type='number'], select { width: 100%; min-height: 44px; border: 1px solid var(--rx-border); border-radius: 8px; outline: 0; background: var(--rx-surface-raised); color: var(--rx-text); padding: 10px 12px; font: inherit; }
+input:focus, select:focus, button:focus-visible, a:focus-visible { border-color: var(--rx-brand); outline: 0; box-shadow: var(--rx-focus); }
+input:disabled, select:disabled, button:disabled { cursor: not-allowed; opacity: .6; }
+.has-error input, input[aria-invalid='true'] { border-color: var(--rx-danger); }
+.help-block, .kc-feedback-text, .instruction, #kc-info { color: var(--rx-muted); line-height: 1.5; }
+.alert-error, .alert-danger, .kc-feedback-text { color: var(--rx-danger); }
+.btn-primary, #kc-login, input[type='submit'] { width: 100%; min-height: 44px; border: 0; border-radius: 8px; background: var(--rx-brand); color: var(--rx-bg); cursor: pointer; font: inherit; font-weight: 700; }
+.btn-primary:hover, #kc-login:hover, input[type='submit']:hover { background: var(--rx-brand-strong); }
+a { color: var(--rx-brand-strong); text-decoration: none; }
+a:hover { color: var(--rx-text); text-decoration: underline; }
+#kc-form-options, #kc-form-buttons, #kc-registration, #kc-info { margin-top: 18px; }
+#kc-registration, #kc-info { color: var(--rx-muted); text-align: center; }
+#kc-locale, .kc-locale { position: relative; top: auto; right: auto; width: auto; margin: 0 0 12px; text-align: right; }
+#kc-locale-dropdown, .kc-locale-dropdown { display: inline-block; }
+#kc-locale ul, .kc-locale ul { min-width: 0; margin: 4px 0 0; padding: 4px; border: 1px solid var(--rx-border); border-radius: 8px; background: var(--rx-surface-raised); }
+#kc-locale ul li, .kc-locale ul li { list-style: none; }
+#kc-locale a, .kc-locale a { color: var(--rx-text); }
+#kc-locale select, .kc-locale select, #kc-current-locale-link { width: auto; min-height: 38px; padding: 6px 32px 6px 10px; border: 1px solid var(--rx-border); border-radius: 8px; background: var(--rx-surface-raised); color: var(--rx-text); font: inherit; font-size: .875rem; }
+.pf-c-input-group { display: flex; }
+.pf-c-input-group input { min-width: 0; flex: 1; }
+.pf-c-input-group button { min-width: 44px; border: 1px solid var(--rx-border); border-left: 0; border-radius: 0 8px 8px 0; background: var(--rx-surface-raised); color: var(--rx-muted); cursor: pointer; }
+@media (max-width: 520px) { #kc-header { padding: 24px 16px 16px; } #kc-header-wrapper { height: 76px; } .login-pf-page .card-pf { padding: 24px 20px; } .login-pf-page .card-pf, .kc-form-card { width: calc(100% - 32px); } }
