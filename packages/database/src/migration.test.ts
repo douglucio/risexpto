@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import { PGlite } from '@electric-sql/pglite';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 const migrationUrl = new URL(
   '../prisma/migrations/20260830222000_initial_domain/migration.sql',
@@ -9,11 +9,17 @@ const migrationUrl = new URL(
 
 describe('initial PostgreSQL migration', () => {
   let db: PGlite;
-  beforeEach(async () => {
+  beforeAll(async () => {
     db = new PGlite();
     await db.exec(await readFile(migrationUrl, 'utf8'));
   });
-  afterEach(async () => db.close());
+  afterAll(async () => db.close());
+  beforeEach(async () => {
+    await db.exec('BEGIN');
+  });
+  afterEach(async () => {
+    await db.exec('ROLLBACK');
+  });
 
   it('persists an identity and its regional profile', async () => {
     const userId = '00000000-0000-4000-8000-000000000001';

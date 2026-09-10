@@ -3421,8 +3421,19 @@ As fases 01–68 permanecem preservadas. Os itens abaixo registram correções d
 | 84 | Regressão browser auth + i18n | ✅ BROWSER_VALIDATED; login Keycloak real e locale PT-BR sobreviveram navegação/reload |
 | 85 | Regressão de dados autenticados | ✅ BROWSER_VALIDATED; strategies/bots/connections/billing sem 401 |
 | 86 | Gate PAPER MVP | ✅ PAPER_BROWSER_AND_DB_VALIDATED; bot DCA PAPER criado, promovido a READY, iniciado, ciclo enfileirado e worker persistiu snapshots, propostas, ordens FILLED, trades, posição e saldos |
+| 87 | Estabilidade do teste de migração PostgreSQL | ✅ CI_REGRESSION_FIXED; migração aplicada uma vez por arquivo e cada caso isolado por transação/rollback, eliminando a recriação de PGlite que excedia o hook timeout no GitHub Actions |
 
 Regressões registradas: `Previously implemented. Manual browser regression found on 2026-09-10. Superseded by Phases 69–86.` O `AppShell` não reimpõe mais o locale a cada navegação; a persistência atualiza UI, cookie, sessão e `UserProfile`. O diagnóstico nunca registra token, refresh token ou segredo de sessão. Binance Production e Stripe Live permanecem proibidos.
+
+### Fase 87 — regressão de timeout no GitHub Actions
+
+Previously implemented. CI regression found on 2026-09-10. O teste
+`packages/database/src/migration.test.ts` recriava PGlite e executava a migração
+completa em cada `beforeEach`. Em runners GitHub Actions, o primeiro hook podia
+ultrapassar 10 segundos, embora a migração e as asserções estivessem corretas.
+A migração agora é executada uma vez em `beforeAll`; cada caso inicia uma
+transação e termina com `ROLLBACK`, preservando isolamento sem repetir a
+inicialização pesada. Três execuções consecutivas passaram localmente.
 
 Na validação autenticada, um `503` inicial foi comprovadamente causado por uma
 conta temporária de teste cujo email já existia no banco com outro `externalAuthId`
