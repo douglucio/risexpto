@@ -135,6 +135,11 @@ registration, forgot password e ausência de overflow horizontal. O teste
 autenticado opcional também verifica que o logout existe somente no menu do
 avatar e que Escape fecha o menu.
 
+A regressão completa também cobre o dropdown nativo do Keycloak fechado/aberto,
+seleção ES, erro de credencial e viewports `1440x900`, `1366x768`, `834x1112`
+e `390x844`. A landing pública deve trocar idioma sem gerar chamadas a
+`/auth/preferences` ou `/api/profile/preferences`.
+
 ## Binance Spot Testnet
 
 Configure somente credenciais descartáveis da Testnet no `.env`, mantenha `BINANCE_TRADING_ENVIRONMENT=TESTNET`, `LIVE_TRADING_ENABLED=false` inicialmente e siga [binance-testnet-smoke.md](../production/binance-testnet-smoke.md). Nunca configure `BINANCE_PRODUCTION_BASE_URL` como endpoint de execução.

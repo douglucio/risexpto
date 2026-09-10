@@ -38,6 +38,11 @@ Authentication surfaces use the local `[R] RiseXPTO` lockup at
 Keycloak serves theme assets independently. These are identical copies, not
 alternate brand variants; updates must be made together.
 
+The authentication lockup has a safe horizontal viewBox and is exposed through
+three application treatments: compact (cropped mark), header (contained
+wordmark) and auth (full lockup). All treatments use the same source identity;
+CSS controls size rather than stretching or redrawing the logo.
+
 ## Color
 
 The product uses deep navy neutrals and an electric indigo-blue accent. Green and red are semantic only.
