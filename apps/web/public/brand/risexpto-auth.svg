@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 268 96" role="img" aria-labelledby="title desc">
+  <title id="title">RiseXPTO</title>
+  <desc id="desc">RiseXPTO authentication logo</desc>
+  <rect x="0" y="0" width="96" height="96" rx="24" fill="#101827"/>
+  <path d="M25 67V29h24c11 0 18 5 18 14 0 7-4 12-11 14l14 10H55L43 59h-7v8H25Zm11-17h12c5 0 8-2 8-6s-3-6-8-6H36v12Z" fill="#6F8CFF"/>
+  <text x="116" y="62" fill="#F1F5F9" font-family="Inter, Arial, sans-serif" font-size="37" font-weight="650" letter-spacing="-1.2">Rise<tspan fill="#6F8CFF">XPTO</tspan></text>
+</svg>

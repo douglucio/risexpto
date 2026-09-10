@@ -26,6 +26,11 @@ The root `.env` is loaded automatically by the root `dev` command and by the API
 
 Never use real Binance or Stripe credentials in local fixtures or tests. Values in `.env.example` are placeholders.
 
+Authentication screens use the local RiseXPTO `[R] RiseXPTO` lockup and the
+Keycloak theme at `infra/keycloak/themes/risexpto/`; run the documented local
+Keycloak/Playwright smoke flow before changing theme selectors. Binance
+Production and Stripe Live are not used by local validation.
+
 ## Commands
 
 ```bash

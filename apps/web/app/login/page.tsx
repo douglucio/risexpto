@@ -13,7 +13,7 @@ export default async function LoginPage({
   return (
     <div className="auth-page">
       <Card className="auth-card">
-        <div className="auth-mark">R</div>
+        <img className="auth-logo" src="/brand/risexpto-auth.svg" alt="RiseXPTO" />
         <h1>{t('auth.welcome')}</h1>
         <p>{t('auth.description')}</p>
         {error && (

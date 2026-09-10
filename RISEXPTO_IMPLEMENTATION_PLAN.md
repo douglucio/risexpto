@@ -2784,6 +2784,62 @@ As fases históricas 07, 15, 16 e 17 representam contratos e fundações testado
 
 Nenhuma credencial real deve ser adicionada ao repositório, e nenhuma ordem de produção deve ser enviada durante a implementação desta etapa.
 
+## 2026-09-10 — Auditoria manual da experiência de identidade e workspace
+
+O teste manual confirmou que o fluxo funcional anterior permanece disponível,
+mas encontrou regressões/pendências visuais e de interação:
+
+- `/login` RiseXPTO está coerente, porém o lockup de autenticação ainda não era reutilizado integralmente no Keycloak;
+- Keycloak Login, Register e Recover exibiam layout excessivamente largo, com inputs quase full-width e pouca margem lateral;
+- o locale selector parecia um `<select>` nativo desproporcional e dominava o formulário ao abrir;
+- o tema mostrava apenas o símbolo `R`/branding incompleto em algumas telas;
+- o workspace tinha logout externo ao avatar e outro item de logout dentro do menu, duplicando a ação;
+- a próxima regressão deve cobrir desktop largo/1366-ish, tablet e mobile, além de EN, PT e ES, foco, teclado, erros, required actions e ausência de overflow horizontal.
+
+O tema Keycloak V2 continua preservado como foundation histórica. A validação
+manual encontrou inconsistências que são superseded pelas fases de refinamento
+abaixo (V3); nenhum histórico anterior foi removido.
+
+Como a Fase 87 já existia no plano (estabilidade da migração PostgreSQL), as
+fases solicitadas nesta rodada continuam sequencialmente como 88–95.
+
+| Fase | Escopo | Estado inicial | Critério de conclusão |
+|---|---|---|---|
+| 88 | Authentication Brand Assets | ✅ | Lockup `[R] RiseXPTO` único e local reutilizado no `/login` e Keycloak, tokens/documentação atualizados. |
+| 89 | Keycloak Auth Layout V3 | ✅ | Login estreito, centralizado e responsivo sobre a estrutura Keycloak 26.3 real, com estados acessíveis. |
+| 90 | Registration & Recovery UX | ✅ | Register, forgot/reset, verify, required actions e erros usam a mesma linguagem e margens seguras. |
+| 91 | Keycloak Locale Selector UX | ✅ | Selector compacto, touch/keyboard accessible e troca EN/PT/ES sem regressão de `ui_locales`. |
+| 92 | User Menu & Logout Cleanup | ✅ | Logout somente no menu do avatar; outside/Escape/route/logout e RBAC ADMIN preservados. |
+| 93 | Auth Responsive Regression | ✅ | `/login` e fluxos Keycloak sem overflow em desktop, tablet e mobile, com foco e legibilidade. |
+| 94 | Auth Theme E2E Regression | ✅ | Login EN/PT/ES, register e forgot password cobertos por assertions estruturais; E2E autenticado permanece opt-in. |
+| 95 | Documentation Reconciliation | ✅ | Plano, README, smoke/pre-live, Brand Reference e ADRs reconciliados; validação final registrada. |
+
+Restrições mantidas: nenhum teste usa Binance Production, nenhuma ordem é
+enviada e Stripe Live permanece proibido.
+
+## 2026-09-10 — Refinamento de identidade e menu autenticado (Fases 88–95)
+
+Resumo:
+- asset local `[R] RiseXPTO` centralizado no `/login` e duplicado no theme por requisito de isolamento do Keycloak, com origem documentada;
+- CSS V3 validado contra o DOM real do Keycloak 26.3 (`.card-pf`, `#kc-form-wrapper`, `#kc-locale`, PatternFly password toggle), com card 460px, margens 16px, inputs 44px, foco, erro, disabled e sem CDN;
+- Register, recovery, reset, verify, required actions e páginas de erro herdam a mesma linguagem do theme sem templates antigos customizados;
+- locale selector nativo do Keycloak foi mantido e estilizado de forma compacta, preservando `ui_locales` (`pt-BR` interno → `pt` no provedor);
+- logout externo removido do AppShell; menu do avatar usa `aria-expanded`, `aria-haspopup`, `role=menu`, foco inicial, setas/Home/End, Escape, clique externo e fechamento por rota;
+- RBAC ADMIN continua controlando a entrada do Console administrativo.
+
+Validações:
+- `pnpm lint`: OK;
+- `pnpm typecheck`: OK;
+- `pnpm exec turbo run test --concurrency=1`: OK (39 tarefas; 39 bem-sucedidas; 18 worker passando, 34 API + 1 skip, 27 Web);
+- `pnpm build`: OK (29 tarefas; Web 29/29 rotas);
+- Keycloak 26.3 + PostgreSQL + Redis locais: saudáveis;
+- Playwright Keycloak real: OK (5/5 — Login EN/PT/ES, Register e Forgot Password), com assertions de asset, card e overflow;
+- `git diff --check`: OK;
+- nenhuma credencial, Binance Production ou Stripe Live foi utilizada.
+
+Status:
+✅ Fases 88–95 concluídas em branch local; aguardando commit/integração em `develop`.
+
 ## 2026-09-06 — Binance Testnet connector (primeira fatia do Gate 1)
 
 Resumo:

@@ -13,9 +13,18 @@ test.describe('Keycloak locale and RiseXPTO theme', () => {
 
       await expect(page.locator('#username')).toBeVisible();
       await expect(page.locator('body')).toContainText(label);
-      await expect(page.locator('#kc-header-wrapper, header, body').first()).toContainText(
-        /RiseXPTO/i,
+      await expect(page.locator('#kc-header-wrapper')).toHaveCSS(
+        'background-image',
+        /risexpto-auth/,
       );
+      await expect(page.locator('body')).toContainText(/RiseXPTO/i);
+      const card = page.locator('.login-pf-page .card-pf, .kc-form-card, #kc-form-wrapper').first();
+      await expect(card).toBeVisible();
+      const metrics = await page.evaluate(() => ({
+        documentWidth: document.documentElement.scrollWidth,
+        viewportWidth: window.innerWidth,
+      }));
+      expect(metrics.documentWidth).toBeLessThanOrEqual(metrics.viewportWidth);
       await page.screenshot({ path: `test-results/keycloak-${locale}.png`, fullPage: true });
     });
   }

@@ -456,6 +456,8 @@ p {
   cursor: pointer;
 }
 .avatar {
+  border: 0;
+  padding: 0;
   display: grid;
   place-items: center;
   width: 2rem;
@@ -472,9 +474,6 @@ p {
 .avatar-menu summary {
   cursor: pointer;
   list-style: none;
-}
-.avatar-menu summary::-webkit-details-marker {
-  display: none;
 }
 .avatar-menu-items {
   position: absolute;
@@ -500,8 +499,12 @@ p {
   cursor: pointer;
 }
 .avatar-menu-items a:hover,
-.avatar-menu-items button:hover {
+.avatar-menu-items button:hover,
+.avatar-menu-items a:focus-visible,
+.avatar-menu-items button:focus-visible {
   background: var(--rx-color-brand-soft);
+  outline: none;
+  box-shadow: none;
 }
 .menu-button {
   display: none;
@@ -657,17 +660,11 @@ p {
 .auth-card small {
   color: var(--rx-color-text-muted);
 }
-.auth-mark {
-  display: grid;
-  place-items: center;
-  width: 3rem;
-  height: 3rem;
+.auth-logo {
+  display: block;
+  width: min(16.75rem, 100%);
+  height: auto;
   margin: auto;
-  border-radius: var(--rx-radius-lg);
-  background: var(--rx-color-brand);
-  color: #fff;
-  font-size: 1.35rem;
-  font-weight: 700;
 }
 .auth-action {
   display: grid;

@@ -32,6 +32,12 @@ Clear space is one node diameter around the symbol and half the symbol height ar
 
 The SVGs are provisional and deliberately decoupled so a future commissioned mark can replace them without changing application layout or tokens.
 
+Authentication surfaces use the local `[R] RiseXPTO` lockup at
+`apps/web/public/brand/risexpto-auth.svg`. Keycloak contains the same SVG under
+`infra/keycloak/themes/risexpto/login/resources/img/risexpto-auth.svg` because
+Keycloak serves theme assets independently. These are identical copies, not
+alternate brand variants; updates must be made together.
+
 ## Color
 
 The product uses deep navy neutrals and an electric indigo-blue accent. Green and red are semantic only.
