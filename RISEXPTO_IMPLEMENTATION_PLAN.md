@@ -2871,7 +2871,7 @@ Como a Fase 95 já era `Documentation Reconciliation`, a solicitação de Fase
 | Fase | Escopo | Estado inicial | Critério de conclusão |
 |---|---|---|---|
 | 96 | Public Locale Persistence Boundary | ✅ | Landing anônima persiste cookie/localStorage sem chamadas autenticadas; workspace autenticado atualiza sessão e UserProfile. |
-| 97 | Shared Brand Asset Fix | ⬜ | `/login`, landing, shell e Keycloak usam assets locais válidos, com dimensões seguras e wordmark sem clipping. |
+| 97 | Shared Brand Asset Fix | ✅ | `/login`, landing, shell e Keycloak usam assets locais válidos, com dimensões seguras e wordmark sem clipping. |
 | 98 | Keycloak Locale Dropdown Behavior | ⬜ | Dropdown fechado por padrão, abre por clique, fecha por seleção/outside/Escape e mantém EN/PT/ES + `ui_locales`. |
 | 99 | Keycloak Visual Consistency | ⬜ | Background, superfície, tokens, card, logo e densidade visual continuam a linguagem do `/login`. |
 | 100 | Registration & Recovery Layout Polish | ⬜ | Register, recovery, reset e required actions compactos, legíveis, responsivos e sem sobreposição. |
@@ -2894,6 +2894,19 @@ Validações:
 - testes de boundary/policy: OK (30 testes Web);
 - assets público/Keycloak idênticos: OK;
 - sem 401 público por persistência de locale: coberto por teste de requests E2E.
+
+### Fase 97 — Shared Brand Asset Fix
+
+Resumo:
+- `BrandLockup` reutiliza o asset local `[R] RiseXPTO` na landing, shell e auth;
+- `/login` mantém a mesma referência pública e o proxy libera `/brand/*`;
+- variantes compact/header/auth controlam dimensões com `object-fit` e `object-position`, sem distorção ou clipping;
+- a cópia Keycloak permanece byte-a-byte equivalente à cópia pública.
+
+Validações:
+- Web typecheck/lint: OK;
+- `cmp` entre assets público e Keycloak: OK;
+- `git diff --check`: OK.
 
 ## 2026-09-06 — Binance Testnet connector (primeira fatia do Gate 1)
 

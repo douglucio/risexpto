@@ -30,4 +30,16 @@ test.describe('Keycloak registration and recovery layout', () => {
     await expect(page.locator('#username')).toBeVisible();
     await expectAuthLayout(page);
   });
+
+  test('locale menu selects Spanish and closes through native Keycloak navigation', async ({ page }) => {
+    await openKeycloakLogin(page);
+    const localeButton = page.locator('#kc-current-locale-link');
+    await expect(localeButton).toHaveAttribute('aria-expanded', 'false');
+    await localeButton.click();
+    await expect(page.locator('#kc-locale [role="menu"]')).toBeVisible();
+    await page.getByRole('menuitem', { name: /Spanish/i }).click();
+    await expect(page).toHaveURL(/kc_locale=es/);
+    await expect(page.locator('#kc-current-locale-link')).toContainText(/Español|Spanish/i);
+    await expect(page.locator('#kc-locale [role="menu"]')).toBeHidden();
+  });
 });

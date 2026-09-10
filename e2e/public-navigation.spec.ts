@@ -18,6 +18,12 @@ test.describe('public marketing navigation', () => {
   });
 
   test('switches public locale without leaving the landing page', async ({ page }) => {
+    const authenticatedLocaleRequests: string[] = [];
+    page.on('request', (request) => {
+      if (request.url().includes('/auth/preferences') || request.url().includes('/api/profile/preferences')) {
+        authenticatedLocaleRequests.push(request.url());
+      }
+    });
     await page.goto('/');
     await page
       .getByRole('combobox', { name: /Language/ })
@@ -30,6 +36,11 @@ test.describe('public marketing navigation', () => {
       .getByRole('combobox', { name: /Language/ })
       .first()
       .selectOption('es');
+    await expect(
+      page.getByRole('heading', { name: 'Opera con un sistema que puedes entender.' }),
+    ).toBeVisible();
+    expect(authenticatedLocaleRequests).toEqual([]);
+    await page.reload();
     await expect(
       page.getByRole('heading', { name: 'Opera con un sistema que puedes entender.' }),
     ).toBeVisible();
