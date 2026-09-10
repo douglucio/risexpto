@@ -2837,8 +2837,15 @@ Validações:
 - `git diff --check`: OK;
 - nenhuma credencial, Binance Production ou Stripe Live foi utilizada.
 
+Commits:
+- `f1810f2` — `refactor: centralize authentication brand assets`;
+- `1e89527` — `feat: redesign keycloak authentication experience`;
+- `ee6ab17` — `refactor: keep logout inside user menu`;
+- `3b6f3cc` — `docs: reconcile authentication ux validation`;
+- `ab3583a` — merge local em `develop`, enviado para `origin/develop`.
+
 Status:
-✅ Fases 88–95 concluídas em branch local; aguardando commit/integração em `develop`.
+✅ Fases 88–95 concluídas e integradas em `develop`. `main` não foi alterada.
 
 ## 2026-09-06 — Binance Testnet connector (primeira fatia do Gate 1)
 
