@@ -2948,9 +2948,9 @@ Validações reais:
   e invalid credentials cobertos pelo Playwright local.
 
 Status:
-✅ Fases 96–102 concluídas e validadas localmente. Lint, typecheck, testes,
-build, `git diff --check` e a suíte E2E focada passaram; integração final em
-`develop` será registrada após o merge local desta rodada.
+✅ Fases 96–102 concluídas, validadas localmente e integradas em `develop` no
+merge `d5b1a68`. Lint, typecheck, testes, build, `git diff --check` e a suíte
+E2E focada passaram. `main` não foi alterada.
 
 ## 2026-09-06 — Binance Testnet connector (primeira fatia do Gate 1)
 
