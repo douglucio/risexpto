@@ -150,6 +150,7 @@ async function summarize(currentRealm, client, scopes, roles) {
     defaultScopes: expectedScopeNames.filter((name) => names.has(name)).sort(),
     emailMapper: mapperSummary.email?.includes('email') ?? false,
     emailVerifiedMapper: mapperSummary.email?.includes('email verified') ?? false,
+    subjectMapper: mapperSummary.openid?.includes('subject') ?? false,
     audienceMapper:
       mapperSummary['risexpto-api-audience']?.includes('RiseXPTO API audience') ?? false,
     realmRoles: roles
@@ -170,6 +171,7 @@ function expectedSummary(value) {
     defaultScopes: [...(web?.defaultClientScopes ?? [])].sort(),
     emailMapper: true,
     emailVerifiedMapper: true,
+    subjectMapper: true,
     audienceMapper: true,
     realmRoles: (value.roles?.realm ?? []).map((role) => role.name).sort(),
     redirectUris: web?.redirectUris ?? [],

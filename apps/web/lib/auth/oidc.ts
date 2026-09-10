@@ -128,7 +128,12 @@ async function sessionFromTokens(
         (role): role is AppRole => typeof role === 'string' && roles.includes(role as AppRole),
       )
     : [];
-  if (!identity.sub || typeof identity.email !== 'string')
+  if (
+    !access.sub ||
+    typeof access.email !== 'string' ||
+    !identity.sub ||
+    typeof identity.email !== 'string'
+  )
     throw new OidcFlowError('IDENTITY_CLAIMS_MISSING');
   return {
     user: {

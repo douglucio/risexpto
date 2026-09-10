@@ -37,6 +37,11 @@ mas nunca remove usuários. O diagnóstico da API registra somente `typ`, presen
 de claims, audience, issuer, `azp`, scope, roles e expiração quando
 `NODE_ENV=development`; nunca copie ou registre o token completo.
 
+O scope `openid` deve conter o mapper `sub`. Esse mapper é importante porque o
+Keycloak realm exportado pelo projeto define um scope `openid` próprio; sem ele,
+um Access Token pode ter audience/email corretos e ainda falhar na API por
+`CLAIMS` com `subPresent=false`.
+
 Para a regressão de locale, selecione `PT-BR` ou `ES` na landing, faça login,
 navegue por Dashboard → Bots → Strategies → Connections → Trades → Settings e
 recarregue a página. O idioma escolhido deve permanecer; o mesmo seletor da

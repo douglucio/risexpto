@@ -122,7 +122,7 @@ export function tokenClaimsDiagnostics(typ: unknown, claims: JwtPayload): TokenC
   };
 }
 
-function classifyTokenKind(
+export function classifyTokenKind(
   typ: unknown,
   payload: JwtPayload,
   apiAudience: string,

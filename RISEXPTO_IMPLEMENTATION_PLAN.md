@@ -3403,9 +3403,9 @@ As fases 01–68 permanecem preservadas. Os itens abaixo registram correções d
 
 | Fase | Escopo | Estado desta rodada |
 |---|---|---|
-| 69 | Diagnóstico sanitizado de claims do Access Token | 🟨 CODE_IMPLEMENTED / LOCAL_TESTED; token real depende de Keycloak ativo |
-| 70 | Check/reconcile determinístico do realm Keycloak | 🟨 CODE_IMPLEMENTED; execução externa depende de Keycloak/admin local |
-| 71 | Recuperação da API autenticada | 🟨 contratos e guard cobertos; endpoints reais dependem da stack |
+| 69 | Diagnóstico sanitizado de claims do Access Token | ✅ REAL_TOKEN_VALIDATED; causa comprovada: mapper `sub` ausente no scope `openid` persistido |
+| 70 | Check/reconcile determinístico do realm Keycloak | ✅ REAL_REALM_VALIDATED; `pnpm keycloak:check` sem divergências após reconcile |
+| 71 | Recuperação da API autenticada | ✅ BROWSER_VALIDATED; sessão real e BFF strategies/bots/connections/billing retornaram 200 |
 | 72 | ADR e hardening do modelo de token | ✅ CODE_IMPLEMENTED / TYPECHECKED |
 | 73 | Locale como fonte única de verdade | ✅ CODE_IMPLEMENTED / TYPECHECKED |
 | 74 | Inicialização de locale da sessão OIDC | ✅ CODE_IMPLEMENTED / TESTED |
@@ -3418,8 +3418,19 @@ As fases 01–68 permanecem preservadas. Os itens abaixo registram correções d
 | 81 | Navbar full-bleed | ✅ CODE_IMPLEMENTED / TYPECHECKED |
 | 82 | Estados auth/empty/error | 🟨 contratos implementados; browser autenticado pendente |
 | 83 | Investigação `reportAllChanges/startTime` | ✅ CLASSIFIED_EXTERNAL_BROWSER_SCRIPT quando ausente do bundle local |
-| 84 | Regressão browser auth + i18n | 🟨 testes locais preparados; execução real requer sessão/serviços |
-| 85 | Regressão de dados autenticados | 🟨 critérios documentados; execução real requer API/DB/Keycloak |
+| 84 | Regressão browser auth + i18n | ✅ BROWSER_VALIDATED; login Keycloak real e locale PT-BR sobreviveram navegação/reload |
+| 85 | Regressão de dados autenticados | ✅ BROWSER_VALIDATED; strategies/bots/connections/billing sem 401 |
 | 86 | Gate PAPER MVP | 🟨 aguardando fases externas e teste manual do proprietário |
 
 Regressões registradas: `Previously implemented. Manual browser regression found on 2026-09-10. Superseded by Phases 69–86.` O `AppShell` não reimpõe mais o locale a cada navegação; a persistência atualiza UI, cookie, sessão e `UserProfile`. O diagnóstico nunca registra token, refresh token ou segredo de sessão. Binance Production e Stripe Live permanecem proibidos.
+
+### Evidência operacional posterior — Keycloak local ativo
+
+Com Keycloak 26.3, PostgreSQL e Redis saudáveis, o primeiro check comparou o
+realm persistido e encontrou somente `loginTheme` ausente; após o reconcile,
+encontrou também a causa do `CLAIMS`: o scope `openid` customizado não possuía
+mapper `sub`. O realm versionado agora declara o mapper `oidc-sub-mapper`, e o
+reconcile o aplica sem remover usuários. Um login real confirmou `sub`, `email`,
+`email_verified`, audience `risexpto-api`, issuer e roles no Access Token; os
+endpoints BFF autenticados retornaram `200`. O usuário temporário usado nessa
+prova foi removido após o teste.

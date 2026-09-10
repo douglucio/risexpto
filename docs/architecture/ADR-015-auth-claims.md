@@ -26,6 +26,11 @@ Realm client scopes and the running realm must be reconciled before authenticate
 API testing. Missing e-mail is an operational configuration failure, not a reason
 to weaken signature, issuer, audience or verification checks.
 
+The local review(6) runtime proved that a custom `openid` scope without the
+`oidc-sub-mapper` can emit `email` and the API audience while omitting `sub`.
+The versioned realm therefore declares the subject mapper explicitly, and
+`pnpm keycloak:reconcile` applies it to an existing development realm.
+
 ## Risks
 
 User e-mail changes and privacy policy remain identity-provider concerns. A future

@@ -190,6 +190,12 @@ código nesta rodada, mas validação de browser/Keycloak real continua um gate
 separado. O erro `reportAllChanges/startTime` deve ser tratado como script
 externo se não existir no código/bundle local.
 
+Validação real posterior: Keycloak 26.3, PostgreSQL e Redis locais ficaram
+saudáveis; o realm foi reconciliado sem apagar usuários; o mapper `sub` ausente
+foi identificado e aplicado; login real e BFF autenticado retornaram `200` para
+session, strategies, bots, connections e billing. Binance Production e Stripe
+Live continuam fora do teste.
+
 ## Validações executadas
 
 - `git status` e branch: executados; branch atual `develop`, com alterações locais pré-existentes preservadas.
