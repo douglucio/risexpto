@@ -9,7 +9,10 @@ const LocaleContext = createContext<LocaleContextValue | null>(null);
 export function LocaleProvider({ children }: { children: ReactNode }) {
   const [locale, setValue] = useState<Locale>('en');
   useEffect(() => {
-    const cookie = document.cookie.split('; ').find((item) => item.startsWith('rx-locale='))?.split('=')[1];
+    const cookie = document.cookie
+      .split('; ')
+      .find((item) => item.startsWith('rx-locale='))
+      ?.split('=')[1];
     const stored = cookie ?? localStorage.getItem('rx-locale') ?? undefined;
     const next = stored ? normalizeLocale(stored) : normalizeLocale(window.navigator.language);
     setValue(next);

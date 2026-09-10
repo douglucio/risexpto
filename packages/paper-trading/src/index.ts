@@ -37,7 +37,8 @@ export class PaperTradingEngine {
     private readonly feeRate = 0.001,
     private readonly now: () => number = Date.now,
   ) {
-    if (new Decimal(feeRate).isNegative() || !new Decimal(feeRate).lessThan(1)) throw new Error('Fee rate must be between 0 and 1');
+    if (new Decimal(feeRate).isNegative() || !new Decimal(feeRate).lessThan(1))
+      throw new Error('Fee rate must be between 0 and 1');
     for (const [asset, amount] of Object.entries(initialBalances)) {
       if (!/^[A-Z0-9]{2,12}$/.test(asset) || !Number.isFinite(amount) || amount < 0)
         throw new Error('Invalid initial balance');
@@ -58,20 +59,28 @@ export class PaperTradingEngine {
     const quoteBalance = this.balances.get(quote) ?? new Decimal(0);
     const position = this.positions.get(symbol) ?? {
       symbol,
-      quantity: new Decimal(0), averagePrice: new Decimal(0), realizedPnl: new Decimal(0), unrealizedPnl: new Decimal(0),
+      quantity: new Decimal(0),
+      averagePrice: new Decimal(0),
+      realizedPnl: new Decimal(0),
+      unrealizedPnl: new Decimal(0),
     };
     if (side === 'BUY') {
       if (quoteBalance.lessThan(gross.plus(fee))) return this.reject(symbol, side, quantity, price);
       this.balances.set(quote, quoteBalance.minus(gross).minus(fee));
       this.balances.set(base, (this.balances.get(base) ?? new Decimal(0)).plus(quantityDecimal));
       const newQuantity = position.quantity.plus(quantityDecimal);
-      position.averagePrice = newQuantity.greaterThan(0) ? position.averagePrice.times(position.quantity).plus(gross).dividedBy(newQuantity) : new Decimal(0);
+      position.averagePrice = newQuantity.greaterThan(0)
+        ? position.averagePrice.times(position.quantity).plus(gross).dividedBy(newQuantity)
+        : new Decimal(0);
       position.quantity = newQuantity;
     } else {
-      if (position.quantity.lessThan(quantityDecimal)) return this.reject(symbol, side, quantity, price);
+      if (position.quantity.lessThan(quantityDecimal))
+        return this.reject(symbol, side, quantity, price);
       this.balances.set(base, (this.balances.get(base) ?? new Decimal(0)).minus(quantityDecimal));
       this.balances.set(quote, quoteBalance.plus(gross).minus(fee));
-      position.realizedPnl = position.realizedPnl.plus(priceDecimal.minus(position.averagePrice).times(quantityDecimal).minus(fee));
+      position.realizedPnl = position.realizedPnl.plus(
+        priceDecimal.minus(position.averagePrice).times(quantityDecimal).minus(fee),
+      );
       position.quantity = position.quantity.minus(quantityDecimal);
       if (position.quantity.isZero()) position.averagePrice = new Decimal(0);
     }
@@ -84,12 +93,18 @@ export class PaperTradingEngine {
       throw new Error('Market price must be positive');
     const position = this.positions.get(symbol);
     if (!position) throw new Error('Position not found');
-    position.unrealizedPnl = new Decimal(marketPrice).minus(position.averagePrice).times(position.quantity);
+    position.unrealizedPnl = new Decimal(marketPrice)
+      .minus(position.averagePrice)
+      .times(position.quantity);
     return toPublicPosition(position);
   }
   snapshot(): PaperSnapshot {
     return {
-      balances: [...this.balances].map(([asset, free]) => ({ asset, free: free.toNumber(), locked: 0 })),
+      balances: [...this.balances].map(([asset, free]) => ({
+        asset,
+        free: free.toNumber(),
+        locked: 0,
+      })),
       positions: [...this.positions.values()].map(toPublicPosition),
       orders: this.orders.map((order) => ({ ...order })),
       realizedPnl: [...this.positions.values()].reduce(
@@ -138,8 +153,22 @@ export class PaperTradingEngine {
   }
 }
 
-type DecimalPosition = { symbol: string; quantity: Decimal; averagePrice: Decimal; realizedPnl: Decimal; unrealizedPnl: Decimal };
-function toPublicPosition(position: DecimalPosition): Position { return { symbol: position.symbol, quantity: position.quantity.toNumber(), averagePrice: position.averagePrice.toNumber(), realizedPnl: position.realizedPnl.toNumber(), unrealizedPnl: position.unrealizedPnl.toNumber() }; }
+type DecimalPosition = {
+  symbol: string;
+  quantity: Decimal;
+  averagePrice: Decimal;
+  realizedPnl: Decimal;
+  unrealizedPnl: Decimal;
+};
+function toPublicPosition(position: DecimalPosition): Position {
+  return {
+    symbol: position.symbol,
+    quantity: position.quantity.toNumber(),
+    averagePrice: position.averagePrice.toNumber(),
+    realizedPnl: position.realizedPnl.toNumber(),
+    unrealizedPnl: position.unrealizedPnl.toNumber(),
+  };
+}
 
 function parseSymbol(symbol: string): [string, string] {
   const normalized = symbol.trim().toUpperCase();

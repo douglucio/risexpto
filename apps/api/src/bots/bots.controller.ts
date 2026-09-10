@@ -7,7 +7,10 @@ import { QueueService } from '../queue/queue.service';
 
 @Controller('bots')
 export class BotsController {
-  constructor(private readonly bots: BotsService, private readonly queue: QueueService) {}
+  constructor(
+    private readonly bots: BotsService,
+    private readonly queue: QueueService,
+  ) {}
 
   @Get()
   list(@CurrentUser() user: AuthenticatedUser) {
@@ -25,7 +28,11 @@ export class BotsController {
   }
 
   @Patch(':id/risk-profile')
-  updateRiskProfile(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string, @Body() body: RiskProfileBody) {
+  updateRiskProfile(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+    @Body() body: RiskProfileBody,
+  ) {
     return this.bots.updateRiskProfile(user, id, body);
   }
 

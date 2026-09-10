@@ -5,5 +5,8 @@ export const marketingObserverOptions: IntersectionObserverInit = {
 };
 
 export function isValidIntersectionObserverMargin(rootMargin: string) {
-  return rootMargin.trim().split(/\s+/).every((value) => /^-?(?:\d+(?:\.\d+)?)(?:px|%)$/.test(value));
+  return rootMargin
+    .trim()
+    .split(/\s+/)
+    .every((value) => /^-?(?:\d+(?:\.\d+)?)(?:px|%)$/.test(value));
 }

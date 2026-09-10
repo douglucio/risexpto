@@ -1,15 +1,30 @@
 import Redis from 'ioredis';
 
-type RequestLike = { method: string; path: string; ip?: string; headers: Record<string, string | string[] | undefined> };
-type ResponseLike = { setHeader(name: string, value: string): void; status(code: number): { json(body: unknown): void } };
+type RequestLike = {
+  method: string;
+  path: string;
+  ip?: string;
+  headers: Record<string, string | string[] | undefined>;
+};
+type ResponseLike = {
+  setHeader(name: string, value: string): void;
+  status(code: number): { json(body: unknown): void };
+};
 
 export function createRedisRateLimiter(redisUrl: string | undefined) {
-  if (!redisUrl) return { middleware: (_request: RequestLike, _response: ResponseLike, next: () => void) => next(), close: async () => {} };
+  if (!redisUrl)
+    return {
+      middleware: (_request: RequestLike, _response: ResponseLike, next: () => void) => next(),
+      close: async () => {},
+    };
   const redis = new Redis(redisUrl, { enableOfflineQueue: false, maxRetriesPerRequest: 1 });
-  const ready = redis.status === 'ready' ? Promise.resolve() : new Promise<void>((resolve, reject) => {
-    redis.once('ready', resolve);
-    redis.once('error', reject);
-  });
+  const ready =
+    redis.status === 'ready'
+      ? Promise.resolve()
+      : new Promise<void>((resolve, reject) => {
+          redis.once('ready', resolve);
+          redis.once('error', reject);
+        });
   const windowSeconds = positiveInt(process.env.API_RATE_LIMIT_WINDOW_SECONDS, 60);
   const maxRequests = positiveInt(process.env.API_RATE_LIMIT_MAX_REQUESTS, 120);
   return {
@@ -26,19 +41,30 @@ export function createRedisRateLimiter(redisUrl: string | undefined) {
         response.setHeader('x-ratelimit-remaining', String(Math.max(0, maxRequests - count)));
         if (count > maxRequests) {
           response.setHeader('retry-after', String(windowSeconds));
-          response.status(429).json({ error: { code: 'RATE_LIMITED', message: 'Too many requests' } });
+          response
+            .status(429)
+            .json({ error: { code: 'RATE_LIMITED', message: 'Too many requests' } });
           return;
         }
       } catch (error) {
-        console.error(JSON.stringify({ event: 'api_rate_limit_unavailable', error: error instanceof Error ? error.message : 'unknown' }));
+        console.error(
+          JSON.stringify({
+            event: 'api_rate_limit_unavailable',
+            error: error instanceof Error ? error.message : 'unknown',
+          }),
+        );
         if (process.env.NODE_ENV === 'production') {
-          response.status(503).json({ error: { code: 'RATE_LIMIT_UNAVAILABLE', message: 'Service temporarily unavailable' } });
+          response.status(503).json({
+            error: { code: 'RATE_LIMIT_UNAVAILABLE', message: 'Service temporarily unavailable' },
+          });
           return;
         }
       }
       next();
     },
-    close: () => { redis.disconnect(); },
+    close: () => {
+      redis.disconnect();
+    },
   };
 }
 

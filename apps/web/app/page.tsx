@@ -12,16 +12,20 @@ export default function MarketingPage() {
   const [activeSection, setActiveSection] = useState('');
   const t = (key: string) => translate(key, locale);
   useEffect(() => {
-    const sections = ['how-it-works', 'security', 'pricing'].map((id) => document.getElementById(id)).filter((item): item is HTMLElement => Boolean(item));
+    const sections = ['how-it-works', 'security', 'pricing']
+      .map((id) => document.getElementById(id))
+      .filter((item): item is HTMLElement => Boolean(item));
     if (sections.length === 0 || typeof IntersectionObserver === 'undefined') return;
     const observer = new IntersectionObserver((entries) => {
-      const visible = entries.filter((entry) => entry.isIntersecting).sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+      const visible = entries
+        .filter((entry) => entry.isIntersecting)
+        .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
       if (visible) setActiveSection(visible.target.id);
     }, marketingObserverOptions);
     sections.forEach((section) => observer.observe(section));
     return () => observer.disconnect();
   }, []);
-  const navClass = (section: string) => activeSection === section ? 'is-active' : undefined;
+  const navClass = (section: string) => (activeSection === section ? 'is-active' : undefined);
   return (
     <main className="marketing-page">
       <nav className="marketing-nav" aria-label="Marketing navigation">
@@ -30,10 +34,24 @@ export default function MarketingPage() {
           <b>RiseXPTO</b>
         </Link>
         <div>
-          <Link className={navClass('how-it-works')} href="#how-it-works">{t('marketing.how')}</Link>
-          <Link className={navClass('security')} href="#security">{t('marketing.security')}</Link>
-          <Link className={navClass('pricing')} href="#pricing">{t('marketing.pricing')}</Link>
-          <select aria-label="Language / Idioma / Idioma" value={locale} onChange={(event) => setLocale(event.target.value as typeof locale)}><option value="en">🇺🇸 EN</option><option value="pt-BR">🇧🇷 PT</option><option value="es">🇪🇸 ES</option></select>
+          <Link className={navClass('how-it-works')} href="#how-it-works">
+            {t('marketing.how')}
+          </Link>
+          <Link className={navClass('security')} href="#security">
+            {t('marketing.security')}
+          </Link>
+          <Link className={navClass('pricing')} href="#pricing">
+            {t('marketing.pricing')}
+          </Link>
+          <select
+            aria-label="Language / Idioma / Idioma"
+            value={locale}
+            onChange={(event) => setLocale(event.target.value as typeof locale)}
+          >
+            <option value="en">🇺🇸 EN</option>
+            <option value="pt-BR">🇧🇷 PT</option>
+            <option value="es">🇪🇸 ES</option>
+          </select>
           <Link href={`/login?locale=${encodeURIComponent(locale)}`} className="marketing-login">
             {t('marketing.login')}
           </Link>
@@ -52,9 +70,7 @@ export default function MarketingPage() {
               {t('marketing.see')}
             </a>
           </div>
-          <p className="marketing-note">
-            {t('marketing.note')}
-          </p>
+          <p className="marketing-note">{t('marketing.note')}</p>
         </div>
         <div className="marketing-preview" aria-label={t('marketing.previewLabel')}>
           <div className="preview-top">
@@ -111,9 +127,7 @@ export default function MarketingPage() {
       <section id="pricing" className="marketing-pricing">
         <p className="marketing-eyebrow">{t('marketing.simple')}</p>
         <h2>{t('marketing.begin')}</h2>
-        <p>
-          {t('marketing.pricingDescription')}
-        </p>
+        <p>{t('marketing.pricingDescription')}</p>
         <PublicPricing />
         <Link href="/login" className="marketing-button">
           {t('marketing.workspace')}

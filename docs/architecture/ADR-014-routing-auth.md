@@ -13,6 +13,7 @@ The Web BFF reads the sealed session and forwards only the current access token 
 ## Consequences
 
 Visitors can inspect the landing page even when logged in. Successful login opens the authenticated workspace, while logout returns to the public landing page. Server-side route protection remains independent of navigation visibility.
+
 # ADR-014: Routing and authentication boundaries
 
 ## Decision

@@ -69,8 +69,17 @@ describe('AuthGuard', () => {
       verify: vi.fn().mockRejectedValue(new KeycloakTokenVerificationError('AUDIENCE', 'id')),
     };
     const { context: execution } = context('Bearer id-token');
-    await expect(new AuthGuard(new Reflector(), verifier, provisioning).canActivate(execution)).rejects.toBeInstanceOf(UnauthorizedException);
-    expect(warning).toHaveBeenCalledWith(JSON.stringify({ event: 'api_authentication_failed', reason: 'AUDIENCE', authorizationPresent: true, tokenKind: 'id' }));
+    await expect(
+      new AuthGuard(new Reflector(), verifier, provisioning).canActivate(execution),
+    ).rejects.toBeInstanceOf(UnauthorizedException);
+    expect(warning).toHaveBeenCalledWith(
+      JSON.stringify({
+        event: 'api_authentication_failed',
+        reason: 'AUDIENCE',
+        authorizationPresent: true,
+        tokenKind: 'id',
+      }),
+    );
     expect(warning.mock.calls[0]?.[0]).not.toContain('id-token');
     warning.mockRestore();
   });

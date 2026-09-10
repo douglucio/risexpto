@@ -77,5 +77,7 @@ function logAuthFailure(
   authorizationPresent: boolean,
   tokenKind: 'access' | 'id' | 'unknown' = 'unknown',
 ): void {
-  console.warn(JSON.stringify({ event: 'api_authentication_failed', reason, authorizationPresent, tokenKind }));
+  console.warn(
+    JSON.stringify({ event: 'api_authentication_failed', reason, authorizationPresent, tokenKind }),
+  );
 }

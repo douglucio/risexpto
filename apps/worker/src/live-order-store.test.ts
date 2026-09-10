@@ -28,16 +28,26 @@ describe('PrismaLiveOrderStore', () => {
     });
     const database = {
       order: {
-        findUnique: vi.fn(({ where }: { where: { clientOrderId: string } }): Promise<Row | undefined> => Promise.resolve(rows.get(where.clientOrderId))),
+        findUnique: vi.fn(
+          ({ where }: { where: { clientOrderId: string } }): Promise<Row | undefined> =>
+            Promise.resolve(rows.get(where.clientOrderId)),
+        ),
         create,
         update,
       },
     } as unknown as PrismaClient;
-    const store = new PrismaLiveOrderStore(database, () => Promise.resolve({
-      botId: 'bot-1', exchangeConnectionId: 'connection-1', tradeProposalId: 'proposal-1', idempotencyKey: 'live:proposal-1',
-    }));
+    const store = new PrismaLiveOrderStore(database, () =>
+      Promise.resolve({
+        botId: 'bot-1',
+        exchangeConnectionId: 'connection-1',
+        tradeProposalId: 'proposal-1',
+        idempotencyKey: 'live:proposal-1',
+      }),
+    );
 
-    await expect(store.createPending({ request, result: null, state: 'PENDING_SUBMIT' })).resolves.toMatchObject({
+    await expect(
+      store.createPending({ request, result: null, state: 'PENDING_SUBMIT' }),
+    ).resolves.toMatchObject({
       state: 'PENDING_SUBMIT',
       result: null,
     });
@@ -74,7 +84,10 @@ describe('PrismaLiveOrderStore', () => {
     });
     const database = {
       order: {
-        findUnique: vi.fn(({ where }: { where: { clientOrderId: string } }): Promise<Row | undefined> => Promise.resolve(rows.get(where.clientOrderId))),
+        findUnique: vi.fn(
+          ({ where }: { where: { clientOrderId: string } }): Promise<Row | undefined> =>
+            Promise.resolve(rows.get(where.clientOrderId)),
+        ),
         create,
         update: vi.fn(({ where, data }: { where: { clientOrderId: string }; data: Row }) => {
           const row = { ...(rows.get(where.clientOrderId) ?? {}), ...data };
@@ -83,9 +96,13 @@ describe('PrismaLiveOrderStore', () => {
         }),
       },
     } as unknown as PrismaClient;
-    const resolveContext = () => Promise.resolve({
-      botId: 'bot-1', exchangeConnectionId: 'connection-1', tradeProposalId: 'proposal-1', idempotencyKey: 'live:proposal-1',
-    });
+    const resolveContext = () =>
+      Promise.resolve({
+        botId: 'bot-1',
+        exchangeConnectionId: 'connection-1',
+        tradeProposalId: 'proposal-1',
+        idempotencyKey: 'live:proposal-1',
+      });
     const firstResult = {
       clientOrderId: request.clientOrderId,
       externalOrderId: '42',
@@ -95,7 +112,9 @@ describe('PrismaLiveOrderStore', () => {
     const firstStore = new PrismaLiveOrderStore(database, resolveContext);
     const restartedStore = new PrismaLiveOrderStore(database, resolveContext);
     await firstStore.createPending({ request, result: null, state: 'PENDING_SUBMIT' });
-    await expect(restartedStore.createPending({ request, result: null, state: 'PENDING_SUBMIT' })).resolves.toMatchObject({
+    await expect(
+      restartedStore.createPending({ request, result: null, state: 'PENDING_SUBMIT' }),
+    ).resolves.toMatchObject({
       state: 'PENDING_SUBMIT',
       result: null,
     });
@@ -110,7 +129,11 @@ describe('PrismaLiveOrderStore', () => {
     await expect(firstEngine.submit(request)).resolves.toEqual(firstResult);
 
     const secondSubmit = vi.fn();
-    const secondConnector: LiveConnector = { submit: secondSubmit, query: vi.fn(), cancel: vi.fn() };
+    const secondConnector: LiveConnector = {
+      submit: secondSubmit,
+      query: vi.fn(),
+      cancel: vi.fn(),
+    };
     const restartedEngine = new LiveExecutionEngine(secondConnector, true, restartedStore);
     await expect(restartedEngine.submit(request)).resolves.toEqual(firstResult);
     expect(firstSubmit).not.toHaveBeenCalled();

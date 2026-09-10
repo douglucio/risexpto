@@ -12,6 +12,11 @@ import { PublicPlansController } from './public-plans.controller';
 })
 export class BillingModule {
   static withDatabase(database: object) {
-    return { module: BillingModule, controllers: [BillingController, PublicPlansController], providers: [{ provide: DATABASE, useValue: database }, BillingService], exports: [BillingService] };
+    return {
+      module: BillingModule,
+      controllers: [BillingController, PublicPlansController],
+      providers: [{ provide: DATABASE, useValue: database }, BillingService],
+      exports: [BillingService],
+    };
   }
 }

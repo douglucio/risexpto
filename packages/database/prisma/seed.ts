@@ -39,12 +39,27 @@ try {
     const definition = await db.strategyDefinition.upsert({
       where: { key: strategy.key },
       update: { name: strategy.name, description: strategy.description, active: true },
-      create: { key: strategy.key, name: strategy.name, description: strategy.description, active: true },
+      create: {
+        key: strategy.key,
+        name: strategy.name,
+        description: strategy.description,
+        active: true,
+      },
     });
     await db.strategyVersion.upsert({
       where: { strategyDefinitionId_version: { strategyDefinitionId: definition.id, version: 1 } },
-      update: { parameterSchema: strategy.parameterSchema, implementationKey: strategy.implementationKey, active: true },
-      create: { strategyDefinitionId: definition.id, version: 1, parameterSchema: strategy.parameterSchema, implementationKey: strategy.implementationKey, active: true },
+      update: {
+        parameterSchema: strategy.parameterSchema,
+        implementationKey: strategy.implementationKey,
+        active: true,
+      },
+      create: {
+        strategyDefinitionId: definition.id,
+        version: 1,
+        parameterSchema: strategy.parameterSchema,
+        implementationKey: strategy.implementationKey,
+        active: true,
+      },
     });
   }
 } finally {

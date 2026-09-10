@@ -46,9 +46,12 @@ export class KeycloakJwtVerifier implements TokenVerifier {
   }
   async verify(token: string): Promise<VerifiedClaims> {
     const decoded = jwt.decode(token, { complete: true });
-    const tokenKind = decoded && typeof decoded !== 'string' && decoded.header.typ === 'ID'
-      ? 'id'
-      : decoded && typeof decoded !== 'string' && decoded.header.typ === 'Bearer' ? 'access' : 'unknown';
+    const tokenKind =
+      decoded && typeof decoded !== 'string' && decoded.header.typ === 'ID'
+        ? 'id'
+        : decoded && typeof decoded !== 'string' && decoded.header.typ === 'Bearer'
+          ? 'access'
+          : 'unknown';
     if (!decoded || typeof decoded === 'string' || !decoded.header.kid)
       throw new KeycloakTokenVerificationError('MALFORMED', tokenKind);
     const key = await this.client.getSigningKey(decoded.header.kid);
@@ -62,11 +65,15 @@ export class KeycloakJwtVerifier implements TokenVerifier {
       }) as JwtPayload;
     } catch (error) {
       const message = error instanceof Error ? error.message.toLowerCase() : '';
-      const reason = message.includes('audience') ? 'AUDIENCE'
-        : message.includes('issuer') ? 'ISSUER'
-        : message.includes('expired') ? 'EXPIRED'
-        : message.includes('signature') ? 'SIGNATURE'
-        : 'INVALID';
+      const reason = message.includes('audience')
+        ? 'AUDIENCE'
+        : message.includes('issuer')
+          ? 'ISSUER'
+          : message.includes('expired')
+            ? 'EXPIRED'
+            : message.includes('signature')
+              ? 'SIGNATURE'
+              : 'INVALID';
       throw new KeycloakTokenVerificationError(reason, tokenKind, error);
     }
     if (typeof result.sub !== 'string' || typeof result.email !== 'string')

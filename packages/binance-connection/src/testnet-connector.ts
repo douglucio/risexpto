@@ -95,7 +95,8 @@ export class BinanceSpotTestnetConnector implements LiveConnector {
   }
 
   async exchangeInfo(symbol: string): Promise<SymbolRules> {
-    if (!/^[A-Z0-9]{5,20}$/.test(symbol)) throw new BinanceConnectionError('Invalid Binance symbol');
+    if (!/^[A-Z0-9]{5,20}$/.test(symbol))
+      throw new BinanceConnectionError('Invalid Binance symbol');
     const url = new URL('/api/v3/exchangeInfo', this.baseUrl);
     url.searchParams.set('symbol', symbol);
     let response: Response;
@@ -107,17 +108,26 @@ export class BinanceSpotTestnetConnector implements LiveConnector {
     } catch {
       throw new BinanceConnectionError('Binance Testnet unavailable');
     }
-    const body = (await response.json().catch(() => undefined)) as {
-      symbols?: Array<Record<string, unknown>>;
-    } | undefined;
+    const body = (await response.json().catch(() => undefined)) as
+      | {
+          symbols?: Array<Record<string, unknown>>;
+        }
+      | undefined;
     const raw = body?.symbols?.[0];
-    if (!response.ok || !raw) throw new BinanceConnectionError(`Binance Testnet exchange info failed (${response.status})`, response.status);
+    if (!response.ok || !raw)
+      throw new BinanceConnectionError(
+        `Binance Testnet exchange info failed (${response.status})`,
+        response.status,
+      );
     return parseSymbolRules(raw);
   }
 
   async accountBalances(): Promise<BinanceAccountBalance[]> {
     const params = new URLSearchParams({ recvWindow: '5000', timestamp: String(this.now()) });
-    params.set('signature', createHmac('sha256', this.apiSecret).update(params.toString()).digest('hex'));
+    params.set(
+      'signature',
+      createHmac('sha256', this.apiSecret).update(params.toString()).digest('hex'),
+    );
     const url = new URL('/api/v3/account', this.baseUrl);
     url.search = params.toString();
     let response: Response;
@@ -129,28 +139,53 @@ export class BinanceSpotTestnetConnector implements LiveConnector {
     } catch {
       throw new BinanceConnectionError('Binance Testnet unavailable');
     }
-    const body = (await response.json().catch(() => undefined)) as { balances?: BinanceAccountBalance[] } | undefined;
+    const body = (await response.json().catch(() => undefined)) as
+      | { balances?: BinanceAccountBalance[] }
+      | undefined;
     if (!response.ok || !Array.isArray(body?.balances))
-      throw new BinanceConnectionError(`Binance Testnet account request failed (${response.status})`, response.status);
-    return body.balances.filter((balance) => typeof balance.asset === 'string' && typeof balance.free === 'string' && typeof balance.locked === 'string');
+      throw new BinanceConnectionError(
+        `Binance Testnet account request failed (${response.status})`,
+        response.status,
+      );
+    return body.balances.filter(
+      (balance) =>
+        typeof balance.asset === 'string' &&
+        typeof balance.free === 'string' &&
+        typeof balance.locked === 'string',
+    );
   }
 
   async myTrades(symbol: string, orderId: string): Promise<BinanceTradeFill[]> {
     if (!/^[A-Z0-9]{5,20}$/.test(symbol) || !/^\d+$/.test(orderId))
       throw new BinanceConnectionError('Invalid Binance trade query');
-    const params = new URLSearchParams({ symbol, orderId, limit: '1000', recvWindow: '5000', timestamp: String(this.now()) });
-    params.set('signature', createHmac('sha256', this.apiSecret).update(params.toString()).digest('hex'));
+    const params = new URLSearchParams({
+      symbol,
+      orderId,
+      limit: '1000',
+      recvWindow: '5000',
+      timestamp: String(this.now()),
+    });
+    params.set(
+      'signature',
+      createHmac('sha256', this.apiSecret).update(params.toString()).digest('hex'),
+    );
     const url = new URL('/api/v3/myTrades', this.baseUrl);
     url.search = params.toString();
     let response: Response;
     try {
-      response = await this.fetcher(url, { headers: { 'X-MBX-APIKEY': this.apiKey, accept: 'application/json' }, signal: AbortSignal.timeout(5_000) });
+      response = await this.fetcher(url, {
+        headers: { 'X-MBX-APIKEY': this.apiKey, accept: 'application/json' },
+        signal: AbortSignal.timeout(5_000),
+      });
     } catch {
       throw new BinanceConnectionError('Binance Testnet unavailable');
     }
     const body = (await response.json().catch(() => undefined)) as unknown;
     if (!response.ok || !Array.isArray(body))
-      throw new BinanceConnectionError(`Binance Testnet trades request failed (${response.status})`, response.status);
+      throw new BinanceConnectionError(
+        `Binance Testnet trades request failed (${response.status})`,
+        response.status,
+      );
     return body.filter(isTradeFill);
   }
 
@@ -169,7 +204,11 @@ export class BinanceSpotTestnetConnector implements LiveConnector {
     path: string,
     values: Record<string, string>,
   ): Promise<ExchangeOrder> {
-    const params = new URLSearchParams({ ...values, recvWindow: '5000', timestamp: String(this.now()) });
+    const params = new URLSearchParams({
+      ...values,
+      recvWindow: '5000',
+      timestamp: String(this.now()),
+    });
     const signature = createHmac('sha256', this.apiSecret).update(params.toString()).digest('hex');
     params.set('signature', signature);
     const url = new URL(path, this.baseUrl);
@@ -186,9 +225,17 @@ export class BinanceSpotTestnetConnector implements LiveConnector {
     }
     const body = (await response.json().catch(() => undefined)) as BinanceOrderResponse | undefined;
     if (!response.ok || !body?.status || body.orderId === undefined)
-      throw new BinanceConnectionError(`Binance Testnet order request failed (${response.status})`, response.status);
+      throw new BinanceConnectionError(
+        `Binance Testnet order request failed (${response.status})`,
+        response.status,
+      );
     return {
-      clientOrderId: body.clientOrderId ?? body.origClientOrderId ?? values.newClientOrderId ?? values.origClientOrderId ?? '',
+      clientOrderId:
+        body.clientOrderId ??
+        body.origClientOrderId ??
+        values.newClientOrderId ??
+        values.origClientOrderId ??
+        '',
       externalOrderId: String(body.orderId),
       status: mapStatus(body.status),
       filledQuantity: body.executedQty ?? '0',
@@ -198,7 +245,8 @@ export class BinanceSpotTestnetConnector implements LiveConnector {
 
 function validateOrderShape(order: LiveOrder): void {
   validateClientOrderId(order.clientOrderId);
-  if (!/^[A-Z0-9]{5,20}$/.test(order.symbol)) throw new BinanceConnectionError('Invalid Binance symbol');
+  if (!/^[A-Z0-9]{5,20}$/.test(order.symbol))
+    throw new BinanceConnectionError('Invalid Binance symbol');
   if (order.type === 'MARKET' && !order.quantity && !order.quoteAmount)
     throw new BinanceConnectionError('Market order requires quantity or quote amount');
   if (order.type === 'LIMIT' && (!order.quantity || !order.limitPrice))
@@ -207,7 +255,8 @@ function validateOrderShape(order: LiveOrder): void {
 
 function parseSymbolRules(raw: Record<string, unknown>): SymbolRules {
   const filters = Array.isArray(raw.filters) ? raw.filters.filter(isRecord) : [];
-  const find = (type: string) => filters.find((filter) => isRecord(filter) && filter.filterType === type);
+  const find = (type: string) =>
+    filters.find((filter) => isRecord(filter) && filter.filterType === type);
   const price = find('PRICE_FILTER');
   const lot = find('LOT_SIZE');
   const minNotional = find('MIN_NOTIONAL') ?? find('NOTIONAL');
@@ -215,33 +264,63 @@ function parseSymbolRules(raw: Record<string, unknown>): SymbolRules {
     symbol: text(raw.symbol),
     status: text(raw.status),
     isSpotTradingAllowed: raw.isSpotTradingAllowed === true,
-    orderTypes: Array.isArray(raw.orderTypes) ? raw.orderTypes.filter((value): value is string => typeof value === 'string') : [],
-    priceFilter: price && isRecord(price) ? {
-      minPrice: text(price.minPrice), maxPrice: text(price.maxPrice), tickSize: text(price.tickSize),
-    } : undefined,
-    lotSize: lot && isRecord(lot) ? {
-      minQty: text(lot.minQty), maxQty: text(lot.maxQty), stepSize: text(lot.stepSize),
-    } : undefined,
+    orderTypes: Array.isArray(raw.orderTypes)
+      ? raw.orderTypes.filter((value): value is string => typeof value === 'string')
+      : [],
+    priceFilter:
+      price && isRecord(price)
+        ? {
+            minPrice: text(price.minPrice),
+            maxPrice: text(price.maxPrice),
+            tickSize: text(price.tickSize),
+          }
+        : undefined,
+    lotSize:
+      lot && isRecord(lot)
+        ? {
+            minQty: text(lot.minQty),
+            maxQty: text(lot.maxQty),
+            stepSize: text(lot.stepSize),
+          }
+        : undefined,
     minNotional: minNotional && isRecord(minNotional) ? text(minNotional.minNotional) : undefined,
-    maxNotional: minNotional && isRecord(minNotional) && minNotional.maxNotional !== undefined ? text(minNotional.maxNotional) : undefined,
+    maxNotional:
+      minNotional && isRecord(minNotional) && minNotional.maxNotional !== undefined
+        ? text(minNotional.maxNotional)
+        : undefined,
   };
 }
 
 function validateOrderAgainstRules(order: LiveOrder, rules: SymbolRules): void {
   if (rules.symbol !== order.symbol || rules.status !== 'TRADING' || !rules.isSpotTradingAllowed)
     throw new BinanceConnectionError('Binance symbol is not available for Spot trading');
-  if (!rules.orderTypes.includes(order.type)) throw new BinanceConnectionError('Binance symbol does not support this order type');
+  if (!rules.orderTypes.includes(order.type))
+    throw new BinanceConnectionError('Binance symbol does not support this order type');
   if (order.quantity && rules.lotSize) {
-    if (compareDecimal(order.quantity, rules.lotSize.minQty) < 0 || compareDecimal(order.quantity, rules.lotSize.maxQty) > 0 || !isMultiple(order.quantity, rules.lotSize.stepSize))
+    if (
+      compareDecimal(order.quantity, rules.lotSize.minQty) < 0 ||
+      compareDecimal(order.quantity, rules.lotSize.maxQty) > 0 ||
+      !isMultiple(order.quantity, rules.lotSize.stepSize)
+    )
       throw new BinanceConnectionError('Order quantity violates Binance LOT_SIZE');
   }
   if (order.type === 'LIMIT' && order.limitPrice && rules.priceFilter) {
-    if (compareDecimal(order.limitPrice, rules.priceFilter.minPrice) < 0 || compareDecimal(order.limitPrice, rules.priceFilter.maxPrice) > 0 || !isMultiple(order.limitPrice, rules.priceFilter.tickSize))
+    if (
+      compareDecimal(order.limitPrice, rules.priceFilter.minPrice) < 0 ||
+      compareDecimal(order.limitPrice, rules.priceFilter.maxPrice) > 0 ||
+      !isMultiple(order.limitPrice, rules.priceFilter.tickSize)
+    )
       throw new BinanceConnectionError('Order price violates Binance PRICE_FILTER');
   }
   if (order.type === 'MARKET' && !order.quoteAmount && rules.minNotional)
-    throw new BinanceConnectionError('Market order requires quote amount for safe notional validation');
-  const notional = order.quoteAmount ?? (order.quantity && order.limitPrice ? multiplyDecimal(order.quantity, order.limitPrice) : undefined);
+    throw new BinanceConnectionError(
+      'Market order requires quote amount for safe notional validation',
+    );
+  const notional =
+    order.quoteAmount ??
+    (order.quantity && order.limitPrice
+      ? multiplyDecimal(order.quantity, order.limitPrice)
+      : undefined);
   if (notional && rules.minNotional && compareDecimal(notional, rules.minNotional) < 0)
     throw new BinanceConnectionError('Order violates Binance minimum notional');
   if (notional && rules.maxNotional && compareDecimal(notional, rules.maxNotional) > 0)
@@ -255,12 +334,20 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 function isTradeFill(value: unknown): value is BinanceTradeFill {
-  return isRecord(value) && typeof value.id === 'number' && typeof value.price === 'string' &&
-    typeof value.qty === 'string' && typeof value.quoteQty === 'string' && typeof value.commission === 'string' &&
-    typeof value.commissionAsset === 'string' && typeof value.time === 'number';
+  return (
+    isRecord(value) &&
+    typeof value.id === 'number' &&
+    typeof value.price === 'string' &&
+    typeof value.qty === 'string' &&
+    typeof value.quoteQty === 'string' &&
+    typeof value.commission === 'string' &&
+    typeof value.commissionAsset === 'string' &&
+    typeof value.time === 'number'
+  );
 }
 function decimalParts(value: string): [bigint, number] {
-  if (!/^(?:0|[1-9]\d*)(?:\.\d+)?$/.test(value)) throw new BinanceConnectionError('Invalid decimal value');
+  if (!/^(?:0|[1-9]\d*)(?:\.\d+)?$/.test(value))
+    throw new BinanceConnectionError('Invalid decimal value');
   const [whole, fraction = ''] = value.split('.');
   return [BigInt(`${whole}${fraction}`), fraction.length];
 }
@@ -289,7 +376,8 @@ function multiplyDecimal(left: string, right: string): string {
 }
 
 function validateClientOrderId(value: string): void {
-  if (!/^[.\-_a-zA-Z0-9]{1,36}$/.test(value)) throw new BinanceConnectionError('Invalid client order ID');
+  if (!/^[.\-_a-zA-Z0-9]{1,36}$/.test(value))
+    throw new BinanceConnectionError('Invalid client order ID');
 }
 
 function mapStatus(status: string): ExchangeOrder['status'] {

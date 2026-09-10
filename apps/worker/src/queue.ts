@@ -1,6 +1,19 @@
 import { Queue, QueueEvents, Worker, type ConnectionOptions, type Job } from 'bullmq';
 
-export type WorkerJob = { type: 'bot-cycle' | 'reconcile' | 'paper-fill' | 'live-reconcile' | 'live-submit' | 'market-data-sync' | 'paper-scheduler'; botId?: string; orderId?: string; exchangeConnectionId?: string; fill?: { externalTradeId: string; quantity: number; price: number; fee?: number } };
+export type WorkerJob = {
+  type:
+    | 'bot-cycle'
+    | 'reconcile'
+    | 'paper-fill'
+    | 'live-reconcile'
+    | 'live-submit'
+    | 'market-data-sync'
+    | 'paper-scheduler';
+  botId?: string;
+  orderId?: string;
+  exchangeConnectionId?: string;
+  fill?: { externalTradeId: string; quantity: number; price: number; fee?: number };
+};
 type WorkerName = string;
 export type PersistentWorker = Readonly<{
   queue: Queue<WorkerJob, void, WorkerName>;
@@ -21,11 +34,22 @@ export function liveReconcileJobId(exchangeConnectionId: string): string {
 }
 
 export function enqueueLiveSubmit(queue: Queue<WorkerJob, void, WorkerName>, orderId: string) {
-  return queue.add('live-submit', { type: 'live-submit', orderId }, { jobId: liveSubmitJobId(orderId) });
+  return queue.add(
+    'live-submit',
+    { type: 'live-submit', orderId },
+    { jobId: liveSubmitJobId(orderId) },
+  );
 }
 
-export function enqueueLiveReconciliation(queue: Queue<WorkerJob, void, WorkerName>, exchangeConnectionId: string) {
-  return queue.add('live-reconcile', { type: 'live-reconcile', exchangeConnectionId }, { jobId: liveReconcileJobId(exchangeConnectionId) });
+export function enqueueLiveReconciliation(
+  queue: Queue<WorkerJob, void, WorkerName>,
+  exchangeConnectionId: string,
+) {
+  return queue.add(
+    'live-reconcile',
+    { type: 'live-reconcile', exchangeConnectionId },
+    { jobId: liveReconcileJobId(exchangeConnectionId) },
+  );
 }
 
 export async function createPersistentWorker(
@@ -34,18 +58,26 @@ export async function createPersistentWorker(
   processor?: WorkerProcessor,
 ): Promise<PersistentWorker> {
   const connection = redisConnection(redisUrl);
-  const queue = new Queue<WorkerJob, void, WorkerName>(queueName, { connection, prefix: 'risexpto' });
+  const queue = new Queue<WorkerJob, void, WorkerName>(queueName, {
+    connection,
+    prefix: 'risexpto',
+  });
   const events = new QueueEvents(queueName, { connection, prefix: 'risexpto' });
   const worker = new Worker<WorkerJob, void, WorkerName>(
     queueName,
-    processor ?? ((job: Job<WorkerJob>) => {
-      console.info(JSON.stringify({ event: 'worker_job_received', jobId: job.id, type: job.data.type }));
-      return Promise.resolve();
-    }),
+    processor ??
+      ((job: Job<WorkerJob>) => {
+        console.info(
+          JSON.stringify({ event: 'worker_job_received', jobId: job.id, type: job.data.type }),
+        );
+        return Promise.resolve();
+      }),
     { connection, prefix: 'risexpto', concurrency: 1 },
   );
   worker.on('failed', (job, error) => {
-    console.error(JSON.stringify({ event: 'worker_job_failed', jobId: job?.id, error: error.message }));
+    console.error(
+      JSON.stringify({ event: 'worker_job_failed', jobId: job?.id, error: error.message }),
+    );
   });
   await Promise.all([queue.waitUntilReady(), events.waitUntilReady(), worker.waitUntilReady()]);
   return {

@@ -7,5 +7,5 @@ validateDevelopmentEnvironment();
 const child = spawn('turbo', ['run', 'dev'], { env: process.env, stdio: 'inherit', shell: false });
 child.on('exit', (code, signal) => {
   if (signal) process.kill(process.pid, signal);
-else process.exitCode = code ?? 1;
+  else process.exitCode = code ?? 1;
 });

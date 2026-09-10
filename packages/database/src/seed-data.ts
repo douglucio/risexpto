@@ -42,7 +42,18 @@ export const mvpStrategies = [
     implementationKey: 'trend-following',
     parameterSchema: {
       type: 'object',
-      required: ['symbol', 'fastEmaPeriod', 'slowEmaPeriod', 'atrPeriod', 'momentumPeriod', 'minMomentumPercent', 'minVolumeRatio', 'maxAtrPercent', 'quoteAmount', 'maxCapital'],
+      required: [
+        'symbol',
+        'fastEmaPeriod',
+        'slowEmaPeriod',
+        'atrPeriod',
+        'momentumPeriod',
+        'minMomentumPercent',
+        'minVolumeRatio',
+        'maxAtrPercent',
+        'quoteAmount',
+        'maxCapital',
+      ],
       properties: {
         symbol: { type: 'string', pattern: '^[A-Z0-9]{5,20}$' },
         fastEmaPeriod: { type: 'integer', minimum: 1 },

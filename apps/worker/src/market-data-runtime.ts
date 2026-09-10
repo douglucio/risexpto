@@ -16,7 +16,12 @@ export async function syncRunningBotMarketData(
   for (const bot of bots) {
     for (const symbol of bot.configuration?.allowedSymbols ?? []) addSymbol(symbols, symbol);
     const parameters = bot.configuration?.parameters;
-    if (parameters && typeof parameters === 'object' && !Array.isArray(parameters) && 'symbol' in parameters)
+    if (
+      parameters &&
+      typeof parameters === 'object' &&
+      !Array.isArray(parameters) &&
+      'symbol' in parameters
+    )
       addSymbol(symbols, parameters.symbol);
   }
   let snapshots = 0;
@@ -29,26 +34,65 @@ export async function syncRunningBotMarketData(
   return { symbols: symbols.size, snapshots };
 }
 
-export function assertFreshMarketData(closeTime: Date, now = Date.now(), maxAgeMs = configuredMaxAge()): void {
+export function assertFreshMarketData(
+  closeTime: Date,
+  now = Date.now(),
+  maxAgeMs = configuredMaxAge(),
+): void {
   const age = now - closeTime.getTime();
   if (!Number.isFinite(age) || age < 0 || age > maxAgeMs) throw new Error('STALE_MARKET_DATA');
 }
 
 export function createPublicMarketDataClient(env: NodeJS.ProcessEnv = process.env) {
-  const restBaseUrl = env.BINANCE_MARKET_DATA_BASE_URL ?? (env.BINANCE_TRADING_ENVIRONMENT === 'TESTNET'
-    ? 'https://testnet.binance.vision' : 'https://api.binance.com');
+  const restBaseUrl =
+    env.BINANCE_MARKET_DATA_BASE_URL ??
+    (env.BINANCE_TRADING_ENVIRONMENT === 'TESTNET'
+      ? 'https://testnet.binance.vision'
+      : 'https://api.binance.com');
   return new BinancePublicMarketDataClient({ restBaseUrl });
 }
 
-async function persistCandle(database: PrismaClient, symbol: string, candle: Candle): Promise<void> {
+async function persistCandle(
+  database: PrismaClient,
+  symbol: string,
+  candle: Candle,
+): Promise<void> {
   await database.marketSnapshot.upsert({
-    where: { provider_symbol_interval_openTime: { provider: 'BINANCE', symbol, interval: '1m', openTime: new Date(candle.openTime) } },
-    update: { closeTime: new Date(candle.closeTime), open: candle.open, high: candle.high, low: candle.low, close: candle.close, volume: candle.volume, trades: candle.trades },
-    create: { provider: 'BINANCE', symbol, interval: '1m', openTime: new Date(candle.openTime), closeTime: new Date(candle.closeTime), open: candle.open, high: candle.high, low: candle.low, close: candle.close, volume: candle.volume, trades: candle.trades },
+    where: {
+      provider_symbol_interval_openTime: {
+        provider: 'BINANCE',
+        symbol,
+        interval: '1m',
+        openTime: new Date(candle.openTime),
+      },
+    },
+    update: {
+      closeTime: new Date(candle.closeTime),
+      open: candle.open,
+      high: candle.high,
+      low: candle.low,
+      close: candle.close,
+      volume: candle.volume,
+      trades: candle.trades,
+    },
+    create: {
+      provider: 'BINANCE',
+      symbol,
+      interval: '1m',
+      openTime: new Date(candle.openTime),
+      closeTime: new Date(candle.closeTime),
+      open: candle.open,
+      high: candle.high,
+      low: candle.low,
+      close: candle.close,
+      volume: candle.volume,
+      trades: candle.trades,
+    },
   });
 }
 function addSymbol(symbols: Set<string>, value: unknown): void {
-  if (typeof value === 'string' && /^[A-Z0-9]{5,20}$/.test(value.trim().toUpperCase())) symbols.add(value.trim().toUpperCase());
+  if (typeof value === 'string' && /^[A-Z0-9]{5,20}$/.test(value.trim().toUpperCase()))
+    symbols.add(value.trim().toUpperCase());
 }
 function configuredMaxAge(): number {
   const value = Number(process.env.MARKET_DATA_MAX_AGE_MS ?? DEFAULT_MARKET_DATA_MAX_AGE_MS);

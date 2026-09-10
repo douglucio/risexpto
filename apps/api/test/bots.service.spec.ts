@@ -42,22 +42,52 @@ describe('BotsService', () => {
 
   it('creates PAPER bot, configuration, risk profile and allocation atomically', async () => {
     const create = vi.fn().mockResolvedValue({ id: 'bot-1', tradingMode: 'PAPER' });
-    const transaction = vi.fn(async (callback: (tx: unknown) => Promise<unknown>) => callback({ bot: { create } }));
+    const transaction = vi.fn(async (callback: (tx: unknown) => Promise<unknown>) =>
+      callback({ bot: { create } }),
+    );
     const service = new BotsService({
       strategyVersion: { findFirst: vi.fn().mockResolvedValue({ id: 'strategy-1' }) },
       bot: { create: vi.fn() },
       $transaction: transaction,
     } as never);
 
-    await expect(service.create(user, {
-      name: 'Paper DCA', strategyVersionId: '00000000-0000-4000-8000-000000000001', tradingMode: 'PAPER',
-      allowedSymbols: ['BTCUSDT'], authorizedCapital: '100', quoteCurrency: 'USDT', parameters: { symbol: 'BTCUSDT', quoteAmount: 10, maxCapital: 100 },
-      riskProfile: { name: 'Paper DCA risk', maxAllocatedCapital: '100', maxTradeAmount: '10', maxExposurePercent: '50', maxPositionPercent: '50', maxPositions: 1, maxDailyLossPercent: '5', maxDrawdownPercent: '10', allowedSymbols: ['BTCUSDT'], cooldownSeconds: 60 },
-    })).resolves.toEqual({ id: 'bot-1', tradingMode: 'PAPER' });
+    await expect(
+      service.create(user, {
+        name: 'Paper DCA',
+        strategyVersionId: '00000000-0000-4000-8000-000000000001',
+        tradingMode: 'PAPER',
+        allowedSymbols: ['BTCUSDT'],
+        authorizedCapital: '100',
+        quoteCurrency: 'USDT',
+        parameters: { symbol: 'BTCUSDT', quoteAmount: 10, maxCapital: 100 },
+        riskProfile: {
+          name: 'Paper DCA risk',
+          maxAllocatedCapital: '100',
+          maxTradeAmount: '10',
+          maxExposurePercent: '50',
+          maxPositionPercent: '50',
+          maxPositions: 1,
+          maxDailyLossPercent: '5',
+          maxDrawdownPercent: '10',
+          allowedSymbols: ['BTCUSDT'],
+          cooldownSeconds: 60,
+        },
+      }),
+    ).resolves.toEqual({ id: 'bot-1', tradingMode: 'PAPER' });
     expect(transaction).toHaveBeenCalledTimes(1);
     expect(create).toHaveBeenCalledTimes(1);
-    const call = create.mock.calls[0] as unknown as [{ data: { riskProfile: { create: { userId: string; maxPositions: number } }; paperCapitalAllocation: { create: { allocated: number } } } }];
-    expect(call[0].data.riskProfile.create).toMatchObject({ userId: 'application-user-id', maxPositions: 1 });
+    const call = create.mock.calls[0] as unknown as [
+      {
+        data: {
+          riskProfile: { create: { userId: string; maxPositions: number } };
+          paperCapitalAllocation: { create: { allocated: number } };
+        };
+      },
+    ];
+    expect(call[0].data.riskProfile.create).toMatchObject({
+      userId: 'application-user-id',
+      maxPositions: 1,
+    });
     expect(call[0].data.paperCapitalAllocation).toEqual({ create: { allocated: 0 } });
   });
 
@@ -66,13 +96,24 @@ describe('BotsService', () => {
     const update = vi.fn().mockResolvedValue({ id: 'bot-1', status: 'RUNNING' });
     const service = new BotsService({ bot: { findFirst, update } } as never);
 
-    await expect(service.changeStatus(user, 'bot-1', 'RUNNING')).resolves.toEqual({ id: 'bot-1', status: 'RUNNING' });
-    expect(findFirst).toHaveBeenCalledWith(expect.objectContaining({ where: { id: 'bot-1', userId: 'application-user-id', archivedAt: null } }));
-    await expect(service.changeStatus(user, 'bot-1', 'STOPPED')).rejects.toThrow('Invalid bot transition');
+    await expect(service.changeStatus(user, 'bot-1', 'RUNNING')).resolves.toEqual({
+      id: 'bot-1',
+      status: 'RUNNING',
+    });
+    expect(findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'bot-1', userId: 'application-user-id', archivedAt: null },
+      }),
+    );
+    await expect(service.changeStatus(user, 'bot-1', 'STOPPED')).rejects.toThrow(
+      'Invalid bot transition',
+    );
   });
 
   it('does not expose a bot that belongs to another application user', async () => {
-    const service = new BotsService({ bot: { findFirst: vi.fn().mockResolvedValue(null) } } as never);
+    const service = new BotsService({
+      bot: { findFirst: vi.fn().mockResolvedValue(null) },
+    } as never);
     await expect(service.get(user, 'foreign-bot')).rejects.toThrow('Bot not found');
   });
 });

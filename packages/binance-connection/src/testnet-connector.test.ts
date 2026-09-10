@@ -14,14 +14,27 @@ describe('BinanceSpotTestnetConnector', () => {
   });
 
   it('signs and maps a Testnet order request', async () => {
-    const fetcher = vi.fn<typeof fetch>()
-      .mockResolvedValueOnce(response({
-        symbols: [{
-          symbol: 'BTCUSDT', status: 'TRADING', isSpotTradingAllowed: true, orderTypes: ['MARKET'],
-          filters: [{ filterType: 'LOT_SIZE', minQty: '0.0001', maxQty: '100', stepSize: '0.0001' }, { filterType: 'MIN_NOTIONAL', minNotional: '5' }],
-        }],
-      }))
-      .mockResolvedValueOnce(response({ orderId: 42, clientOrderId: 'bot-1-1', status: 'FILLED', executedQty: '0.001' }));
+    const fetcher = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(
+        response({
+          symbols: [
+            {
+              symbol: 'BTCUSDT',
+              status: 'TRADING',
+              isSpotTradingAllowed: true,
+              orderTypes: ['MARKET'],
+              filters: [
+                { filterType: 'LOT_SIZE', minQty: '0.0001', maxQty: '100', stepSize: '0.0001' },
+                { filterType: 'MIN_NOTIONAL', minNotional: '5' },
+              ],
+            },
+          ],
+        }),
+      )
+      .mockResolvedValueOnce(
+        response({ orderId: 42, clientOrderId: 'bot-1-1', status: 'FILLED', executedQty: '0.001' }),
+      );
     const connector = new BinanceSpotTestnetConnector('api-key', 'api-secret', {
       fetch: fetcher,
       now: () => 1_700_000_000_000,
@@ -44,7 +57,9 @@ describe('BinanceSpotTestnetConnector', () => {
     const params = new URL(requestUrl).searchParams;
     const signature = params.get('signature');
     params.delete('signature');
-    expect(signature).toBe(createHmac('sha256', 'api-secret').update(params.toString()).digest('hex'));
+    expect(signature).toBe(
+      createHmac('sha256', 'api-secret').update(params.toString()).digest('hex'),
+    );
     expect(requestUrl.origin).toBe('https://testnet.binance.vision');
     expect(fetcher.mock.calls[0]?.[1]).toMatchObject({
       headers: { accept: 'application/json' },
@@ -56,12 +71,23 @@ describe('BinanceSpotTestnetConnector', () => {
   });
 
   it('validates order shape and maps query/cancel terminal states', async () => {
-    const fetcher = vi.fn<typeof fetch>()
-      .mockResolvedValueOnce(response({ orderId: 42, origClientOrderId: 'bot-1-1', status: 'CANCELED' }))
-      .mockResolvedValueOnce(response({ orderId: 42, origClientOrderId: 'bot-1-1', status: 'CANCELED' }));
+    const fetcher = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(
+        response({ orderId: 42, origClientOrderId: 'bot-1-1', status: 'CANCELED' }),
+      )
+      .mockResolvedValueOnce(
+        response({ orderId: 42, origClientOrderId: 'bot-1-1', status: 'CANCELED' }),
+      );
     const connector = new BinanceSpotTestnetConnector('key', 'secret', { fetch: fetcher });
     await expect(
-      connector.submit({ clientOrderId: 'bad id', symbol: 'BTCUSDT', side: 'BUY', type: 'MARKET', quantity: '1' }),
+      connector.submit({
+        clientOrderId: 'bad id',
+        symbol: 'BTCUSDT',
+        side: 'BUY',
+        type: 'MARKET',
+        quantity: '1',
+      }),
     ).rejects.toThrow(BinanceConnectionError);
     await expect(connector.query('bot-1-1')).resolves.toMatchObject({ status: 'CANCELED' });
     await expect(connector.cancel('bot-1-1')).resolves.toMatchObject({ status: 'CANCELED' });

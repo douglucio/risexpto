@@ -22,23 +22,35 @@ export async function submitLiveOrder(database: PrismaClient, orderId: string): 
   const correlationId = order.proposal.correlationId;
   const blocked = await isBlocked(database, order.bot.userId, order.bot.id);
   if (blocked) {
-    await record(database, order.bot.id, correlationId, 'LIVE_SUBMIT_BLOCKED', { orderId, reason: 'KILL_SWITCH' });
+    await record(database, order.bot.id, correlationId, 'LIVE_SUBMIT_BLOCKED', {
+      orderId,
+      reason: 'KILL_SWITCH',
+    });
     return;
   }
-  const { engine, connector } = await createTestnetLiveExecutionEngine(database, order.exchangeConnection.id, () => Promise.resolve({
-    botId: order.botId,
-    exchangeConnectionId: order.exchangeConnection!.id,
-    tradeProposalId: order.tradeProposalId,
-    idempotencyKey: order.idempotencyKey,
-  }));
-  const price = order.limitPrice?.toString() ?? await latestPrice(database, order.symbol);
-  const amount = order.requestedQuantity?.toString() ?? new Decimal(order.requestedQuoteAmount ?? 0).div(price).toString();
+  const { engine, connector } = await createTestnetLiveExecutionEngine(
+    database,
+    order.exchangeConnection.id,
+    () =>
+      Promise.resolve({
+        botId: order.botId,
+        exchangeConnectionId: order.exchangeConnection!.id,
+        tradeProposalId: order.tradeProposalId,
+        idempotencyKey: order.idempotencyKey,
+      }),
+  );
+  const price = order.limitPrice?.toString() ?? (await latestPrice(database, order.symbol));
+  const amount =
+    order.requestedQuantity?.toString() ??
+    new Decimal(order.requestedQuoteAmount ?? 0).div(price).toString();
   const quoteAsset = order.bot.configuration?.quoteCurrency ?? inferQuoteAsset(order.symbol);
   const balance = (await connector.accountBalances()).find((item) => item.asset === quoteAsset);
   const risk = new RiskEngine({
     maxAllocatedCapital: Number(order.bot.riskProfile.maxAllocatedCapital),
     maxTradeAmount: Number(order.bot.riskProfile.maxTradeAmount),
-    maxExposure: Number(order.bot.riskProfile.maxAllocatedCapital) * Number(order.bot.riskProfile.maxExposurePercent),
+    maxExposure:
+      Number(order.bot.riskProfile.maxAllocatedCapital) *
+      Number(order.bot.riskProfile.maxExposurePercent),
     maxPositionPercent: Number(order.bot.riskProfile.maxPositionPercent),
     maxPositions: order.bot.riskProfile.maxPositions,
     maxDailyLoss: Number(order.bot.riskProfile.maxDailyLossPercent),
@@ -61,43 +73,96 @@ export async function submitLiveOrder(database: PrismaClient, orderId: string): 
     botStatus,
     tradingMode: 'LIVE',
   });
-  await database.riskEvent.create({ data: {
-    botId: order.botId, riskProfileId: order.bot.riskProfile.id, tradeProposalId: order.tradeProposalId,
-    decision: risk.decision, reasonCode: risk.reasonCode, reason: risk.reason, riskSnapshot: risk.riskSnapshot,
-  } });
+  await database.riskEvent.create({
+    data: {
+      botId: order.botId,
+      riskProfileId: order.bot.riskProfile.id,
+      tradeProposalId: order.tradeProposalId,
+      decision: risk.decision,
+      reasonCode: risk.reasonCode,
+      reason: risk.reason,
+      riskSnapshot: risk.riskSnapshot,
+    },
+  });
   if (risk.decision !== 'APPROVED') {
-    await record(database, order.botId, correlationId, 'LIVE_SUBMIT_BLOCKED', { orderId, reason: risk.reasonCode });
+    await record(database, order.botId, correlationId, 'LIVE_SUBMIT_BLOCKED', {
+      orderId,
+      reason: risk.reasonCode,
+    });
     return;
   }
   if (await isBlocked(database, order.bot.userId, order.bot.id)) {
-    await record(database, order.botId, correlationId, 'LIVE_SUBMIT_BLOCKED', { orderId, reason: 'KILL_SWITCH_RACE' });
+    await record(database, order.botId, correlationId, 'LIVE_SUBMIT_BLOCKED', {
+      orderId,
+      reason: 'KILL_SWITCH_RACE',
+    });
     return;
   }
-  await recordAudit(database, order.botId, correlationId, 'ORDER_REQUEST', { orderId, clientOrderId: order.clientOrderId });
+  await recordAudit(database, order.botId, correlationId, 'ORDER_REQUEST', {
+    orderId,
+    clientOrderId: order.clientOrderId,
+  });
   const request: LiveOrder = {
-    clientOrderId: order.clientOrderId, symbol: order.symbol, side: order.side, type: order.type,
+    clientOrderId: order.clientOrderId,
+    symbol: order.symbol,
+    side: order.side,
+    type: order.type,
     ...(order.requestedQuantity ? { quantity: order.requestedQuantity.toString() } : {}),
     ...(order.requestedQuoteAmount ? { quoteAmount: order.requestedQuoteAmount.toString() } : {}),
     ...(order.limitPrice ? { limitPrice: order.limitPrice.toString() } : {}),
   };
   const result = await engine.submit(request);
-  await recordAudit(database, order.botId, correlationId, 'ORDER_RESULT', { orderId, clientOrderId: result.clientOrderId, externalOrderId: result.externalOrderId, status: result.status });
+  await recordAudit(database, order.botId, correlationId, 'ORDER_RESULT', {
+    orderId,
+    clientOrderId: result.clientOrderId,
+    externalOrderId: result.externalOrderId,
+    status: result.status,
+  });
 }
 
 async function latestPrice(database: PrismaClient, symbol: string): Promise<string> {
-  const snapshot = await database.marketSnapshot.findFirst({ where: { provider: 'BINANCE', symbol }, orderBy: { closeTime: 'desc' }, select: { close: true, closeTime: true } });
-  if (!snapshot || new Decimal(snapshot.close).lte(0)) throw new Error('LIVE_MARKET_PRICE_UNAVAILABLE');
+  const snapshot = await database.marketSnapshot.findFirst({
+    where: { provider: 'BINANCE', symbol },
+    orderBy: { closeTime: 'desc' },
+    select: { close: true, closeTime: true },
+  });
+  if (!snapshot || new Decimal(snapshot.close).lte(0))
+    throw new Error('LIVE_MARKET_PRICE_UNAVAILABLE');
   assertFreshMarketData(snapshot.closeTime);
   return snapshot.close.toString();
 }
 async function isBlocked(database: PrismaClient, userId: string, botId: string): Promise<boolean> {
-  return (await database.killSwitchState.findFirst({ where: { active: true, OR: [{ scope: 'SYSTEM', targetId: 'global' }, { scope: 'USER', targetId: userId }, { scope: 'BOT', targetId: botId }] }, select: { id: true } })) !== null;
+  return (
+    (await database.killSwitchState.findFirst({
+      where: {
+        active: true,
+        OR: [
+          { scope: 'SYSTEM', targetId: 'global' },
+          { scope: 'USER', targetId: userId },
+          { scope: 'BOT', targetId: botId },
+        ],
+      },
+      select: { id: true },
+    })) !== null
+  );
 }
-async function record(database: PrismaClient, botId: string, correlationId: string, type: string, payload: object) {
+async function record(
+  database: PrismaClient,
+  botId: string,
+  correlationId: string,
+  type: string,
+  payload: object,
+) {
   await database.botEvent.create({ data: { botId, type, payload } });
   await recordAudit(database, botId, correlationId, 'EXCHANGE_EVENT', payload);
 }
-async function recordAudit(database: PrismaClient, botId: string, correlationId: string, eventType: 'ORDER_REQUEST' | 'ORDER_RESULT' | 'EXCHANGE_EVENT', payload: object) {
+async function recordAudit(
+  database: PrismaClient,
+  botId: string,
+  correlationId: string,
+  eventType: 'ORDER_REQUEST' | 'ORDER_RESULT' | 'EXCHANGE_EVENT',
+  payload: object,
+) {
   await database.auditLog.create({ data: { botId, correlationId, eventType, payload } });
 }
 function inferQuoteAsset(symbol: string): string {

@@ -25,7 +25,10 @@ let defaultsAdded = 0;
 let obsoleteRemoved = 0;
 
 if (/^BINANCE_BASE_URL=/m.test(contents)) {
-  contents = contents.replace(/^BINANCE_BASE_URL=.*$/m, '# BINANCE_BASE_URL removed; use the explicit TESTNET setting below.');
+  contents = contents.replace(
+    /^BINANCE_BASE_URL=.*$/m,
+    '# BINANCE_BASE_URL removed; use the explicit TESTNET setting below.',
+  );
   obsoleteRemoved = 1;
 }
 
@@ -39,12 +42,16 @@ for (const [name, value] of Object.entries(replacements)) {
 }
 
 if (existsSync(examplePath)) {
-  const existingNames = new Set([...contents.matchAll(/^([A-Za-z_][A-Za-z0-9_]*)=/gm)].map(([_, name]) => name));
+  const existingNames = new Set(
+    [...contents.matchAll(/^([A-Za-z_][A-Za-z0-9_]*)=/gm)].map(([_, name]) => name),
+  );
   const sensitive = /(?:SECRET|PASSWORD|API_KEY|API_SECRET|MASTER_KEY)/;
-  const defaults = readFileSync(examplePath, 'utf8').split(/\r?\n/).filter((line) => {
-    const match = line.match(/^([A-Za-z_][A-Za-z0-9_]*)=(.*)$/);
-    return match && !existingNames.has(match[1]) && !sensitive.test(match[1]);
-  });
+  const defaults = readFileSync(examplePath, 'utf8')
+    .split(/\r?\n/)
+    .filter((line) => {
+      const match = line.match(/^([A-Za-z_][A-Za-z0-9_]*)=(.*)$/);
+      return match && !existingNames.has(match[1]) && !sensitive.test(match[1]);
+    });
   if (defaults.length) {
     contents += `${contents.endsWith('\n') ? '' : '\n'}${defaults.join('\n')}\n`;
     defaultsAdded = defaults.length;
@@ -53,6 +60,8 @@ if (existsSync(examplePath)) {
 
 if (contents !== original) writeFileSync(envPath, contents);
 chmodSync(envPath, 0o600);
-console.log(generated || defaultsAdded || obsoleteRemoved
-  ? `Generated ${generated} development secret(s), added ${defaultsAdded} safe default(s), and migrated ${obsoleteRemoved} obsolete setting(s); existing secrets were preserved.`
-  : 'Development secrets and defaults already exist; nothing changed.');
+console.log(
+  generated || defaultsAdded || obsoleteRemoved
+    ? `Generated ${generated} development secret(s), added ${defaultsAdded} safe default(s), and migrated ${obsoleteRemoved} obsolete setting(s); existing secrets were preserved.`
+    : 'Development secrets and defaults already exist; nothing changed.',
+);

@@ -21,18 +21,22 @@ export default async function LoginPage({
             {t(errorMessageKey(error ?? ''))}
           </Alert>
         )}
-        <a className="rx-button auth-action" href={`/auth/login?returnTo=${encodedReturnTo}&locale=${locale}`}>
+        <a
+          className="rx-button auth-action"
+          href={`/auth/login?returnTo=${encodedReturnTo}&locale=${locale}`}
+        >
           {t('auth.signIn')}
         </a>
-        <a className="auth-link" href={`/auth/login?action=register&returnTo=${encodedReturnTo}&locale=${locale}`}>
+        <a
+          className="auth-link"
+          href={`/auth/login?action=register&returnTo=${encodedReturnTo}&locale=${locale}`}
+        >
           {t('auth.createAccount')}
         </a>
         <a className="auth-link" href={`/auth/login?action=recover&locale=${locale}`}>
           {t('auth.recover')}
         </a>
-        <small>
-          {t('auth.disclaimer')}
-        </small>
+        <small>{t('auth.disclaimer')}</small>
       </Card>
     </div>
   );
@@ -49,15 +53,10 @@ function errorTitleKey(error: string): string {
 function errorMessageKey(error: string): string {
   if (error === 'email_not_verified') return 'auth.error.emailMessage';
   if (error === 'code_expired') return 'auth.error.expiredMessage';
-  if (error === 'invalid_state_or_pkce')
-    return 'auth.error.sessionMessage';
-  if (error === 'identity_claims_missing')
-    return 'auth.error.profileMessage';
-  if (error === 'access_token_audience_invalid')
-    return 'auth.error.audienceMessage';
-  if (error === 'id_token_invalid' || error === 'token_invalid')
-    return 'auth.error.tokenMessage';
-  if (error === 'token_exchange_failed')
-    return 'auth.error.exchangeMessage';
+  if (error === 'invalid_state_or_pkce') return 'auth.error.sessionMessage';
+  if (error === 'identity_claims_missing') return 'auth.error.profileMessage';
+  if (error === 'access_token_audience_invalid') return 'auth.error.audienceMessage';
+  if (error === 'id_token_invalid' || error === 'token_invalid') return 'auth.error.tokenMessage';
+  if (error === 'token_exchange_failed') return 'auth.error.exchangeMessage';
   return 'auth.error.genericMessage';
 }

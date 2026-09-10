@@ -27,8 +27,7 @@ async function bootstrap(): Promise<void> {
       if (job.data.type === 'reconcile') {
         await reconcilePaperOrders(database);
         await recoverOrphanedReservations(database);
-      }
-      else if (job.data.type === 'paper-fill' && job.data.orderId && job.data.fill)
+      } else if (job.data.type === 'paper-fill' && job.data.orderId && job.data.fill)
         await applyPaperFill(database, { orderId: job.data.orderId, ...job.data.fill });
       else if (job.data.type === 'live-reconcile' && job.data.exchangeConnectionId)
         await reconcileLiveOrders(database, job.data.exchangeConnectionId);
@@ -56,7 +55,13 @@ async function bootstrap(): Promise<void> {
     { every: 60_000 },
     { name: 'reconcile', data: { type: 'reconcile' } },
   );
-  console.info(JSON.stringify({ event: 'worker_started', service: 'worker', queue: process.env.WORKER_QUEUE_NAME ?? 'risexpto' }));
+  console.info(
+    JSON.stringify({
+      event: 'worker_started',
+      service: 'worker',
+      queue: process.env.WORKER_QUEUE_NAME ?? 'risexpto',
+    }),
+  );
   const shutdown = async (signal: string) => {
     console.info(JSON.stringify({ event: 'worker_shutdown', signal }));
     await infrastructure.close();

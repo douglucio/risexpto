@@ -50,11 +50,20 @@ export class UserProvisioningService {
   }
 
   private async ensureStarterPlan(userId: string): Promise<void> {
-    const database = this.db as PrismaClient & { plan?: PrismaClient['plan']; subscription?: PrismaClient['subscription'] };
+    const database = this.db as PrismaClient & {
+      plan?: PrismaClient['plan'];
+      subscription?: PrismaClient['subscription'];
+    };
     if (!database.plan || !database.subscription) return;
-    const existing = await database.subscription.findFirst({ where: { userId }, select: { id: true } });
+    const existing = await database.subscription.findFirst({
+      where: { userId },
+      select: { id: true },
+    });
     if (existing) return;
-    const plan = await database.plan.findUnique({ where: { key: 'STARTER' }, select: { id: true } });
+    const plan = await database.plan.findUnique({
+      where: { key: 'STARTER' },
+      select: { id: true },
+    });
     if (!plan) throw new UserProvisioningError('UNAVAILABLE');
     await database.subscription.create({ data: { userId, planId: plan.id, status: 'ACTIVE' } });
   }

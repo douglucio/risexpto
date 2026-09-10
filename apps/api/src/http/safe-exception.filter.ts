@@ -2,7 +2,10 @@ import { Catch, ArgumentsHost, ExceptionFilter, HttpException, HttpStatus } from
 import { randomUUID } from 'node:crypto';
 
 type RequestLike = { headers: Record<string, string | string[] | undefined> };
-type ResponseLike = { setHeader(name: string, value: string): void; status(code: number): { json(body: unknown): void } };
+type ResponseLike = {
+  setHeader(name: string, value: string): void;
+  status(code: number): { json(body: unknown): void };
+};
 
 @Catch()
 export class SafeExceptionFilter implements ExceptionFilter {
@@ -11,9 +14,8 @@ export class SafeExceptionFilter implements ExceptionFilter {
     const request = context.getRequest<RequestLike>();
     const response = context.getResponse<ResponseLike>();
     const header = request.headers['x-correlation-id'];
-    const correlationId = typeof header === 'string' && /^[a-zA-Z0-9._:-]{1,128}$/.test(header)
-      ? header
-      : randomUUID();
+    const correlationId =
+      typeof header === 'string' && /^[a-zA-Z0-9._:-]{1,128}$/.test(header) ? header : randomUUID();
     response.setHeader('x-correlation-id', correlationId);
     const httpException = exception instanceof HttpException ? exception : null;
     const status = httpException?.getStatus() ?? HttpStatus.INTERNAL_SERVER_ERROR;

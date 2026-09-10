@@ -1,12 +1,4 @@
-import {
-  Alert,
-  Badge,
-  Card,
-  CurrencyDisplay,
-  DataTable,
-  EmptyState,
-  Tabs,
-} from '@risexpto/ui';
+import { Alert, Badge, Card, CurrencyDisplay, DataTable, EmptyState, Tabs } from '@risexpto/ui';
 import { notFound } from 'next/navigation';
 import { PageHeader } from '../../components/page-header';
 import { PreferencesForm } from '../../components/preferences-form';
@@ -22,11 +14,11 @@ import { translate, type Locale } from '@risexpto/i18n';
 
 const pages = {
   bots: ['section.automation', 'nav.bots', 'section.botsDescription'],
-  strategies: [
-    'section.library', 'nav.strategies', 'section.strategiesDescription',
-  ],
+  strategies: ['section.library', 'nav.strategies', 'section.strategiesDescription'],
   'exchange-connections': [
-    'nav.connections', 'section.connectionsTitle', 'section.connectionsDescription',
+    'nav.connections',
+    'section.connectionsTitle',
+    'section.connectionsDescription',
   ],
   backtests: ['section.research', 'nav.backtests', 'section.backtestsDescription'],
   trades: ['section.activity', 'nav.trades', 'section.tradesDescription'],
@@ -52,7 +44,12 @@ export default async function SectionPage({ params }: { params: Promise<{ sectio
     if (!session?.user.roles.includes('ADMIN')) redirect('/dashboard');
   }
   const data =
-    section === 'bots' || section === 'strategies' || section === 'exchange-connections' || section === 'trades' || section === 'portfolio' || section === 'billing'
+    section === 'bots' ||
+    section === 'strategies' ||
+    section === 'exchange-connections' ||
+    section === 'trades' ||
+    section === 'portfolio' ||
+    section === 'billing'
       ? await loadSectionData(section)
       : null;
   return (
@@ -116,7 +113,10 @@ type PositionRecord = {
   averagePrice: string;
   realizedPnl: string;
 };
-type BillingRecord = { mode: string; subscription: { status: string; plan: string; entitlements: Record<string, unknown> } | null };
+type BillingRecord = {
+  mode: string;
+  subscription: { status: string; plan: string; entitlements: Record<string, unknown> } | null;
+};
 
 async function loadSectionData(
   section: 'bots' | 'strategies' | 'exchange-connections' | 'trades' | 'portfolio' | 'billing',
@@ -138,7 +138,8 @@ async function loadSectionData(
     const payload: unknown = await response.json();
     if (section === 'bots') return { kind: 'bots', value: payload as BotRecord[] };
     if (section === 'strategies') return { kind: 'strategies', value: payload as StrategyRecord[] };
-    if (section === 'exchange-connections') return { kind: 'exchange-connections', value: payload as ExchangeConnectionRecord[] };
+    if (section === 'exchange-connections')
+      return { kind: 'exchange-connections', value: payload as ExchangeConnectionRecord[] };
     if (section === 'trades') return { kind: 'trades', value: payload as TradeRecord[] };
     if (section === 'billing') return { kind: 'billing', value: payload as BillingRecord };
     return { kind: 'positions', value: payload as PositionRecord[] };
@@ -185,7 +186,12 @@ function SectionContent({ section, data }: { section: string; data: SectionData 
                   currency={bot.configuration?.quoteCurrency ?? 'USD'}
                 />,
                 <Badge key={`${bot.id}-status`}>{bot.status}</Badge>,
-                <BotControls key={`${bot.id}-actions`} id={bot.id} status={bot.status} tradingMode={bot.tradingMode} />,
+                <BotControls
+                  key={`${bot.id}-actions`}
+                  id={bot.id}
+                  status={bot.status}
+                  tradingMode={bot.tradingMode}
+                />,
               ])}
             />
           </div>
@@ -213,7 +219,9 @@ function SectionContent({ section, data }: { section: string; data: SectionData 
                 {strategy.versions[0] ? (
                   <small>Version {strategy.versions[0].version}</small>
                 ) : null}
-                <Link className="rx-button" href="/bots">Use strategy</Link>
+                <Link className="rx-button" href="/bots">
+                  Use strategy
+                </Link>
               </Card>
             ))
           : null}
@@ -230,7 +238,9 @@ function SectionContent({ section, data }: { section: string; data: SectionData 
             {data.message}
           </Alert>
         ) : null}
-        {data?.kind === 'exchange-connections' ? <ExchangeConnectionsPanel initial={data.value} /> : null}
+        {data?.kind === 'exchange-connections' ? (
+          <ExchangeConnectionsPanel initial={data.value} />
+        ) : null}
       </>
     );
   if (section === 'backtests')
@@ -247,42 +257,70 @@ function SectionContent({ section, data }: { section: string; data: SectionData 
     );
   if (section === 'trades')
     return data?.kind === 'error' ? (
-      <Alert tone="negative" title="Unable to load trades">{data.message}</Alert>
+      <Alert tone="negative" title="Unable to load trades">
+        {data.message}
+      </Alert>
     ) : data?.kind === 'trades' && data.value.length === 0 ? (
       <EmptyState title="No trades yet" description="Executed Paper trades will appear here." />
     ) : (
       <DataTable
         columns={['Time', 'Pair', 'Side', 'Quantity', 'Price', 'Mode']}
-        rows={data?.kind === 'trades' ? data.value.map((trade) => [
-          <span key={`${trade.id}-time`} className="rx-number">{new Date(trade.executedAt).toLocaleTimeString()}</span>,
-          trade.symbol,
-          <Badge key={`${trade.id}-side`} tone={trade.side === 'BUY' ? 'positive' : 'negative'}>{trade.side}</Badge>,
-          trade.quantity,
-          <CurrencyDisplay key={`${trade.id}-price`} value={Number(trade.price)} />,
-          <Badge key={`${trade.id}-mode`} tone="brand">{trade.tradingMode}</Badge>,
-        ]) : []}
+        rows={
+          data?.kind === 'trades'
+            ? data.value.map((trade) => [
+                <span key={`${trade.id}-time`} className="rx-number">
+                  {new Date(trade.executedAt).toLocaleTimeString()}
+                </span>,
+                trade.symbol,
+                <Badge
+                  key={`${trade.id}-side`}
+                  tone={trade.side === 'BUY' ? 'positive' : 'negative'}
+                >
+                  {trade.side}
+                </Badge>,
+                trade.quantity,
+                <CurrencyDisplay key={`${trade.id}-price`} value={Number(trade.price)} />,
+                <Badge key={`${trade.id}-mode`} tone="brand">
+                  {trade.tradingMode}
+                </Badge>,
+              ])
+            : []
+        }
       />
     );
   if (section === 'portfolio')
     return data?.kind === 'error' ? (
-      <Alert tone="negative" title="Unable to load portfolio">{data.message}</Alert>
+      <Alert tone="negative" title="Unable to load portfolio">
+        {data.message}
+      </Alert>
     ) : data?.kind === 'positions' && data.value.length === 0 ? (
-      <EmptyState title="No positions yet" description="Persisted Paper positions will appear here." />
+      <EmptyState
+        title="No positions yet"
+        description="Persisted Paper positions will appear here."
+      />
     ) : (
       <DataTable
         columns={['Symbol', 'Quantity', 'Average price', 'P&L', 'Status', 'Mode']}
-        rows={data?.kind === 'positions' ? data.value.map((position) => [
-          position.symbol,
-          position.quantity,
-          <CurrencyDisplay key={`${position.id}-price`} value={Number(position.averagePrice)} />,
-          <CurrencyDisplay key={`${position.id}-pnl`} value={Number(position.realizedPnl)} />,
-          <Badge key={`${position.id}-status`}>{position.status}</Badge>,
-          <Badge key={`${position.id}-mode`} tone="brand">{position.tradingMode}</Badge>,
-        ]) : []}
+        rows={
+          data?.kind === 'positions'
+            ? data.value.map((position) => [
+                position.symbol,
+                position.quantity,
+                <CurrencyDisplay
+                  key={`${position.id}-price`}
+                  value={Number(position.averagePrice)}
+                />,
+                <CurrencyDisplay key={`${position.id}-pnl`} value={Number(position.realizedPnl)} />,
+                <Badge key={`${position.id}-status`}>{position.status}</Badge>,
+                <Badge key={`${position.id}-mode`} tone="brand">
+                  {position.tradingMode}
+                </Badge>,
+              ])
+            : []
+        }
       />
     );
-  if (section === 'risk')
-    return <RiskPanel />;
+  if (section === 'risk') return <RiskPanel />;
   if (section === 'notifications')
     return (
       <EmptyState
@@ -291,7 +329,13 @@ function SectionContent({ section, data }: { section: string; data: SectionData 
       />
     );
   if (section === 'billing')
-    return data?.kind === 'billing' ? <BillingPanel /> : <Alert tone="negative" title="Unable to load billing">{data?.kind === 'error' ? data.message : 'Billing is unavailable.'}</Alert>;
+    return data?.kind === 'billing' ? (
+      <BillingPanel />
+    ) : (
+      <Alert tone="negative" title="Unable to load billing">
+        {data?.kind === 'error' ? data.message : 'Billing is unavailable.'}
+      </Alert>
+    );
   if (section === 'settings') return <PreferencesForm />;
   return (
     <>

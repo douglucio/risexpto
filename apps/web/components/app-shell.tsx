@@ -7,9 +7,16 @@ import { useLocale } from './locale-provider';
 import { translate } from '@risexpto/i18n';
 
 const navigation = [
-  ['nav.dashboard', '/dashboard'], ['nav.bots', '/bots'], ['nav.strategies', '/strategies'],
-  ['nav.connections', '/exchange-connections'], ['nav.backtests', '/backtests'], ['nav.trades', '/trades'],
-  ['nav.risk', '/risk'], ['nav.notifications', '/notifications'], ['nav.billing', '/billing'], ['nav.settings', '/settings'],
+  ['nav.dashboard', '/dashboard'],
+  ['nav.bots', '/bots'],
+  ['nav.strategies', '/strategies'],
+  ['nav.connections', '/exchange-connections'],
+  ['nav.backtests', '/backtests'],
+  ['nav.trades', '/trades'],
+  ['nav.risk', '/risk'],
+  ['nav.notifications', '/notifications'],
+  ['nav.billing', '/billing'],
+  ['nav.settings', '/settings'],
 ] as const;
 
 export function AppShell({ children }: { children: ReactNode }) {
@@ -31,7 +38,10 @@ export function AppShell({ children }: { children: ReactNode }) {
     if (pathname === '/' || pathname === '/login') return;
     void fetch('/auth/session', { cache: 'no-store' }).then(async (response) => {
       if (response.ok) {
-        const body = (await response.json()) as { user: { name: string; email: string; roles: string[] }; preferences?: { locale?: 'en' | 'pt-BR' | 'es' } };
+        const body = (await response.json()) as {
+          user: { name: string; email: string; roles: string[] };
+          preferences?: { locale?: 'en' | 'pt-BR' | 'es' };
+        };
         setUser(body.user);
         if (body.preferences?.locale) setLocale(body.preferences.locale);
       }
@@ -67,13 +77,17 @@ export function AppShell({ children }: { children: ReactNode }) {
             </Link>
           ))}
           {user?.roles.includes('ADMIN') ? (
-            <Link href="/admin" aria-current={pathname === '/admin' ? 'page' : undefined} onClick={() => setMobileOpen(false)}>
+            <Link
+              href="/admin"
+              aria-current={pathname === '/admin' ? 'page' : undefined}
+              onClick={() => setMobileOpen(false)}
+            >
               {t('nav.admin')}
             </Link>
           ) : null}
         </nav>
         <div className="mode-guard">
-            <small>{t('nav.tradingMode')}</small>
+          <small>{t('nav.tradingMode')}</small>
           <b>
             <i /> PAPER
           </b>
@@ -101,7 +115,15 @@ export function AppShell({ children }: { children: ReactNode }) {
             <strong>{activeLabel}</strong>
           </div>
           <div className="topbar-actions">
-            <select aria-label="Language / Idioma / Idioma" value={locale} onChange={(event) => setLocale(event.target.value as typeof locale)}><option value="en">🇺🇸 EN</option><option value="pt-BR">🇧🇷 PT</option><option value="es">🇪🇸 ES</option></select>
+            <select
+              aria-label="Language / Idioma / Idioma"
+              value={locale}
+              onChange={(event) => setLocale(event.target.value as typeof locale)}
+            >
+              <option value="en">🇺🇸 EN</option>
+              <option value="pt-BR">🇧🇷 PT</option>
+              <option value="es">🇪🇸 ES</option>
+            </select>
             <button
               onClick={toggleTheme}
               aria-label={`Use ${theme === 'dark' ? 'light' : 'dark'} theme`}
@@ -110,12 +132,21 @@ export function AppShell({ children }: { children: ReactNode }) {
             </button>
             <button aria-label="Open notifications">●</button>
             <details className="avatar-menu">
-              <summary className="avatar" title={user?.email}>{user ? initials(user.name) : 'RX'}</summary>
+              <summary className="avatar" title={user?.email}>
+                {user ? initials(user.name) : 'RX'}
+              </summary>
               <div className="avatar-menu-items">
                 <Link href="/settings">{t('nav.profile')}</Link>
                 <Link href="/settings">{t('nav.settings')}</Link>
                 {user?.roles.includes('ADMIN') ? <Link href="/admin">{t('nav.admin')}</Link> : null}
-                <button type="button" onClick={() => document.querySelector<HTMLFormElement>('[data-logout-form]')?.requestSubmit()}>{t('nav.logout')}</button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    document.querySelector<HTMLFormElement>('[data-logout-form]')?.requestSubmit()
+                  }
+                >
+                  {t('nav.logout')}
+                </button>
               </div>
             </details>
             <form action="/auth/logout" method="post" data-logout-form>

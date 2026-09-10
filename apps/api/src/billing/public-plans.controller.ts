@@ -10,7 +10,11 @@ export class PublicPlansController {
 
   @Get()
   async list() {
-    const plans = await this.db.plan.findMany({ where: { active: true }, orderBy: { key: 'asc' }, include: { entitlements: true } });
+    const plans = await this.db.plan.findMany({
+      where: { active: true },
+      orderBy: { key: 'asc' },
+      include: { entitlements: true },
+    });
     return plans.map((plan) => ({
       plan: plan.key,
       displayName: plan.name,

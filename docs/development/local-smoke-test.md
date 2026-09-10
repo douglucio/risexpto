@@ -65,6 +65,7 @@ O login exige e-mail verificado; não remova essa exigência para facilitar o te
    ```
 
    Esse comando só funciona em `NODE_ENV=development`, cria/atualiza uma subscription local e marca `source=development-local-grant`; não é Stripe.
+
 4. Em `Bots`, crie um bot DCA `PAPER` para `BTCUSDT`, revise capital e risco, e crie-o.
 5. Faça `Start` e aguarde o worker: `market-data-sync`, `paper-scheduler` e o ciclo do bot.
 6. Confirme em `Bots`, `Trades` e `Portfolio` os dados persistidos. A primeira execução DCA exige um `MarketSnapshot` recente; sem sinal ou mercado disponível o bot deve mostrar o estado correspondente, não dados fictícios.

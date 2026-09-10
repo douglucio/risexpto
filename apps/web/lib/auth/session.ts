@@ -40,7 +40,10 @@ export async function writeSession(session: AuthSession): Promise<void> {
     cookieOptions(config.secureCookies, maxAge),
   );
 }
-export async function readSession(refresh = true, persistRefresh = true): Promise<AuthSession | null> {
+export async function readSession(
+  refresh = true,
+  persistRefresh = true,
+): Promise<AuthSession | null> {
   const config = authConfig();
   const token = (await cookies()).get(sessionCookieName(config.secureCookies))?.value;
   if (!token) return null;

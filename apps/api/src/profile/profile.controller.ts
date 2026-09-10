@@ -23,13 +23,33 @@ export class ProfileController {
   async preferences(@CurrentUser() user: AuthenticatedUser, @Body() body: unknown) {
     const userId = user.applicationUserId;
     if (!userId || !isPreferences(body)) throw new BadRequestException('Invalid preferences');
-    const profile = await this.db.userProfile.upsert({ where: { userId }, update: { locale: body.locale, timezone: body.timezone, referenceCurrency: body.currency }, create: { userId, locale: body.locale, timezone: body.timezone, referenceCurrency: body.currency } });
-    return { locale: profile.locale, timezone: profile.timezone, currency: profile.referenceCurrency };
+    const profile = await this.db.userProfile.upsert({
+      where: { userId },
+      update: { locale: body.locale, timezone: body.timezone, referenceCurrency: body.currency },
+      create: {
+        userId,
+        locale: body.locale,
+        timezone: body.timezone,
+        referenceCurrency: body.currency,
+      },
+    });
+    return {
+      locale: profile.locale,
+      timezone: profile.timezone,
+      currency: profile.referenceCurrency,
+    };
   }
 }
 
-function isPreferences(value: unknown): value is { locale: 'en' | 'pt-BR' | 'es'; timezone: string; currency: 'USD' | 'BRL' | 'EUR' } {
+function isPreferences(
+  value: unknown,
+): value is { locale: 'en' | 'pt-BR' | 'es'; timezone: string; currency: 'USD' | 'BRL' | 'EUR' } {
   if (!value || typeof value !== 'object') return false;
   const item = value as Record<string, unknown>;
-  return ['en', 'pt-BR', 'es'].includes(String(item.locale)) && ['USD', 'BRL', 'EUR'].includes(String(item.currency)) && typeof item.timezone === 'string' && item.timezone.length <= 64;
+  return (
+    ['en', 'pt-BR', 'es'].includes(String(item.locale)) &&
+    ['USD', 'BRL', 'EUR'].includes(String(item.currency)) &&
+    typeof item.timezone === 'string' &&
+    item.timezone.length <= 64
+  );
 }

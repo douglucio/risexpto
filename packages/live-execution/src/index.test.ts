@@ -63,12 +63,20 @@ describe('LiveExecutionEngine', () => {
 
   it('survives an engine restart using the same durable store', async () => {
     const store = new InMemoryLiveOrderStore();
-    const firstConnector: LiveConnector = { submit: vi.fn().mockResolvedValue(result), query: vi.fn(), cancel: vi.fn() };
+    const firstConnector: LiveConnector = {
+      submit: vi.fn().mockResolvedValue(result),
+      query: vi.fn(),
+      cancel: vi.fn(),
+    };
     const firstEngine = new LiveExecutionEngine(firstConnector, true, store);
     await expect(firstEngine.submit(order)).resolves.toEqual(result);
 
     const secondSubmit = vi.fn();
-    const secondConnector: LiveConnector = { submit: secondSubmit, query: vi.fn(), cancel: vi.fn() };
+    const secondConnector: LiveConnector = {
+      submit: secondSubmit,
+      query: vi.fn(),
+      cancel: vi.fn(),
+    };
     const restartedEngine = new LiveExecutionEngine(secondConnector, true, store);
     await expect(restartedEngine.submit(order)).resolves.toEqual(result);
     expect(secondSubmit).not.toHaveBeenCalled();

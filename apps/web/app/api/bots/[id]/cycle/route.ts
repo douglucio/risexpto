@@ -4,6 +4,8 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
   const { id } = await context.params;
   const body = await request.text();
   return apiProxy(`/bots/${encodeURIComponent(id)}/cycle`, {
-    method: 'POST', body, headers: { 'content-type': 'application/json' },
+    method: 'POST',
+    body,
+    headers: { 'content-type': 'application/json' },
   });
 }

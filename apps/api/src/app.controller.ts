@@ -41,7 +41,11 @@ export class AppController {
   private async checkRedis(): Promise<boolean> {
     const url = process.env.REDIS_URL?.trim();
     if (!url) return false;
-    const redis = new Redis(url, { lazyConnect: true, connectTimeout: 1_000, maxRetriesPerRequest: 1 });
+    const redis = new Redis(url, {
+      lazyConnect: true,
+      connectTimeout: 1_000,
+      maxRetriesPerRequest: 1,
+    });
     try {
       await redis.connect();
       return (await redis.ping()) === 'PONG';

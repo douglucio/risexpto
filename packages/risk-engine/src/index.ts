@@ -106,17 +106,23 @@ export class RiskEngine {
       [
         'ALLOCATED_CAPITAL_LIMIT',
         'Allocated capital limit would be exceeded.',
-        new Decimal(context.allocatedCapital).plus(proposedValueDecimal).lte(this.limits.maxAllocatedCapital),
+        new Decimal(context.allocatedCapital)
+          .plus(proposedValueDecimal)
+          .lte(this.limits.maxAllocatedCapital),
       ],
       [
         'EXPOSURE_LIMIT',
         'Maximum exposure would be exceeded.',
-        new Decimal(context.currentExposure).plus(proposedValueDecimal).lte(this.limits.maxExposure),
+        new Decimal(context.currentExposure)
+          .plus(proposedValueDecimal)
+          .lte(this.limits.maxExposure),
       ],
       [
         'POSITION_PERCENT_LIMIT',
         'Position percentage limit would be exceeded.',
-        proposedValueDecimal.lte(new Decimal(this.limits.maxExposure).times(this.limits.maxPositionPercent)),
+        proposedValueDecimal.lte(
+          new Decimal(this.limits.maxExposure).times(this.limits.maxPositionPercent),
+        ),
       ],
       [
         'MAX_POSITIONS',

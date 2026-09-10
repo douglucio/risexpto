@@ -1,13 +1,13 @@
-import {
-  BinanceSpotTestnetConnector,
-  CredentialVault,
-} from '@risexpto/binance-connection';
+import { BinanceSpotTestnetConnector, CredentialVault } from '@risexpto/binance-connection';
 import type { BinanceSpotTestnetConnector as BinanceSpotTestnetConnectorType } from '@risexpto/binance-connection';
 import type { PrismaClient } from '@risexpto/database';
 import { LiveExecutionEngine } from '@risexpto/live-execution';
 import { PrismaLiveOrderStore, type LiveOrderContextResolver } from './live-order-store.js';
 
-export type TestnetLiveRuntime = { engine: LiveExecutionEngine; connector: BinanceSpotTestnetConnectorType };
+export type TestnetLiveRuntime = {
+  engine: LiveExecutionEngine;
+  connector: BinanceSpotTestnetConnectorType;
+};
 
 export async function createTestnetLiveExecutionEngine(
   database: PrismaClient,
@@ -17,7 +17,12 @@ export async function createTestnetLiveExecutionEngine(
   assertTestnetLiveEnabled();
   const connection = await database.exchangeConnection.findFirst({
     where: { id: exchangeConnectionId, provider: 'BINANCE', status: 'CONNECTED', revokedAt: null },
-    select: { apiKeyCiphertext: true, apiSecretCiphertext: true, encryptionKeyVersion: true, revokedAt: true },
+    select: {
+      apiKeyCiphertext: true,
+      apiSecretCiphertext: true,
+      encryptionKeyVersion: true,
+      revokedAt: true,
+    },
   });
   if (!connection) throw new Error('LIVE_TESTNET_CONNECTION_NOT_FOUND');
   const masterKey = process.env.BINANCE_CREDENTIAL_MASTER_KEY;
@@ -36,6 +41,5 @@ export async function createTestnetLiveExecutionEngine(
 export function assertTestnetLiveEnabled(): void {
   if (process.env.BINANCE_TRADING_ENVIRONMENT !== 'TESTNET')
     throw new Error('LIVE execution requires BINANCE_TRADING_ENVIRONMENT=TESTNET');
-  if (process.env.LIVE_TRADING_ENABLED !== 'true')
-    throw new Error('LIVE execution is disabled');
+  if (process.env.LIVE_TRADING_ENABLED !== 'true') throw new Error('LIVE execution is disabled');
 }

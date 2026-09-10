@@ -59,13 +59,18 @@ export class StripeTestProvider implements BillingProvider {
   }
 
   async createCustomer(userId: string, email: string): Promise<string> {
-    const customer = await this.stripe.customers.create({ email, metadata: { riseXpToUserId: userId } });
+    const customer = await this.stripe.customers.create({
+      email,
+      metadata: { riseXpToUserId: userId },
+    });
     return customer.id;
   }
 
   async checkout(customerId: string, priceId: string): Promise<string> {
     const session = await this.stripe.checkout.sessions.create({
-      mode: 'subscription', customer: customerId, line_items: [{ price: priceId, quantity: 1 }],
+      mode: 'subscription',
+      customer: customerId,
+      line_items: [{ price: priceId, quantity: 1 }],
       success_url: requiredUrl('STRIPE_CHECKOUT_SUCCESS_URL'),
       cancel_url: requiredUrl('STRIPE_CHECKOUT_CANCEL_URL'),
     });
@@ -75,13 +80,19 @@ export class StripeTestProvider implements BillingProvider {
 
   async portal(customerId: string): Promise<string> {
     const session = await this.stripe.billingPortal.sessions.create({
-      customer: customerId, return_url: requiredUrl('STRIPE_PORTAL_RETURN_URL'),
+      customer: customerId,
+      return_url: requiredUrl('STRIPE_PORTAL_RETURN_URL'),
     });
     return session.url;
   }
 
-  constructWebhookEvent(payload: string | Buffer, signature: string, webhookSecret: string): Stripe.Event {
-    if (!webhookSecret.trim()) throw new Error('STRIPE_WEBHOOK_SECRET is required for Stripe Test Mode');
+  constructWebhookEvent(
+    payload: string | Buffer,
+    signature: string,
+    webhookSecret: string,
+  ): Stripe.Event {
+    if (!webhookSecret.trim())
+      throw new Error('STRIPE_WEBHOOK_SECRET is required for Stripe Test Mode');
     return this.stripe.webhooks.constructEvent(payload, signature, webhookSecret);
   }
 }

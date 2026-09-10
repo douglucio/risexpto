@@ -4,20 +4,20 @@
 
 Esta é a matriz vigente. `CODE_IMPLEMENTED` indica caminho implementado; `LOCALLY_VALIDATED` exige teste ou execução local; `BROWSER_VALIDATED` exige fluxo autenticado no navegador; `EXTERNAL_TEST_VALIDATED` exige exercício da dependência externa; `PRODUCTION_READY` exige todos os gates e aprovação humana.
 
-| Domínio | CODE_IMPLEMENTED | LOCALLY_VALIDATED | BROWSER_VALIDATED | EXTERNAL_TEST_VALIDATED | PRODUCTION_READY |
-|---|---:|---:|---:|---:|---:|
-| Bootstrap/env | ✅ | ✅ `pnpm install --frozen-lockfile`, `dev:secrets`, validação fail-fast | N/A | ⬜ Docker/serviços | ❌ |
-| Keycloak login/provisioning | ✅ | ✅ unitários | ⬜ | ⬜ Keycloak real | ❌ |
-| Seed DCA/Grid/Trend | ✅ | ✅ testes idempotentes | ⬜ | N/A | ❌ |
-| Market Data runtime | ✅ worker + `MarketSnapshot` | ✅ testes/upsert idempotente | N/A | ⬜ Binance pública + PostgreSQL | ❌ |
-| Bot Wizard + Risk Profile | ✅ transacional | ✅ testes/typecheck | ⬜ | N/A | ❌ |
-| Paper Scheduler + DCA | ✅ BullMQ/claim/job determinístico | ✅ testes/smoke opt-in | ⬜ | ⬜ Redis/PostgreSQL reais | ❌ |
-| Portfolio/Trade/Position | ✅ leitura persistida | ✅ contratos | ⬜ | ⬜ E2E completo | ❌ |
-| Binance Connection/Vault | ✅ UI Testnet, key masked, secret cifrado | ✅ testes | ⬜ | ⬜ credenciais Testnet | ❌ |
-| Binance LIVE Testnet | ✅ pipeline fail-closed | ✅ testes sanitizados | ⬜ | ⬜ smoke/ordem/reconciliação | ❌ |
-| Stripe Test Mode | ✅ provider, Checkout, Portal, webhook, subscription, entitlements | ✅ lint/typecheck/test/build | ⬜ | ⬜ Stripe Test real | ❌ |
-| Notifications | ⬜ não integrada | ⬜ | N/A | N/A | ❌ |
-| Admin/auditoria/observabilidade | 🟨 parcial | 🟨 contratos/pacotes | ⬜ | ⬜ operação integrada | ❌ |
+| Domínio                         |                                                   CODE_IMPLEMENTED |                                                       LOCALLY_VALIDATED | BROWSER_VALIDATED |         EXTERNAL_TEST_VALIDATED | PRODUCTION_READY |
+| ------------------------------- | -----------------------------------------------------------------: | ----------------------------------------------------------------------: | ----------------: | ------------------------------: | ---------------: |
+| Bootstrap/env                   |                                                                 ✅ | ✅ `pnpm install --frozen-lockfile`, `dev:secrets`, validação fail-fast |               N/A |              ⬜ Docker/serviços |               ❌ |
+| Keycloak login/provisioning     |                                                                 ✅ |                                                            ✅ unitários |                ⬜ |                ⬜ Keycloak real |               ❌ |
+| Seed DCA/Grid/Trend             |                                                                 ✅ |                                                  ✅ testes idempotentes |                ⬜ |                             N/A |               ❌ |
+| Market Data runtime             |                                       ✅ worker + `MarketSnapshot` |                                            ✅ testes/upsert idempotente |               N/A | ⬜ Binance pública + PostgreSQL |               ❌ |
+| Bot Wizard + Risk Profile       |                                                    ✅ transacional |                                                     ✅ testes/typecheck |                ⬜ |                             N/A |               ❌ |
+| Paper Scheduler + DCA           |                                 ✅ BullMQ/claim/job determinístico |                                                  ✅ testes/smoke opt-in |                ⬜ |       ⬜ Redis/PostgreSQL reais |               ❌ |
+| Portfolio/Trade/Position        |                                              ✅ leitura persistida |                                                            ✅ contratos |                ⬜ |                 ⬜ E2E completo |               ❌ |
+| Binance Connection/Vault        |                          ✅ UI Testnet, key masked, secret cifrado |                                                               ✅ testes |                ⬜ |          ⬜ credenciais Testnet |               ❌ |
+| Binance LIVE Testnet            |                                            ✅ pipeline fail-closed |                                                   ✅ testes sanitizados |                ⬜ |    ⬜ smoke/ordem/reconciliação |               ❌ |
+| Stripe Test Mode                | ✅ provider, Checkout, Portal, webhook, subscription, entitlements |                                            ✅ lint/typecheck/test/build |                ⬜ |             ⬜ Stripe Test real |               ❌ |
+| Notifications                   |                                                   ⬜ não integrada |                                                                      ⬜ |               N/A |                             N/A |               ❌ |
+| Admin/auditoria/observabilidade |                                                         🟨 parcial |                                                    🟨 contratos/pacotes |                ⬜ |           ⬜ operação integrada |               ❌ |
 
 O caminho atual está em `TESTABLE MVP READINESS`, não em `PRODUCTION_READY`. Binance Production e Stripe Live continuam proibidos.
 
@@ -62,52 +62,52 @@ Esta matriz foi reavaliada contra o código executável, testes existentes e gra
 
 ### Applications e integração efetiva
 
-| Área       | Estado real                                  | Evidência                                                                                                                                                                |
-| ---------- | -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Área       | Estado real                                  | Evidência                                                                                                                                                                                                        |
+| ---------- | -------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Web        | `PARTIALLY_IMPLEMENTED`                      | Next.js possui landing, login, sessão e páginas autenticadas; bots, strategies, conexões, trades, posições, wizard, risco e billing consomem caminhos reais; notificações, backtests e admin exibem Coming Soon. |
-| API        | `PARTIALLY_IMPLEMENTED`                      | NestJS possui health, auth/provisioning, strategies, bots, conexões, trades/positions, fila e kill switch; faltam API de RiskProfile, billing Stripe real, readiness e fluxo completo de criação/scheduler. |
-| Worker     | `PARTIALLY_IMPLEMENTED`                      | `apps/worker/src/main.ts` inicia PostgreSQL + Redis/BullMQ, processa Paper Cycle/Paper Fill/reconciliation e jobs LIVE; scheduler automático de bots e market-data runtime ainda faltam. |
-| PostgreSQL | `PARTIALLY_IMPLEMENTED`                      | Schema, migrations, seed e cliente existem; Paper e LIVE possuem testes de integração opt-in, mas não foram executados neste ambiente com banco real e o seed não cria estratégias MVP. |
-| Redis      | `PARTIALLY_IMPLEMENTED` / `BLOCKED_EXTERNAL` | API rate limit, BullMQ worker e testes de integração existem; confirmação contra Redis real depende de `E2E_REDIS_URL`/serviço disponível. |
-| Keycloak   | `PARTIALLY_IMPLEMENTED` / `BLOCKED_EXTERNAL` | OIDC, PKCE, JWKS, RBAC, realm e provisioning existem; login E2E depende de Keycloak, SMTP e usuário verificado configurados. |
+| API        | `PARTIALLY_IMPLEMENTED`                      | NestJS possui health, auth/provisioning, strategies, bots, conexões, trades/positions, fila e kill switch; faltam API de RiskProfile, billing Stripe real, readiness e fluxo completo de criação/scheduler.      |
+| Worker     | `PARTIALLY_IMPLEMENTED`                      | `apps/worker/src/main.ts` inicia PostgreSQL + Redis/BullMQ, processa Paper Cycle/Paper Fill/reconciliation e jobs LIVE; scheduler automático de bots e market-data runtime ainda faltam.                         |
+| PostgreSQL | `PARTIALLY_IMPLEMENTED`                      | Schema, migrations, seed e cliente existem; Paper e LIVE possuem testes de integração opt-in, mas não foram executados neste ambiente com banco real e o seed não cria estratégias MVP.                          |
+| Redis      | `PARTIALLY_IMPLEMENTED` / `BLOCKED_EXTERNAL` | API rate limit, BullMQ worker e testes de integração existem; confirmação contra Redis real depende de `E2E_REDIS_URL`/serviço disponível.                                                                       |
+| Keycloak   | `PARTIALLY_IMPLEMENTED` / `BLOCKED_EXTERNAL` | OIDC, PKCE, JWKS, RBAC, realm e provisioning existem; login E2E depende de Keycloak, SMTP e usuário verificado configurados.                                                                                     |
 
 ### Packages de domínio
 
-| Domínio                        | Estado real                    | Observação                                                                                                                                             |
-| ------------------------------ | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| UI/config                      | `IMPLEMENTED`                  | Componentes e tokens consumidos pelo Web.                                                                                                              |
-| Database                       | `PARTIALLY_IMPLEMENTED`        | Persistência e migration existem, mas sem repositórios/casos de uso integrados à API.                                                                  |
-| Market data                    | `PARTIALLY_IMPLEMENTED`                  | Worker agenda coleta pública de candles para símbolos de bots RUNNING e faz upsert idempotente em `MarketSnapshot`; execução contra Binance e observabilidade externa ainda dependem do ambiente. |
-| Binance connection/vault       | `PARTIALLY_IMPLEMENTED` / `BLOCKED_EXTERNAL` | CRUD, vault AES-GCM e teste de permissões existem; connector privado Testnet está integrado ao worker, mas faltam credenciais e execução real.             |
-| Paper trading                  | `PARTIALLY_IMPLEMENTED`        | Worker gera proposals, avalia risco, rejeita market data stale e persiste Order/Trade/Position/balances; DCA é o caminho executável, mas scheduler de bots e E2E autenticado ainda faltam. |
-| Risk engine                    | `PARTIALLY_IMPLEMENTED`        | Worker avalia proposals Paper e LIVE, usa Decimal em partes críticas e reserva capital; RiskProfile API/UI, market freshness e E2E completo ainda faltam. |
-| Strategies/catalog/backtesting | `PARTIALLY_IMPLEMENTED`        | Pacotes DCA/Grid/Trend e catálogo existem; `GET /strategies` depende de seed e o worker Paper executa somente o caminho DCA. |
-| Bot manager/wizard             | `PARTIALLY_IMPLEMENTED` / `NOT_INTEGRATED` | API possui lifecycle/ownership básico e pacotes isolados existem; wizard real, criação atômica completa e scheduler ainda não estão integrados. |
-| Worker runtime                 | `PARTIALLY_IMPLEMENTED`        | BullMQ/Redis real, retries, graceful shutdown e scheduler persistente de ciclos PAPER existem; heartbeat/readiness, DLQ operacional e validação Redis real ainda faltam. |
-| Live execution                 | `PARTIALLY_IMPLEMENTED` / `BLOCKED_EXTERNAL` | Connector Testnet, `PrismaLiveOrderStore`, idempotência, fills, risco, reconciliação e smoke protegido existem; PostgreSQL/Redis/Binance reais ainda não foram validados. |
-| Kill switch                    | `PARTIALLY_IMPLEMENTED`     | Estado `SYSTEM/USER/BOT` persiste em PostgreSQL, possui endpoints ADMIN e é consultado antes do ciclo Paper; testes de restart e integração com todas as execuções ainda pendentes. |
-| Portfolio                      | `PARTIALLY_IMPLEMENTED`        | `GET /positions` e a área `portfolio` consomem posições Paper persistidas; valuation, histórico completo e atualização em tempo real ainda pendentes.             |
-| Notifications                  | `MOCK_ONLY` / `NOT_INTEGRATED` | Adapters e deduplicação local; sem outbox, persistência ou entrega operacional.                                                                        |
-| Audit trail                    | `NOT_INTEGRATED`               | Sanitização/hash chain existem no package, sem gravação via API/worker.                                                                                |
-| Billing                        | `PARTIALLY_IMPLEMENTED` / `BLOCKED_EXTERNAL` | SDK oficial restrito a `sk_test_`, endpoints billing, persistência de eventos e UI TEST MODE existem; checkout/webhook/entitlement precisam de Stripe Test real. |
-| Admin console                  | `PARTIALLY_IMPLEMENTED` / `NOT_INTEGRATED` | Pacote de leitura e kill switch API existem; UI `/admin` não é console operacional completo.                                                          |
-| Observability                  | `PARTIALLY_IMPLEMENTED` / `NOT_INTEGRATED` | Logging/correlation e métricas existem em pacotes e alguns runtimes; não há stack operacional integrada com alertas.                                    |
-| Security                       | `PARTIALLY_IMPLEMENTED`        | API possui ValidationPipe global, CORS configurável, Helmet e exception filter seguro com correlation ID; rate limit distribuído e revisão completa ainda pendentes. |
-| i18n                           | `PARTIALLY_IMPLEMENTED` / `NOT_INTEGRATED` | Package possui fallback e formatação, mas telas ainda têm textos hardcoded em inglês.                                                                  |
+| Domínio                        | Estado real                                  | Observação                                                                                                                                                                                        |
+| ------------------------------ | -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| UI/config                      | `IMPLEMENTED`                                | Componentes e tokens consumidos pelo Web.                                                                                                                                                         |
+| Database                       | `PARTIALLY_IMPLEMENTED`                      | Persistência e migration existem, mas sem repositórios/casos de uso integrados à API.                                                                                                             |
+| Market data                    | `PARTIALLY_IMPLEMENTED`                      | Worker agenda coleta pública de candles para símbolos de bots RUNNING e faz upsert idempotente em `MarketSnapshot`; execução contra Binance e observabilidade externa ainda dependem do ambiente. |
+| Binance connection/vault       | `PARTIALLY_IMPLEMENTED` / `BLOCKED_EXTERNAL` | CRUD, vault AES-GCM e teste de permissões existem; connector privado Testnet está integrado ao worker, mas faltam credenciais e execução real.                                                    |
+| Paper trading                  | `PARTIALLY_IMPLEMENTED`                      | Worker gera proposals, avalia risco, rejeita market data stale e persiste Order/Trade/Position/balances; DCA é o caminho executável, mas scheduler de bots e E2E autenticado ainda faltam.        |
+| Risk engine                    | `PARTIALLY_IMPLEMENTED`                      | Worker avalia proposals Paper e LIVE, usa Decimal em partes críticas e reserva capital; RiskProfile API/UI, market freshness e E2E completo ainda faltam.                                         |
+| Strategies/catalog/backtesting | `PARTIALLY_IMPLEMENTED`                      | Pacotes DCA/Grid/Trend e catálogo existem; `GET /strategies` depende de seed e o worker Paper executa somente o caminho DCA.                                                                      |
+| Bot manager/wizard             | `PARTIALLY_IMPLEMENTED` / `NOT_INTEGRATED`   | API possui lifecycle/ownership básico e pacotes isolados existem; wizard real, criação atômica completa e scheduler ainda não estão integrados.                                                   |
+| Worker runtime                 | `PARTIALLY_IMPLEMENTED`                      | BullMQ/Redis real, retries, graceful shutdown e scheduler persistente de ciclos PAPER existem; heartbeat/readiness, DLQ operacional e validação Redis real ainda faltam.                          |
+| Live execution                 | `PARTIALLY_IMPLEMENTED` / `BLOCKED_EXTERNAL` | Connector Testnet, `PrismaLiveOrderStore`, idempotência, fills, risco, reconciliação e smoke protegido existem; PostgreSQL/Redis/Binance reais ainda não foram validados.                         |
+| Kill switch                    | `PARTIALLY_IMPLEMENTED`                      | Estado `SYSTEM/USER/BOT` persiste em PostgreSQL, possui endpoints ADMIN e é consultado antes do ciclo Paper; testes de restart e integração com todas as execuções ainda pendentes.               |
+| Portfolio                      | `PARTIALLY_IMPLEMENTED`                      | `GET /positions` e a área `portfolio` consomem posições Paper persistidas; valuation, histórico completo e atualização em tempo real ainda pendentes.                                             |
+| Notifications                  | `MOCK_ONLY` / `NOT_INTEGRATED`               | Adapters e deduplicação local; sem outbox, persistência ou entrega operacional.                                                                                                                   |
+| Audit trail                    | `NOT_INTEGRATED`                             | Sanitização/hash chain existem no package, sem gravação via API/worker.                                                                                                                           |
+| Billing                        | `PARTIALLY_IMPLEMENTED` / `BLOCKED_EXTERNAL` | SDK oficial restrito a `sk_test_`, endpoints billing, persistência de eventos e UI TEST MODE existem; checkout/webhook/entitlement precisam de Stripe Test real.                                  |
+| Admin console                  | `PARTIALLY_IMPLEMENTED` / `NOT_INTEGRATED`   | Pacote de leitura e kill switch API existem; UI `/admin` não é console operacional completo.                                                                                                      |
+| Observability                  | `PARTIALLY_IMPLEMENTED` / `NOT_INTEGRATED`   | Logging/correlation e métricas existem em pacotes e alguns runtimes; não há stack operacional integrada com alertas.                                                                              |
+| Security                       | `PARTIALLY_IMPLEMENTED`                      | API possui ValidationPipe global, CORS configurável, Helmet e exception filter seguro com correlation ID; rate limit distribuído e revisão completa ainda pendentes.                              |
+| i18n                           | `PARTIALLY_IMPLEMENTED` / `NOT_INTEGRATED`   | Package possui fallback e formatação, mas telas ainda têm textos hardcoded em inglês.                                                                                                             |
 
 ### Matriz de evidência
 
-| Domínio | Classificação auditada | Evidência mínima | Próxima prova necessária |
-| --- | --- | --- | --- |
-| Ambiente local | `PARTIALLY_IMPLEMENTED` | Loader raiz e `pnpm db:setup` agora são usados pelos comandos executáveis; serviços healthy, secrets reais locais e execução completa ainda dependem do ambiente do operador. | Bootstrap reproduzível com Docker/Keycloak/PostgreSQL/Redis disponíveis e variáveis locais válidas. |
-| Autenticação | `PARTIALLY_IMPLEMENTED` / `BLOCKED_EXTERNAL` | OIDC/PKCE, sessão selada, guards e provisioning têm testes unitários. | Login/refresh/logout/provisioning E2E contra Keycloak real. |
-| Seed e catálogo | `IMPLEMENTED` | Seed idempotente agora cria Plans/Entitlements e DCA/Grid/Trend com versão ativa, `parameterSchema` e `implementationKey`; execução em instalação limpa ainda depende de PostgreSQL disponível. | Executar `pnpm db:setup` em clone limpo e confirmar `GET /strategies`. |
-| Market Data | `PARTIALLY_IMPLEMENTED` | Job periódico público do worker deriva símbolos de bots RUNNING, faz upsert de `MarketSnapshot` e rejeita dados stale. | Executar contra Binance pública e PostgreSQL reais, observando freshness, retry e rate limit. |
-| Bot/Risk | `PARTIALLY_IMPLEMENTED` | API cria PAPER atomicamente com configuração, RiskProfile e allocation; endpoints autenticados, wizard PAPER com presets revisáveis e tela `/risk` com dados reais existem. | E2E autenticado e validação com instalação limpa, sem fixture/manual DB. |
-| Paper E2E | `PARTIALLY_IMPLEMENTED` | Ciclo persistente, scheduler automático e integrações opt-in existem; browser e execução com serviços reais não foram comprovados. | Fresh clone → login → bot PAPER → ciclo automático → trade/position visíveis. |
-| Binance Testnet | `BLOCKED_EXTERNAL` | Connector, runtime, smoke, preflight e testes sanitizados existem. | Credenciais Testnet, PostgreSQL/Redis reais, leitura e ordem mínima/cancelamento/reconciliação. |
-| Stripe Test Mode | `PARTIALLY_IMPLEMENTED` / `BLOCKED_EXTERNAL` | SDK oficial restrito a `sk_test_`, endpoints, evento persistido e UI TEST MODE existem. | Checkout/webhook real, atualização fora de ordem e enforcement completo de entitlements. |
-| Produção | `BLOCKED_EXTERNAL` | Guardas fail-closed e checklists existem. | Gates anteriores, revisão humana e aprovação explícita; Binance Production e Stripe Live continuam proibidos. |
+| Domínio          | Classificação auditada                       | Evidência mínima                                                                                                                                                                                | Próxima prova necessária                                                                                      |
+| ---------------- | -------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| Ambiente local   | `PARTIALLY_IMPLEMENTED`                      | Loader raiz e `pnpm db:setup` agora são usados pelos comandos executáveis; serviços healthy, secrets reais locais e execução completa ainda dependem do ambiente do operador.                   | Bootstrap reproduzível com Docker/Keycloak/PostgreSQL/Redis disponíveis e variáveis locais válidas.           |
+| Autenticação     | `PARTIALLY_IMPLEMENTED` / `BLOCKED_EXTERNAL` | OIDC/PKCE, sessão selada, guards e provisioning têm testes unitários.                                                                                                                           | Login/refresh/logout/provisioning E2E contra Keycloak real.                                                   |
+| Seed e catálogo  | `IMPLEMENTED`                                | Seed idempotente agora cria Plans/Entitlements e DCA/Grid/Trend com versão ativa, `parameterSchema` e `implementationKey`; execução em instalação limpa ainda depende de PostgreSQL disponível. | Executar `pnpm db:setup` em clone limpo e confirmar `GET /strategies`.                                        |
+| Market Data      | `PARTIALLY_IMPLEMENTED`                      | Job periódico público do worker deriva símbolos de bots RUNNING, faz upsert de `MarketSnapshot` e rejeita dados stale.                                                                          | Executar contra Binance pública e PostgreSQL reais, observando freshness, retry e rate limit.                 |
+| Bot/Risk         | `PARTIALLY_IMPLEMENTED`                      | API cria PAPER atomicamente com configuração, RiskProfile e allocation; endpoints autenticados, wizard PAPER com presets revisáveis e tela `/risk` com dados reais existem.                     | E2E autenticado e validação com instalação limpa, sem fixture/manual DB.                                      |
+| Paper E2E        | `PARTIALLY_IMPLEMENTED`                      | Ciclo persistente, scheduler automático e integrações opt-in existem; browser e execução com serviços reais não foram comprovados.                                                              | Fresh clone → login → bot PAPER → ciclo automático → trade/position visíveis.                                 |
+| Binance Testnet  | `BLOCKED_EXTERNAL`                           | Connector, runtime, smoke, preflight e testes sanitizados existem.                                                                                                                              | Credenciais Testnet, PostgreSQL/Redis reais, leitura e ordem mínima/cancelamento/reconciliação.               |
+| Stripe Test Mode | `PARTIALLY_IMPLEMENTED` / `BLOCKED_EXTERNAL` | SDK oficial restrito a `sk_test_`, endpoints, evento persistido e UI TEST MODE existem.                                                                                                         | Checkout/webhook real, atualização fora de ordem e enforcement completo de entitlements.                      |
+| Produção         | `BLOCKED_EXTERNAL`                           | Guardas fail-closed e checklists existem.                                                                                                                                                       | Gates anteriores, revisão humana e aprovação explícita; Binance Production e Stripe Live continuam proibidos. |
 
 ## Auditoria de autenticação
 
@@ -154,14 +154,14 @@ Classificação: `PARTIALLY_IMPLEMENTED`, `BLOCKED_EXTERNAL`; não é `PRODUCTIO
 
 ## Gates de release
 
-| Gate                            | Estado                                | Bloqueios atuais                                                                                    |
-| ------------------------------- | ------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| A — Authentication              | `PARTIALLY_IMPLEMENTED`               | Diagnóstico e provisioning iniciais existem; refresh/logout E2E, sessão server-side e testes reais pendentes. |
-| B — Paper Trading               | `PARTIALLY_IMPLEMENTED`              | Ciclo persistido, retry e idempotência têm smoke tests reais; navegador, dashboard e recuperação após restart ainda pendentes. |
-| C — Binance Spot Testnet        | `NOT_INTEGRATED` / `BLOCKED_EXTERNAL` | Connector, filters, credentials persistidas, idempotência e reconciliação pendentes.                |
-| D — Stripe Test Mode            | `MOCK_ONLY`                           | SDK, checkout, portal, webhook e idempotência persistida pendentes.                                 |
-| E — Production Security         | `PARTIALLY_IMPLEMENTED`               | Hardening de runtime, secrets, backup/restore executado, observability e deployment real pendentes. |
-| F — Controlled Production Pilot | `BLOCKED_EXTERNAL`                    | Não autorizado nesta execução; depende de todos os gates anteriores e aprovação explícita.          |
+| Gate                            | Estado                                | Bloqueios atuais                                                                                                               |
+| ------------------------------- | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| A — Authentication              | `PARTIALLY_IMPLEMENTED`               | Diagnóstico e provisioning iniciais existem; refresh/logout E2E, sessão server-side e testes reais pendentes.                  |
+| B — Paper Trading               | `PARTIALLY_IMPLEMENTED`               | Ciclo persistido, retry e idempotência têm smoke tests reais; navegador, dashboard e recuperação após restart ainda pendentes. |
+| C — Binance Spot Testnet        | `NOT_INTEGRATED` / `BLOCKED_EXTERNAL` | Connector, filters, credentials persistidas, idempotência e reconciliação pendentes.                                           |
+| D — Stripe Test Mode            | `MOCK_ONLY`                           | SDK, checkout, portal, webhook e idempotência persistida pendentes.                                                            |
+| E — Production Security         | `PARTIALLY_IMPLEMENTED`               | Hardening de runtime, secrets, backup/restore executado, observability e deployment real pendentes.                            |
+| F — Controlled Production Pilot | `BLOCKED_EXTERNAL`                    | Não autorizado nesta execução; depende de todos os gates anteriores e aprovação explícita.                                     |
 
 ## Próxima ordem de implementação
 
@@ -213,6 +213,7 @@ Nenhuma ordem Binance foi enviada, nenhuma credencial real foi usada e Stripe Li
 - o worker agora possui scheduler persistente de ciclos PAPER, com `Bot.nextRunAt`, claim atômico, respeito a RUNNING/PAPER e `jobId` determinístico; PAUSED/STOPPED não recebem novos ciclos;
 
 Validações desta atualização:
+
 - loader raiz: OK (`root env loaded`);
 - API lint/typecheck/build: OK;
 - worker test: OK (28 testes, 8 integrações ignoradas), lint/typecheck/build: OK;

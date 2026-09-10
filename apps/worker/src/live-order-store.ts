@@ -50,8 +50,12 @@ export class PrismaLiveOrderStore implements LiveOrderStore {
         symbol: order.symbol,
         side: order.side,
         type: order.type,
-        ...(order.requestedQuantity !== null ? { quantity: order.requestedQuantity.toString() } : {}),
-        ...(order.requestedQuoteAmount !== null ? { quoteAmount: order.requestedQuoteAmount.toString() } : {}),
+        ...(order.requestedQuantity !== null
+          ? { quantity: order.requestedQuantity.toString() }
+          : {}),
+        ...(order.requestedQuoteAmount !== null
+          ? { quoteAmount: order.requestedQuoteAmount.toString() }
+          : {}),
         ...(order.limitPrice !== null ? { limitPrice: order.limitPrice.toString() } : {}),
       },
       result: order.externalOrderId

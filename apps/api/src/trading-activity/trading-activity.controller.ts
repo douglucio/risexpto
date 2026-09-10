@@ -8,8 +8,12 @@ export class TradingActivityController {
   constructor(private readonly activity: TradingActivityService) {}
 
   @Get('trades')
-  trades(@CurrentUser() user: AuthenticatedUser) { return this.activity.trades(user); }
+  trades(@CurrentUser() user: AuthenticatedUser) {
+    return this.activity.trades(user);
+  }
 
   @Get('positions')
-  positions(@CurrentUser() user: AuthenticatedUser) { return this.activity.positions(user); }
+  positions(@CurrentUser() user: AuthenticatedUser) {
+    return this.activity.positions(user);
+  }
 }

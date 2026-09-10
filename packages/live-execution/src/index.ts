@@ -71,7 +71,11 @@ export class LiveExecutionEngine {
       await this.store.resolve(order.clientOrderId, recovered);
       return { ...recovered };
     }
-    const reserved = await this.store.createPending({ request: { ...order }, result: null, state: 'PENDING_SUBMIT' });
+    const reserved = await this.store.createPending({
+      request: { ...order },
+      result: null,
+      state: 'PENDING_SUBMIT',
+    });
     if (reserved.result) return { ...reserved.result };
     if (reserved.request.clientOrderId !== order.clientOrderId)
       throw new Error('LIVE_ORDER_IDEMPOTENCY_CONFLICT');
@@ -104,5 +108,9 @@ export class LiveExecutionEngine {
 }
 
 function cloneRecord(record: LiveOrderRecord): LiveOrderRecord {
-  return { ...record, request: { ...record.request }, result: record.result ? { ...record.result } : null };
+  return {
+    ...record,
+    request: { ...record.request },
+    result: record.result ? { ...record.result } : null,
+  };
 }

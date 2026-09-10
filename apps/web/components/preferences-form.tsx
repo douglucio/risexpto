@@ -5,7 +5,11 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { useLocale } from './locale-provider';
 import { translate } from '@risexpto/i18n';
 
-type Preferences = { locale: 'en' | 'pt-BR' | 'es'; timezone: string; currency: 'USD' | 'BRL' | 'EUR' };
+type Preferences = {
+  locale: 'en' | 'pt-BR' | 'es';
+  timezone: string;
+  currency: 'USD' | 'BRL' | 'EUR';
+};
 type Profile = { name: string; email: string; emailVerified: boolean };
 const defaults: Preferences = { locale: 'en', timezone: 'UTC', currency: 'USD' };
 
@@ -26,15 +30,18 @@ export function PreferencesForm() {
   async function submit(event: FormEvent) {
     event.preventDefault();
     setStatus('saving');
-    const [sessionResponse, profileResponse] = await Promise.all([fetch('/auth/preferences', {
-      method: 'PUT',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify(preferences),
-    }), fetch('/api/profile/preferences', {
-      method: 'PATCH',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify(preferences),
-    })]);
+    const [sessionResponse, profileResponse] = await Promise.all([
+      fetch('/auth/preferences', {
+        method: 'PUT',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(preferences),
+      }),
+      fetch('/api/profile/preferences', {
+        method: 'PATCH',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(preferences),
+      }),
+    ]);
     setStatus(sessionResponse.ok && profileResponse.ok ? 'saved' : 'error');
   }
   return (
@@ -111,7 +118,7 @@ export function PreferencesForm() {
         <Checkbox label={t('settings.botEvents')} defaultChecked />
         <Checkbox label={t('settings.weeklySummary')} />
         {status === 'saved' && (
-            <Alert tone="positive" title={t('settings.saved')}>
+          <Alert tone="positive" title={t('settings.saved')}>
             {t('settings.sessionUpdated')}
           </Alert>
         )}

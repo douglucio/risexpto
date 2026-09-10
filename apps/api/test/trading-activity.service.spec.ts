@@ -6,11 +6,17 @@ describe('TradingActivityService', () => {
     const findMany = vi.fn().mockResolvedValue([]);
     const service = new TradingActivityService({ trade: { findMany } } as never);
     await service.trades({
-      id: 'keycloak-sub', applicationUserId: 'user-a', email: 'a@example.com', name: 'A',
-      emailVerified: true, roles: ['USER'],
+      id: 'keycloak-sub',
+      applicationUserId: 'user-a',
+      email: 'a@example.com',
+      name: 'A',
+      emailVerified: true,
+      roles: ['USER'],
     });
-    expect(findMany).toHaveBeenCalledWith(expect.objectContaining({
-      where: { order: { bot: { userId: 'user-a' } } },
-    }));
+    expect(findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { order: { bot: { userId: 'user-a' } } },
+      }),
+    );
   });
 });
