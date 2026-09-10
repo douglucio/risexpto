@@ -2873,10 +2873,10 @@ Como a Fase 95 já era `Documentation Reconciliation`, a solicitação de Fase
 | 96 | Public Locale Persistence Boundary | ✅ | Landing anônima persiste cookie/localStorage sem chamadas autenticadas; workspace autenticado atualiza sessão e UserProfile. |
 | 97 | Shared Brand Asset Fix | ✅ | `/login`, landing, shell e Keycloak usam assets locais válidos, com dimensões seguras e wordmark sem clipping. |
 | 98 | Keycloak Locale Dropdown Behavior | ✅ | Dropdown fechado por padrão, abre por clique, fecha por seleção/outside/Escape e mantém EN/PT/ES + `ui_locales`. |
-| 99 | Keycloak Visual Consistency | ⬜ | Background, superfície, tokens, card, logo e densidade visual continuam a linguagem do `/login`. |
-| 100 | Registration & Recovery Layout Polish | ⬜ | Register, recovery, reset e required actions compactos, legíveis, responsivos e sem sobreposição. |
-| 101 | Authentication Error States | ⬜ | Erro de login/validação usa field/form error discreto, sem vermelho aplicado ao formulário inteiro. |
-| 102 | Auth Responsive & Interaction Regression | ⬜ | Desktop/tablet/mobile cobertos por assertions estruturais e interação real do Keycloak. |
+| 99 | Keycloak Visual Consistency | ✅ | Background, superfície, tokens, card, logo e densidade visual continuam a linguagem do `/login`. |
+| 100 | Registration & Recovery Layout Polish | ✅ | Register, recovery, reset e required actions compactos, legíveis, responsivos e sem sobreposição. |
+| 101 | Authentication Error States | ✅ | Erro de login/validação usa field/form error discreto, sem vermelho aplicado ao formulário inteiro. |
+| 102 | Auth Responsive & Interaction Regression | 🟨 | Desktop/tablet/mobile cobertos por assertions estruturais e interação real do Keycloak. |
 
 Restrições mantidas: nenhum teste usa Binance Production, nenhuma ordem é
 enviada e Stripe Live permanece proibido.
@@ -2920,6 +2920,20 @@ Validações:
 - Playwright real: dropdown abre/fecha e seleciona Espanhol: OK;
 - Login EN/PT/ES e locale público: OK (7 testes);
 - `git diff --check`: OK.
+
+### Fases 99–101 — Visual, registration/recovery e errors
+
+Resumo:
+- background do `.login-pf-page` substitui o background dominante do parent por navy RiseXPTO equivalente ao `/login`;
+- lockup recebeu viewBox seguro, escala menor e wordmark completo;
+- input password visibility herda surface dark, não PatternFly branco;
+- Register usa card até 540px, gaps reduzidos e margens seguras; Recovery usa o card compacto do login;
+- erros de credencial/validação usam alertas e bordas de campo discretos, mantendo card e inputs dark.
+
+Validações:
+- screenshot real Keycloak Login revisado: background, logo e wordmark alinhados;
+- Register, Forgot Password e invalid credentials: OK no Playwright;
+- nenhuma superfície de formulário recebeu vermelho integral.
 
 ## 2026-09-06 — Binance Testnet connector (primeira fatia do Gate 1)
 
