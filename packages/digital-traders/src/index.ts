@@ -92,7 +92,7 @@ export function mapBotState(status: string, waitingReason?: string | null): Prod
   return 'ERROR';
 }
 
-export type WaitingReason = 'MARKET_REGIME_NOT_SUITABLE' | 'INSUFFICIENT_MARKET_DATA' | 'OUTSIDE_SCHEDULE';
+export type WaitingReason = 'MARKET_REGIME_NOT_SUITABLE' | 'INSUFFICIENT_MARKET_DATA' | 'OUTSIDE_SCHEDULE' | 'INTERVAL_NOT_REACHED' | 'PRICE_OUT_OF_RANGE' | 'CAPITAL_INSUFFICIENT';
 export type StrategyNoOp = Readonly<{ kind: 'NO_OP'; waitingReason: WaitingReason; details?: Readonly<Record<string, string | number>> }>;
 export function noOp(waitingReason: WaitingReason, details?: Readonly<Record<string, string | number>>): StrategyNoOp {
   return { kind: 'NO_OP', waitingReason, ...(details ? { details } : {}) };

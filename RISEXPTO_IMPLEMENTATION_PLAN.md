@@ -3690,13 +3690,13 @@ provider e moeda-base.
 | 124 | Pulse Breakout Entry/Exit | ✅ Concluída — saída Paper determinística por stop/take-profit e cooldown versionável. |
 | 125 | Compound Capital Realization | ✅ Concluída — operational capital usa realized P&L e exclui unrealized. |
 | 126 | Allocation Lifecycle | ✅ Concluída — portfolio allocation idempotente; PAUSED mantém capital. |
-| 127 | Portfolio Risk Real State | 🟨 Base implementada — runtime injeta daily loss/exposure persistidos; agregação completa segue hardening. |
-| 128 | Real P&L / Exposure | 🟨 Base implementada — P&L de posição/trade persistido; API/dashboard ainda recebem a reconciliação final. |
-| 129 | My Team Dashboard V2 | 🟨 Em integração — payload mantém compatibilidade técnica enquanto a UI migra textos e métricas. |
-| 130 | Trader Backtesting | 🟨 Foundation existente — engine já suporta sinais; fluxo persistido/API fica no próximo incremento. |
+| 127 | Portfolio Risk Real State | ✅ Concluída — estado agregado por usuário/portfolio, exposição, perda diária, limites e kill switch entram no pipeline. |
+| 128 | Real P&L / Exposure | ✅ Concluída — realized, unrealized, today, total e exposure são calculados no backend com Decimal. |
+| 129 | My Team Dashboard V2 | ✅ Concluída — dashboard e área de traders exibem linguagem Digital Trader, status, capital, exposure e P&L. |
+| 130 | Trader Backtesting | ✅ Concluída — execução persistida por trader/versão/risco, métricas e equity curve com fluxo na UI. |
 | 131 | Trader Notifications | ✅ Concluída — Notification persistida, API list/unread/read e evento WAITING no worker. |
-| 132 | Paper Multi-Trader E2E | 🟨 Preparada — testes unitários e idempotência passam; execução PostgreSQL/Redis depende do ambiente externo. |
-| 133 | Commercial Readiness Gate | 🟨 Em andamento — ADRs, limites de Live e modelo de escala documentados nesta rodada. |
+| 132 | Paper Multi-Trader E2E | 🟨 Preparada — fixture PostgreSQL, restart/idempotência e execução dos quatro traders estão cobertos para ambiente E2E; Docker externo indisponível nesta execução. |
+| 133 | Commercial Readiness Gate | ✅ Concluída — documentação, migrations, checklist de escala e bloqueio explícito de Live reconciliados. |
 
 ### Runtime V2 — regras de segurança e operação
 
@@ -3720,3 +3720,9 @@ provider e moeda-base.
 - 2026-09-12: runtime state, Paper Portfolio schema, allocation lifecycle,
   Decimal position fills, Pulse exits e notification API implementados em branch
   local. Binance Production, Stripe Live e credenciais reais não foram usados.
+- 2026-09-12: hardening V2 concluído: PaperPortfolio por usuário, estado
+  centralizado de posição/P&L, reserva de venda sem duplicação de capital,
+  razões estruturadas de WAITING, backtest com equity curve, dashboard de My
+  Team e reconciliação de notifications. A suíte unitária passou; o E2E real
+  PostgreSQL/Redis e dois testes HTTP de autenticação continuam dependentes do
+  ambiente externo.

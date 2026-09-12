@@ -20,6 +20,7 @@ describe('backtesting engine', () => {
       bestTrade: 14.935,
     });
     expect(result.metrics.returnPercent).toBeGreaterThan(0);
+    expect(result.equityCurve).toHaveLength(candles.length);
     expect(result.disclaimer).toContain('not a guarantee');
   });
   it('rejects unsafe input', () =>

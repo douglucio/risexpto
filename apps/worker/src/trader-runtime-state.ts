@@ -49,8 +49,11 @@ export class TraderRuntimeStateService {
         configuration: true,
         riskProfile: true,
         exchangeConnection: true,
+        paperPortfolio: true,
+        paperCapitalAllocation: true,
         positions: { where: { status: 'OPEN', tradingMode: 'PAPER' } },
         paperReservations: { where: { status: 'ACTIVE' } },
+        paperBalances: true,
         orders: { where: { tradingMode: 'PAPER', status: { in: ['CREATED', 'SUBMITTED', 'PARTIALLY_FILLED'] } } },
       },
     });
@@ -61,31 +64,32 @@ export class TraderRuntimeStateService {
     const quantity = new Decimal(position?.quantity ?? 0);
     const average = new Decimal(position?.averagePrice ?? 0);
     const currentValue = quantity.times(price);
-    const realizedPnl = new Decimal(position?.realizedPnl ?? 0);
+    const allTrades = await this.database.trade.findMany({
+      where: { order: { botId, tradingMode: 'PAPER' } },
+      orderBy: { executedAt: 'desc' },
+      select: { realizedPnl: true, executedAt: true, order: { select: { side: true } } },
+    });
+    const realizedPnl = allTrades.reduce((sum, trade) => sum.plus(trade.realizedPnl), new Decimal(0));
     const reservations = bot.paperReservations.reduce((sum, item) => sum.plus(item.amount), new Decimal(0));
     const spentCapital = await this.spentCapital(botId);
     const authorized = new Decimal(configuration.authorizedCapital);
     const operational = bot.capitalMode === 'COMPOUND'
       ? Decimal.max(0, authorized.plus(realizedPnl))
       : authorized;
-    const allocated = new Decimal(bot.exchangeConnection?.allocatedCapital ?? authorized);
-    const available = Decimal.max(0, authorized.minus(reservations).minus(spentCapital));
+    const allocated = new Decimal(bot.paperCapitalAllocation?.allocated ?? bot.exchangeConnection?.allocatedCapital ?? authorized);
+    const quoteBalance = bot.paperBalances.find((balance) => balance.asset === configuration.quoteCurrency);
+    const available = Decimal.max(0, new Decimal(quoteBalance?.free ?? authorized).minus(reservations));
     const unrealized = price.minus(average).times(quantity);
-    const trades = await this.database.trade.findMany({
-      where: { order: { botId, tradingMode: 'PAPER' } },
-      orderBy: { executedAt: 'desc' },
-      take: 100,
-      select: { executedAt: true, order: { select: { side: true } } },
-    });
     const today = new Date();
     today.setUTCHours(0, 0, 0, 0);
-    const todayRealized = (await this.database.trade.findMany({
-      where: { order: { botId, tradingMode: 'PAPER' }, executedAt: { gte: today } },
-      select: { realizedPnl: true },
-    })).reduce((sum, item) => sum.plus(item.realizedPnl), new Decimal(0));
-    const lastBuy = trades.find((item) => item.order.side === 'BUY')?.executedAt ?? null;
-    const lastSell = trades.find((item) => item.order.side === 'SELL')?.executedAt ?? null;
-    const lastTradeAt = trades[0]?.executedAt ?? null;
+    const todayTrades = allTrades.filter((trade) => trade.executedAt >= today);
+    const todayRealized = todayTrades.reduce((sum, item) => sum.plus(item.realizedPnl), new Decimal(0));
+    const todayUnrealized = position && position.openedAt >= today
+      ? unrealized
+      : new Decimal(0);
+    const lastBuy = allTrades.find((item) => item.order.side === 'BUY')?.executedAt ?? null;
+    const lastSell = allTrades.find((item) => item.order.side === 'SELL')?.executedAt ?? null;
+    const lastTradeAt = allTrades[0]?.executedAt ?? null;
     return {
       traderInstanceId: bot.id,
       userId: bot.userId,
@@ -105,7 +109,7 @@ export class TraderRuntimeStateService {
       realizedPnl,
       unrealizedPnl: unrealized,
       todayRealizedPnl: todayRealized,
-      todayUnrealizedPnl: unrealized,
+      todayUnrealizedPnl: todayUnrealized,
       currentExposure: currentValue,
       openOrders: bot.orders.length,
       openPositions: position ? 1 : 0,
@@ -117,10 +121,10 @@ export class TraderRuntimeStateService {
       traderStatus: bot.status,
       riskPreset: bot.riskProfile?.preset ?? null,
       connectionRiskState: {
-        allocatedCapital: new Decimal(bot.exchangeConnection?.allocatedCapital ?? 0),
+        allocatedCapital: new Decimal(bot.paperPortfolio?.allocatedCapital ?? bot.exchangeConnection?.allocatedCapital ?? 0),
         currentExposure: currentValue,
         dailyLoss: Decimal.max(0, todayRealized.negated()),
-        killSwitchActive: bot.exchangeConnection?.killSwitchActive ?? false,
+        killSwitchActive: bot.paperPortfolio?.killSwitchActive ?? bot.exchangeConnection?.killSwitchActive ?? false,
       },
     };
   }

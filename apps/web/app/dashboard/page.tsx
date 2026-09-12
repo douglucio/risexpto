@@ -3,9 +3,8 @@ import { Badge, Card, CurrencyDisplay, EmptyState } from '@risexpto/ui';
 import { readSession } from '../../lib/auth/session';
 import { translate, type Locale } from '@risexpto/i18n';
 
-type Bot = { id: string; status: string; tradingMode: string };
+type Bot = { id: string; status: string; tradingMode: string; totalPnl?: number; todayPnl?: number; currentExposure?: string };
 type Trade = { id: string; executedAt: string; realizedPnl?: string };
-type Position = { realizedPnl: string };
 
 export default async function DashboardPage() {
   const session = await readSession(true, false);
@@ -18,15 +17,13 @@ export default async function DashboardPage() {
         description={t('dashboard.signInAgain')}
       />
     );
-  const [bots, trades, positions] = await Promise.all([
+  const [bots, trades] = await Promise.all([
     api<Bot[]>('/bots', session.accessToken),
     api<Trade[]>('/trades', session.accessToken),
-    api<Position[]>('/positions', session.accessToken),
   ]);
   const activeBots = bots.ok ? bots.value.filter((bot) => bot.status === 'RUNNING').length : null;
-  const pnl = positions.ok
-    ? positions.value.reduce((total, position) => total + Number(position.realizedPnl || 0), 0)
-    : null;
+  const pnl = bots.ok ? bots.value.reduce((total, bot) => total + Number(bot.totalPnl ?? 0), 0) : null;
+  const todayPnl = bots.ok ? bots.value.reduce((total, bot) => total + Number(bot.todayPnl ?? 0), 0) : null;
   return (
     <>
       <div className="page-header">
@@ -55,9 +52,9 @@ export default async function DashboardPage() {
           </p>
         </Card>
         <Card>
-          <small>{t('dashboard.realizedPnl')}</small>
+            <small>{t('dashboard.realizedPnl')}</small>
           <h2>{pnl === null ? '—' : <CurrencyDisplay value={pnl} currency="USD" />}</h2>
-          <p>{t('dashboard.persistedPositions')}</p>
+          <p>{todayPnl === null ? t('dashboard.unavailable') : `${t('workspace.todayPnl')}: ${todayPnl.toFixed(2)}`}</p>
         </Card>
         <Card>
           <small>{t('dashboard.riskStatus')}</small>

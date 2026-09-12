@@ -31,6 +31,7 @@ export type BacktestMetrics = {
 export type BacktestResult = {
   metrics: BacktestMetrics;
   finalState: BacktestState;
+  equityCurve: readonly { timestamp: number; equity: number }[];
   disclaimer: string;
 };
 export type BacktestStrategy = (
@@ -63,6 +64,7 @@ export function runBacktest(
   };
   const returns: number[] = [];
   const tradePnl: number[] = [];
+  const equityCurve: { timestamp: number; equity: number }[] = [];
   let peak = initialCapital;
   let maxDrawdown = 0;
   for (let i = 0; i < candles.length; i += 1) {
@@ -96,6 +98,7 @@ export function runBacktest(
       }
     }
     state = { ...state, equity: state.cash + state.quantity * candle.close };
+    equityCurve.push({ timestamp: candle.openTime, equity: state.equity });
     const previous = returns.at(-1) ?? initialCapital;
     returns.push(state.equity);
     peak = Math.max(peak, state.equity);
@@ -130,6 +133,7 @@ export function runBacktest(
       estimatedFees: state.fees,
     },
     finalState: state,
+    equityCurve,
     disclaimer,
   };
 }

@@ -19,6 +19,18 @@ pnpm --filter @risexpto/worker test:integration
 
 Sem uma das variáveis E2E, o respectivo teste é marcado como skipped para que a suíte unitária continue determinística. O teste PostgreSQL cria fixtures isoladas, executa um ciclo e verifica proposal, risk event, order, trade, position e saldo. Isso ainda não substitui o E2E completo de usuário e navegador; o Gate B permanece bloqueado até esse fluxo ser coberto.
 
+## Roteiro Runtime V2
+
+Com a aplicação Paper local aberta, executar: Explore Traders → Atlas/BTCUSDT →
+Luna/ETHUSDT → DCA One/SOLUSDT → Pulse/DOGEUSDT. Para cada trader, confirmar
+capital distinto, FIXED/COMPOUND, ativação, pausa, retomada e parada. Confirmar
+que pausa conserva allocation e parada libera uma única vez. Produzir uma
+condição WAITING, conferir `waitingReason` e `waitingSince`, executar entradas e
+saídas Paper, conferir realized/unrealized/today/total P&L e exposure, abrir o
+Notification Center e confirmar eventos. Executar um backtest para cada
+especialista e reiniciar o worker com posições abertas; após o restart, repetir
+um ciclo e confirmar continuidade sem ordem duplicada.
+
 ## Navegador
 
 O teste Playwright exige a API e o web rodando, um bot PAPER de fixture e um arquivo de sessão autenticada criado fora do repositório:
