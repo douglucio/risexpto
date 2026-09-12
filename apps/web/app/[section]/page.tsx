@@ -80,6 +80,10 @@ type BotRecord = {
   productState?: string;
   assetSymbol?: string | null;
   waitingReason?: string | null;
+  totalPnl?: number;
+  todayPnl?: number;
+  exchangeConnection?: { provider: string; label: string } | null;
+  riskProfile?: { preset?: string | null } | null;
   tradingMode: string;
   configuration?: { authorizedCapital?: string; quoteCurrency?: string } | null;
 };
@@ -216,13 +220,20 @@ function SectionContent({
             <DataTable
               columns={[
                 t('workspace.name'),
+                t('workspace.asset'),
+                t('workspace.provider'),
                 t('workspace.mode'),
                 t('workspace.capital'),
+                t('workspace.todayPnl'),
+                t('workspace.totalPnl'),
+                t('workspace.riskPreset'),
                 t('workspace.status'),
                 t('workspace.actions'),
               ]}
               rows={data.value.map((bot) => [
                 <b key={`${bot.id}-name`}>{bot.name}</b>,
+                bot.assetSymbol ?? '—',
+                bot.exchangeConnection?.provider ?? 'Paper',
                 <Badge key={`${bot.id}-mode`} tone="brand">
                   {bot.tradingMode}
                 </Badge>,
@@ -231,6 +242,9 @@ function SectionContent({
                   value={Number(bot.configuration?.authorizedCapital ?? 0)}
                   currency={bot.configuration?.quoteCurrency ?? 'USD'}
                 />,
+                <CurrencyDisplay key={`${bot.id}-today-pnl`} value={bot.todayPnl ?? 0} currency={bot.configuration?.quoteCurrency ?? 'USD'} />,
+                <CurrencyDisplay key={`${bot.id}-total-pnl`} value={bot.totalPnl ?? 0} currency={bot.configuration?.quoteCurrency ?? 'USD'} />,
+                bot.riskProfile?.preset ?? t('workspace.advanced'),
                 <Badge key={`${bot.id}-status`}>{bot.productState ?? bot.status}</Badge>,
                 <BotControls
                   key={`${bot.id}-actions`}

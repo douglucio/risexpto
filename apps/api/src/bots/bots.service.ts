@@ -24,9 +24,19 @@ export class BotsService {
     const bots = await this.db.bot.findMany({
       where: { userId: applicationUserId(user), archivedAt: null },
       orderBy: { createdAt: 'desc' },
-      include: { configuration: true, riskProfile: true, exchangeConnection: { select: { provider: true, label: true } } },
+      include: {
+        configuration: true,
+        riskProfile: true,
+        exchangeConnection: { select: { provider: true, label: true } },
+        positions: { select: { realizedPnl: true } },
+      },
     });
-    return bots.map((bot) => ({ ...bot, productState: mapBotState(bot.status, bot.waitingReason) }));
+    return bots.map((bot) => ({
+      ...bot,
+      productState: mapBotState(bot.status, bot.waitingReason),
+      totalPnl: bot.positions.reduce((sum, position) => sum + Number(position.realizedPnl), 0),
+      todayPnl: bot.positions.reduce((sum, position) => sum + Number(position.realizedPnl), 0),
+    }));
   }
 
   async get(user: AuthenticatedUser, id: string) {
