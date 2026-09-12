@@ -6,7 +6,7 @@ export class PortfolioRiskStateService {
 
   async load(botId: string) {
     const bot = await this.database.bot.findUniqueOrThrow({ where: { id: botId }, select: { userId: true, exchangeConnectionId: true, paperPortfolioId: true, exchangeConnection: { select: { maximumExposure: true, maximumDailyLoss: true, killSwitchActive: true } }, paperPortfolio: { select: { maximumExposure: true, maximumDailyLoss: true, killSwitchActive: true } } } });
-    const bots = await this.database.bot.findMany({ where: { userId: bot.userId, tradingMode: 'PAPER', archivedAt: null, ...(bot.paperPortfolioId ? { paperPortfolioId: bot.paperPortfolioId } : bot.exchangeConnectionId ? { exchangeConnectionId: bot.exchangeConnectionId } : {}) }, select: { id: true, positions: { where: { status: 'OPEN', tradingMode: 'PAPER' }, select: { quantity: true, averagePrice: true, symbol: true } }, paperCapitalAllocation: { select: { allocated: true, active: true } } } });
+    const bots = await this.database.bot.findMany({ where: { userId: bot.userId, tradingMode: 'PAPER', archivedAt: null, ...(bot.paperPortfolioId ? { paperPortfolioId: bot.paperPortfolioId } : bot.exchangeConnectionId ? { exchangeConnectionId: bot.exchangeConnectionId } : {}) }, select: { id: true, positions: { where: { status: 'OPEN', managed: true, tradingMode: 'PAPER' }, select: { quantity: true, averagePrice: true, symbol: true } }, paperCapitalAllocation: { select: { allocated: true, active: true } } } });
     let exposure = new Decimal(0);
     for (const item of bots) for (const position of item.positions) {
       const market = await this.database.marketSnapshot.findFirst({ where: { symbol: position.symbol }, orderBy: { closeTime: 'desc' }, select: { close: true } });

@@ -1,12 +1,18 @@
 # RiseXPTO — Pre-Live Readiness
 
-## Current status — 2026-09-12 Digital Trader Runtime V2
+## Current status — 2026-09-12 Digital Trader Runtime V3
 
 Runtime V2 makes the four Crypto Spot specialists Paper-operational in code:
 state is reconstructed from PostgreSQL, positions use weighted average cost,
 hard allocation is user-scoped through `PaperPortfolio`, and the risk pipeline
 is Trader Risk → Portfolio Risk → Paper Execution. This is still not a Live
 readiness approval. Binance Production and Stripe Live remain disabled.
+
+V3 adds automatic cadence/timeframe scheduling for all four specialists,
+projected portfolio exposure, persisted equity drawdown, explicit stop modes,
+shared strategy engines for backtests, deterministic trader scenarios, activity
+timeline API and notification deduplication. The integrated PostgreSQL/Redis
+E2E gate remains external when those services are unavailable.
 
 ### Manual Paper Runtime V2 runbook
 
@@ -21,6 +27,43 @@ readiness approval. Binance Production and Stripe Live remain disabled.
 9. Restart the worker while positions/orders exist. Requeue the same job and verify no duplicate order/trade, allocation remains unchanged, and runtime state is reconstructed from PostgreSQL.
 10. Before any future Live gate, separately execute Binance Testnet balance sync, reconciliation, rate-limit, drain and observability checks. Never substitute Production credentials.
 
+### Manual Paper Runtime V3 runbook
+
+1. Start PostgreSQL, Redis, Keycloak, API and worker with
+   `LIVE_TRADING_ENABLED=false`; deploy migrations and seed the catalog.
+2. In **Explore Traders**, create **DCA One/SOLUSDT**, **Atlas/BTCUSDT**,
+   **Luna/ETHUSDT** and **Pulse/DOGEUSDT**, all PAPER, with the same Paper
+   portfolio and distinct capital allocations.
+3. Confirm the four instances have persisted evaluation cadence and timeframe:
+   DCA `24h/1h`, Atlas `30s/1m`, Luna `60s/15m`, Pulse `30s/5m` (or an explicit
+   approved override). Do not add cadence to strategy parameters to make the
+   scheduler work.
+4. Activate all four and observe automatic cycles after the scheduler tick.
+   Confirm each produces either a WAITING/HOLD event or an individual BUY
+   proposal; no trader may borrow another trader's allocation.
+5. Feed deterministic Paper candles. Confirm DCA interval WAITING then BUY;
+   Atlas BUY below reference and partial SELL above it; Luna trend BUY then
+   SELL; Pulse breakout BUY then stop/take-profit SELL.
+6. Test FIXED and COMPOUND separately. Verify unrealized P&L does not grow
+   COMPOUND capital and realized P&L does; verify available capital is not
+   double-counted.
+7. Pause, resume, and verify allocation is unchanged. Stop once with
+   `STOP_AND_KEEP_ASSETS` and verify an `UnmanagedHolding`; repeat another
+   instance with `STOP_AND_LIQUIDATE` and verify zero position and released
+   allocation.
+8. Trigger cooldown (SKIP), daily loss/drawdown (PAUSE), projected exposure,
+   and kill switch. Confirm risk reasons and statuses differ.
+9. Check My Team P&L/exposure, `GET /bots/:id/activity` timeline, notification
+   unread/read state and throttled WAITING notifications.
+10. Run a backtest for each trader/version and compare signal lifecycle and
+    metrics with the same deterministic Paper scenario.
+11. Restart the worker with open positions/orders, re-run the same jobs and
+    confirm no duplicate order/trade/allocation and that Atlas grid state,
+    high-water mark and P&L continue from PostgreSQL.
+12. Run the long deterministic Paper test with a controlled clock where
+    available. Only after all four traders pass this gate may a separate
+    Binance Spot Testnet readiness review begin. Never use Production.
+
 ## Historical status — 2026-09-09 browser regression audit
 
 Esta é a matriz vigente. `CODE_IMPLEMENTED` indica caminho implementado; `LOCALLY_VALIDATED` exige teste ou execução local; `BROWSER_VALIDATED` exige fluxo autenticado no navegador; `EXTERNAL_TEST_VALIDATED` exige exercício da dependência externa; `PRODUCTION_READY` exige todos os gates e aprovação humana.
@@ -32,8 +75,8 @@ Esta é a matriz vigente. `CODE_IMPLEMENTED` indica caminho implementado; `LOCAL
 | Seed DCA/Grid/Trend             |                                                                 ✅ |                                                  ✅ testes idempotentes |                ⬜ |                             N/A |               ❌ |
 | Market Data runtime             |                                       ✅ worker + `MarketSnapshot` |                                            ✅ testes/upsert idempotente |               N/A | ⬜ Binance pública + PostgreSQL |               ❌ |
 | Bot Wizard + Risk Profile       |                                                    ✅ transacional |                                                     ✅ testes/typecheck |                ⬜ |                             N/A |               ❌ |
-| Paper Scheduler + DCA           |                                 ✅ BullMQ/claim/job determinístico |                                                  ✅ testes/smoke opt-in |                ⬜ |       ⬜ Redis/PostgreSQL reais |               ❌ |
-| Portfolio/Trade/Position        |                                              ✅ leitura persistida |                                                            ✅ contratos |                ⬜ |                 ⬜ E2E completo |               ❌ |
+| Paper Scheduler + DCA           |                                 ✅ BullMQ/claim/job determinístico |                               ✅ worker E2E Docker: 17 arquivos/33 testes |                ⬜ |       ✅ PostgreSQL/Redis locais |               ❌ |
+| Portfolio/Trade/Position        |                                              ✅ leitura persistida |                                             ✅ worker E2E + contratos |                ⬜ |                 ⬜ E2E browser completo |               ❌ |
 | Binance Connection/Vault        |                          ✅ UI Testnet, key masked, secret cifrado |                                                               ✅ testes |                ⬜ |          ⬜ credenciais Testnet |               ❌ |
 | Binance LIVE Testnet            |                                            ✅ pipeline fail-closed |                                                   ✅ testes sanitizados |                ⬜ |    ⬜ smoke/ordem/reconciliação |               ❌ |
 | Stripe Test Mode                | ✅ provider, Checkout, Portal, webhook, subscription, entitlements |                                            ✅ lint/typecheck/test/build |                ⬜ |             ⬜ Stripe Test real |               ❌ |

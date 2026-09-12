@@ -23,6 +23,14 @@ export type RiskPresetValues = Readonly<{
   cooldownSeconds: number;
 }>;
 
+/** Operational execution settings are deliberately separate from strategy parameters. */
+export type RuntimeExecutionProfile = Readonly<{
+  evaluationIntervalMs: number;
+  marketDataTimeframe: string;
+  historyDepth: number;
+  minimumCandles: number;
+}>;
+
 export const riskPresets: Readonly<Record<RiskPreset, RiskPresetValues>> = {
   CONSERVATIVE: { maxTrade: 10, maxPosition: 25, maxExposure: 35, maxDailyLoss: 2, maxDrawdown: 5, cooldownSeconds: 300 },
   BALANCED: { maxTrade: 20, maxPosition: 50, maxExposure: 60, maxDailyLoss: 5, maxDrawdown: 10, cooldownSeconds: 60 },
@@ -46,6 +54,7 @@ export type DigitalTrader = Readonly<{
   status: TraderStatus;
   paperAvailable: boolean;
   liveAvailable: boolean;
+  runtimeExecutionProfile: RuntimeExecutionProfile;
 }>;
 
 export const cryptoDigitalTraders: readonly DigitalTrader[] = [
@@ -53,23 +62,38 @@ export const cryptoDigitalTraders: readonly DigitalTrader[] = [
     id: 'atlas', slug: 'atlas', name: 'ATLAS', displayName: 'Grid Specialist',
     description: 'A bounded grid specialist for disciplined range participation.', specialty: 'Grid Specialist', marketType: 'CRYPTO_SPOT', supportedStrategies: ['grid'],
     riskDescription: 'Balanced inventory and bounded exposure.', idealMarketRegime: 'RANGE_BOUND', avoidMarketRegime: 'EXTREME_TREND', defaultRiskPreset: 'BALANCED', supportedProviders: ['binance'], status: 'ACTIVE', paperAvailable: true, liveAvailable: false,
+    runtimeExecutionProfile: { evaluationIntervalMs: 30_000, marketDataTimeframe: '1m', historyDepth: 60, minimumCandles: 2 },
   },
   {
     id: 'luna', slug: 'luna', name: 'LUNA', displayName: 'Trend Following Specialist',
     description: 'A trend specialist that waits for momentum, volume and volatility confirmation.', specialty: 'Trend Following Specialist', marketType: 'CRYPTO_SPOT', supportedStrategies: ['trend-following'],
     riskDescription: 'Directional exposure with confirmation gates.', idealMarketRegime: 'DIRECTIONAL_TREND', avoidMarketRegime: 'CHOPPY', defaultRiskPreset: 'BALANCED', supportedProviders: ['binance'], status: 'ACTIVE', paperAvailable: true, liveAvailable: false,
+    runtimeExecutionProfile: { evaluationIntervalMs: 60_000, marketDataTimeframe: '15m', historyDepth: 120, minimumCandles: 20 },
   },
   {
     id: 'dca-one', slug: 'dca-one', name: 'DCA ONE', displayName: 'Accumulation / DCA Specialist',
     description: 'A recurring accumulation specialist with explicit capital pacing.', specialty: 'Accumulation / DCA Specialist', marketType: 'CRYPTO_SPOT', supportedStrategies: ['dca'],
     riskDescription: 'Paced allocation with a hard capital ceiling.', idealMarketRegime: 'LONG_HORIZON', avoidMarketRegime: 'LIQUIDITY_STRESS', defaultRiskPreset: 'CONSERVATIVE', supportedProviders: ['binance'], status: 'ACTIVE', paperAvailable: true, liveAvailable: false,
+    runtimeExecutionProfile: { evaluationIntervalMs: 86_400_000, marketDataTimeframe: '1h', historyDepth: 30, minimumCandles: 1 },
   },
   {
     id: 'pulse', slug: 'pulse', name: 'PULSE', displayName: 'Breakout / Momentum Specialist',
     description: 'A paper-first breakout specialist for confirmed range expansion.', specialty: 'Breakout / Momentum Specialist', marketType: 'CRYPTO_SPOT', supportedStrategies: ['breakout'],
     riskDescription: 'Small, cooldown-protected entries after confirmation.', idealMarketRegime: 'BREAKOUT', avoidMarketRegime: 'LOW_LIQUIDITY', defaultRiskPreset: 'CONSERVATIVE', supportedProviders: ['binance'], status: 'ACTIVE', paperAvailable: true, liveAvailable: false,
+    runtimeExecutionProfile: { evaluationIntervalMs: 30_000, marketDataTimeframe: '5m', historyDepth: 120, minimumCandles: 20 },
   },
 ];
+
+export const defaultRuntimeExecutionProfile: RuntimeExecutionProfile = {
+  evaluationIntervalMs: 60_000,
+  marketDataTimeframe: '1m',
+  historyDepth: 60,
+  minimumCandles: 1,
+};
+
+export function runtimeExecutionProfileForTrader(slug?: string | null): RuntimeExecutionProfile {
+  return cryptoDigitalTraders.find((trader) => trader.slug === slug)?.runtimeExecutionProfile ?? defaultRuntimeExecutionProfile;
+}
 
 export type Allocation = Readonly<{ traderInstanceId: string; amount: number }>;
 export function assertHardAllocation(balance: number, allocations: readonly Allocation[], requested: number, instanceId?: string): void {
@@ -98,15 +122,16 @@ export function noOp(waitingReason: WaitingReason, details?: Readonly<Record<str
   return { kind: 'NO_OP', waitingReason, ...(details ? { details } : {}) };
 }
 
-export type PortfolioRiskInput = Readonly<{ proposedExposure: number; allocatedCapital: number; maximumExposure: number; dailyLoss: number; maximumDailyLoss: number; killSwitchActive: boolean; side?: 'BUY' | 'SELL' }>;
-export function evaluatePortfolioRisk(input: PortfolioRiskInput): { approved: boolean; reasonCode: string } {
+export type RiskAction = 'ALLOW' | 'SKIP' | 'PAUSE';
+export type PortfolioRiskInput = Readonly<{ proposedExposure: number; currentExposure?: number; allocatedCapital: number; maximumExposure: number; dailyLoss: number; maximumDailyLoss: number; killSwitchActive: boolean; side?: 'BUY' | 'SELL' }>;
+export function evaluatePortfolioRisk(input: PortfolioRiskInput): { approved: boolean; action: RiskAction; reasonCode: string } {
   const isExit = input.side === 'SELL';
-  if (input.killSwitchActive) return { approved: false, reasonCode: 'CONNECTION_KILL_SWITCH' };
-  if (isExit) return { approved: true, reasonCode: 'APPROVED_RISK_REDUCTION' };
-  if (input.allocatedCapital > input.maximumExposure) return { approved: false, reasonCode: 'ACCOUNT_EXPOSURE_LIMIT' };
-  if (input.proposedExposure > input.maximumExposure) return { approved: false, reasonCode: 'ACCOUNT_EXPOSURE_LIMIT' };
-  if (input.dailyLoss >= input.maximumDailyLoss) return { approved: false, reasonCode: 'ACCOUNT_DAILY_LOSS_LIMIT' };
-  return { approved: true, reasonCode: 'APPROVED' };
+  if (input.killSwitchActive) return { approved: false, action: 'PAUSE', reasonCode: 'CONNECTION_KILL_SWITCH' };
+  if (isExit) return { approved: true, action: 'ALLOW', reasonCode: 'APPROVED_RISK_REDUCTION' };
+  if (input.allocatedCapital > input.maximumExposure) return { approved: false, action: 'PAUSE', reasonCode: 'ACCOUNT_EXPOSURE_LIMIT' };
+  if ((input.currentExposure ?? 0) + input.proposedExposure > input.maximumExposure) return { approved: false, action: 'SKIP', reasonCode: 'ACCOUNT_EXPOSURE_LIMIT' };
+  if (input.dailyLoss >= input.maximumDailyLoss) return { approved: false, action: 'PAUSE', reasonCode: 'ACCOUNT_DAILY_LOSS_LIMIT' };
+  return { approved: true, action: 'ALLOW', reasonCode: 'APPROVED' };
 }
 
 export type CreditBucket = 'SUBSCRIPTION_CREDITS' | 'PURCHASED_CREDITS';

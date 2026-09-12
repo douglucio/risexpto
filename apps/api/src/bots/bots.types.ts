@@ -12,6 +12,10 @@ export type CreateBotBody = {
   riskProfile?: unknown;
   capitalMode?: unknown;
   digitalTraderSlug?: unknown;
+  evaluationIntervalMs?: unknown;
+  marketDataTimeframe?: unknown;
+  historyDepth?: unknown;
+  minimumCandles?: unknown;
 };
 
 export type RiskProfileBody = {
@@ -29,6 +33,7 @@ export type RiskProfileBody = {
 };
 
 export type BotStatusChange = 'READY' | 'RUNNING' | 'PAUSED' | 'STOPPED' | 'ARCHIVED';
+export type StopModeChange = 'STOP_AND_KEEP_ASSETS' | 'STOP_AND_LIQUIDATE';
 
 export type BotData = {
   id: string;

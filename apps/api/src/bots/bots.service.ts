@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import {
   BadRequestException,
   ConflictException,
@@ -9,9 +10,9 @@ import {
 import type { Prisma, PrismaClient } from '@risexpto/database';
 import { DATABASE } from '../users/user-provisioning.service';
 import type { AuthenticatedUser } from '../auth/auth.types';
-import type { BotStatusChange, CreateBotBody, RiskProfileBody } from './bots.types';
+import type { BotStatusChange, CreateBotBody, RiskProfileBody, StopModeChange } from './bots.types';
 import { BillingService } from '../billing/billing.service';
-import { cryptoDigitalTraders, mapBotState, type CapitalMode, type RiskPreset } from '@risexpto/digital-traders';
+import { cryptoDigitalTraders, mapBotState, runtimeExecutionProfileForTrader, type CapitalMode, type RiskPreset } from '@risexpto/digital-traders';
 import { Decimal } from 'decimal.js';
 
 @Injectable()
@@ -73,6 +74,14 @@ export class BotsService {
     return bot;
   }
 
+  async activity(user: AuthenticatedUser, id: string, rawLimit?: string, rawOffset?: string) {
+    const bot = await this.db.bot.findFirst({ where: { id, userId: applicationUserId(user), archivedAt: null }, select: { id: true } });
+    if (!bot) throw new NotFoundException('Bot not found');
+    const take = Math.min(100, Math.max(1, Number(rawLimit ?? 50) || 50));
+    const skip = Math.max(0, Number(rawOffset ?? 0) || 0);
+    return this.db.botEvent.findMany({ where: { botId: id }, orderBy: { createdAt: 'desc' }, take, skip });
+  }
+
   async create(user: AuthenticatedUser, body: CreateBotBody) {
     const userId = applicationUserId(user);
     if (this.billing) await this.billing.assertCanCreateBot(user, body.tradingMode === 'LIVE' ? 'LIVE' : 'PAPER');
@@ -117,6 +126,10 @@ export class BotsService {
                 allowedSymbols: input.allowedSymbols,
                 authorizedCapital: input.authorizedCapital,
                 quoteCurrency: input.quoteCurrency,
+                evaluationIntervalMs: input.evaluationIntervalMs,
+                marketDataTimeframe: input.marketDataTimeframe,
+                historyDepth: input.historyDepth,
+                minimumCandles: input.minimumCandles,
               },
             },
             riskProfile: { create: input.riskProfile },
@@ -133,7 +146,7 @@ export class BotsService {
     }
   }
 
-  async changeStatus(user: AuthenticatedUser, id: string, status: BotStatusChange) {
+  async changeStatus(user: AuthenticatedUser, id: string, status: BotStatusChange, stopMode?: StopModeChange) {
     const bot = await this.get(user, id);
     const allowed: Record<string, readonly string[]> = {
       DRAFT: ['READY'],
@@ -147,6 +160,9 @@ export class BotsService {
       throw new ConflictException(`Invalid bot transition: ${bot.status} to ${status}`);
     if (typeof this.db.$transaction !== 'function')
       return this.db.bot.update({ where: { id: bot.id }, data: { status } });
+    const stopPrice = status === 'STOPPED' && stopMode === 'STOP_AND_LIQUIDATE' && bot.assetSymbol
+      ? await this.db.marketSnapshot.findFirst({ where: { symbol: bot.assetSymbol }, orderBy: { closeTime: 'desc' }, select: { close: true } })
+      : null;
     return this.db.$transaction(async (tx) => {
       if (bot.tradingMode === 'PAPER' && bot.configuration && typeof tx.paperCapitalAllocation?.update === 'function') {
         const allocation = await tx.paperCapitalAllocation.findUnique({ where: { botId: bot.id } });
@@ -155,10 +171,19 @@ export class BotsService {
             ? await tx.paperPortfolio.findUnique({ where: { id: bot.paperPortfolioId } })
             : null;
           if (portfolio) {
-            const available = portfolio.availableCapital.minus(portfolio.allocatedCapital);
+            // availableCapital is already the free cash balance. Subtracting
+            // allocatedCapital here double-counts every previous allocation.
+            const available = portfolio.availableCapital;
             if (available.lessThan(bot.configuration.authorizedCapital))
               throw new ConflictException('Paper portfolio capital allocation is unavailable');
-            await tx.paperPortfolio.update({ where: { id: portfolio.id }, data: { allocatedCapital: { increment: bot.configuration.authorizedCapital }, availableCapital: { decrement: bot.configuration.authorizedCapital } } });
+            const claimed = typeof tx.paperPortfolio.updateMany === 'function'
+              ? await tx.paperPortfolio.updateMany({
+                  where: { id: portfolio.id, availableCapital: { gte: bot.configuration.authorizedCapital } },
+                  data: { allocatedCapital: { increment: bot.configuration.authorizedCapital }, availableCapital: { decrement: bot.configuration.authorizedCapital } },
+                })
+              : { count: 1 };
+            if (claimed.count !== 1) throw new ConflictException('Paper portfolio capital allocation is unavailable');
+            if (typeof tx.paperPortfolio.updateMany !== 'function') await tx.paperPortfolio.update({ where: { id: portfolio.id }, data: { allocatedCapital: { increment: bot.configuration.authorizedCapital }, availableCapital: { decrement: bot.configuration.authorizedCapital } } });
           }
           await tx.paperCapitalAllocation.upsert({ where: { botId: bot.id }, create: { botId: bot.id, paperPortfolioId: bot.paperPortfolioId, allocated: bot.configuration.authorizedCapital, active: true }, update: { allocated: bot.configuration.authorizedCapital, active: true, releasedAt: null } });
           if (typeof tx.paperBalance?.upsert === 'function') {
@@ -170,7 +195,37 @@ export class BotsService {
           }
         }
         if (status === 'STOPPED' && allocation?.active) {
-          if (bot.paperPortfolioId && typeof tx.paperPortfolio?.update === 'function') await tx.paperPortfolio.update({ where: { id: bot.paperPortfolioId }, data: { allocatedCapital: { decrement: allocation.allocated }, availableCapital: { increment: allocation.allocated } } });
+          const mode = stopMode ?? 'STOP_AND_KEEP_ASSETS';
+          const positions = typeof tx.position?.findMany === 'function'
+            ? await tx.position.findMany({ where: { botId: bot.id, tradingMode: 'PAPER', status: 'OPEN', managed: true } })
+            : [];
+          let retainedCapital = new Decimal(0);
+          if (mode === 'STOP_AND_LIQUIDATE' && positions.length > 0) {
+            if (!stopPrice) throw new ConflictException('Paper liquidation requires a current market price');
+            for (const position of positions) {
+              const quantity = new Decimal(position.quantity);
+              const price = new Decimal(stopPrice.close);
+              const value = quantity.times(price);
+              const fee = value.times('0.001');
+              const realized = price.minus(position.averagePrice).times(quantity).minus(fee);
+              const base = baseAssetFor(position.symbol, bot.configuration.quoteCurrency);
+              const sold = await tx.paperBalance.updateMany({ where: { botId: bot.id, asset: base, free: { gte: quantity } }, data: { free: { decrement: quantity } } });
+              if (sold.count !== 1) throw new ConflictException('Paper liquidation balance is unavailable');
+              await tx.paperBalance.upsert({ where: { botId_asset: { botId: bot.id, asset: bot.configuration.quoteCurrency } }, create: { botId: bot.id, asset: bot.configuration.quoteCurrency, free: value.minus(fee), locked: 0 }, update: { free: { increment: value.minus(fee) } } });
+              const proposal = await tx.tradeProposal.create({ data: { botId: bot.id, strategyVersionId: bot.strategyVersionId, correlationId: randomUUID(), symbol: position.symbol, side: 'SELL', orderType: 'MARKET', quantity, rationale: { reason: 'STOP_AND_LIQUIDATE' }, status: 'EXECUTED', decidedAt: new Date() } });
+              const order = await tx.order.create({ data: { botId: bot.id, tradeProposalId: proposal.id, idempotencyKey: `paper-stop:${proposal.id}`, clientOrderId: `paper-stop-${proposal.id}`, tradingMode: 'PAPER', symbol: position.symbol, side: 'SELL', type: 'MARKET', status: 'FILLED', requestedQuantity: quantity, filledQuantity: quantity, averageFillPrice: price, submittedAt: new Date(), completedAt: new Date() } });
+              await tx.trade.create({ data: { orderId: order.id, quantity, price, fee, realizedPnl: realized, executedAt: new Date() } });
+              await tx.position.update({ where: { id: position.id }, data: { quantity: 0, realizedPnl: { increment: realized }, status: 'CLOSED', managed: true, closedAt: new Date() } });
+            }
+          } else {
+            for (const position of positions) {
+              retainedCapital = retainedCapital.plus(new Decimal(position.quantity).times(position.averagePrice));
+              if (typeof tx.unmanagedHolding?.create === 'function') await tx.unmanagedHolding.create({ data: { userId: bot.userId, paperPortfolioId: bot.paperPortfolioId!, originBotInstanceId: bot.id, symbol: position.symbol, quantity: position.quantity, averagePrice: position.averagePrice, costBasis: new Decimal(position.quantity).times(position.averagePrice) } });
+              await tx.position.update({ where: { id: position.id }, data: { managed: false } });
+            }
+          }
+          const releasable = Decimal.max(0, new Decimal(allocation.allocated).minus(retainedCapital));
+          if (bot.paperPortfolioId && typeof tx.paperPortfolio?.update === 'function') await tx.paperPortfolio.update({ where: { id: bot.paperPortfolioId }, data: { allocatedCapital: { decrement: releasable }, availableCapital: { increment: releasable } } });
           await tx.paperCapitalAllocation.update({ where: { botId: bot.id }, data: { active: false, allocated: 0, releasedAt: new Date() } });
         }
       } else if (status === 'RUNNING' && bot.exchangeConnectionId && bot.configuration) {
@@ -188,7 +243,7 @@ export class BotsService {
           SET "allocatedCapital" = GREATEST(0, "allocatedCapital" - ${bot.configuration.authorizedCapital})
           WHERE "id" = ${bot.exchangeConnectionId}`;
       }
-      return tx.bot.update({ where: { id: bot.id }, data: { status } });
+      return tx.bot.update({ where: { id: bot.id }, data: { status, ...(status === 'STOPPED' ? { stopMode: stopMode ?? 'STOP_AND_KEEP_ASSETS', stopRequestedAt: new Date() } : {}) } });
     });
   }
 
@@ -243,6 +298,11 @@ function applicationUserId(user: AuthenticatedUser): string {
   return user.applicationUserId;
 }
 
+function baseAssetFor(symbol: string, quoteCurrency: string): string {
+  const quote = quoteCurrency.toUpperCase();
+  return symbol.toUpperCase().endsWith(quote) ? symbol.slice(0, -quote.length) : symbol;
+}
+
 function parseCreateBody(body: CreateBotBody, userId: string) {
   const name = text(body.name, 'name', 120);
   const strategyVersionId = uuid(body.strategyVersionId, 'strategyVersionId');
@@ -268,6 +328,11 @@ function parseCreateBody(body: CreateBotBody, userId: string) {
   const authorizedCapital = decimal(body.authorizedCapital, 'authorizedCapital');
   const quoteCurrency = text(body.quoteCurrency, 'quoteCurrency', 16).toUpperCase();
   if (!/^[A-Z]{3,16}$/.test(quoteCurrency)) throw new BadRequestException('Invalid quoteCurrency');
+  const executionProfile = runtimeExecutionProfileForTrader(digitalTraderSlug);
+  const evaluationIntervalMs = boundedInt(body.evaluationIntervalMs ?? executionProfile.evaluationIntervalMs, 'evaluationIntervalMs', 1_000, 86_400_000);
+  const marketDataTimeframe = text(body.marketDataTimeframe ?? executionProfile.marketDataTimeframe, 'marketDataTimeframe', 12);
+  const historyDepth = boundedInt(body.historyDepth ?? executionProfile.historyDepth, 'historyDepth', 1, 2_000);
+  const minimumCandles = boundedInt(body.minimumCandles ?? executionProfile.minimumCandles, 'minimumCandles', 1, historyDepth);
   return {
     name,
     strategyVersionId,
@@ -280,10 +345,20 @@ function parseCreateBody(body: CreateBotBody, userId: string) {
     allowedSymbols: [...new Set(allowedSymbols)],
     authorizedCapital,
     quoteCurrency,
+    evaluationIntervalMs,
+    marketDataTimeframe,
+    historyDepth,
+    minimumCandles,
     riskProfile: parseRiskProfile(body.riskProfile, userId, authorizedCapital, [
       ...new Set(allowedSymbols),
     ]),
   };
+}
+
+function boundedInt(value: unknown, field: string, min: number, max: number): number {
+  const parsed = typeof value === 'number' ? value : Number(value);
+  if (!Number.isInteger(parsed) || parsed < min || parsed > max) throw new BadRequestException(`${field} must be an integer between ${min} and ${max}`);
+  return parsed;
 }
 
 function parseRiskProfile(

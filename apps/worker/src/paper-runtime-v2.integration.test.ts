@@ -73,15 +73,26 @@ describe('Digital Trader Runtime V2 multi-trader Paper flow', () => {
         expect(allocations).toHaveLength(4);
         expect(allocations.every((allocation) => allocation.active && allocation.allocated.toString() === '100')).toBe(true);
         const events = await database.botEvent.findMany({ where: { botId: { in: botIds }, type: 'CYCLE_STARTED' } });
-        expect(events).toHaveLength(4);
+        expect(events).toHaveLength(8);
         const orders = await database.order.findMany({ where: { botId: { in: botIds }, tradingMode: 'PAPER' } });
-        expect(new Set(orders.map((order) => order.botId)).size).toBeGreaterThan(0);
+        expect(new Set(orders.map((order) => order.botId)).size).toBe(4);
+        for (const botId of botIds) {
+          expect(orders.filter((order) => order.botId === botId)).toHaveLength(1);
+          const proposals = await database.tradeProposal.count({ where: { botId } });
+          expect(proposals).toBeGreaterThanOrEqual(1);
+          const cycleEvents = await database.botEvent.count({ where: { botId, type: 'CYCLE_STARTED' } });
+          expect(cycleEvents).toBe(2);
+        }
         for (const botId of botIds) {
           const context = await new TraderRuntimeStateService(database).load(botId, 100);
           expect(context.traderInstanceId).toBe(botId);
           expect(context.allocatedCapital.toString()).toBe('100');
         }
       } finally {
+        await database.riskEvent.deleteMany({ where: { botId: { in: botIds } } });
+        await database.trade.deleteMany({ where: { order: { botId: { in: botIds } } } });
+        await database.order.deleteMany({ where: { botId: { in: botIds } } });
+        await database.position.deleteMany({ where: { botId: { in: botIds } } });
         await database.bot.deleteMany({ where: { id: { in: botIds } } });
         await database.marketSnapshot.deleteMany({ where: { id: { in: snapshotIds } } });
         await database.strategyVersion.deleteMany({ where: { id: { in: versionIds } } });

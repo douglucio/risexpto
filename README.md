@@ -65,6 +65,13 @@ hard allocation; STOPPED instances release it. Backtesting and notifications
 remain Paper/product surfaces only, while Binance Production and Stripe Live
 remain disabled.
 
+Runtime V3 adds explicit evaluation cadence and market timeframe profiles for
+Atlas, Luna, DCA One and Pulse, projected portfolio exposure checks, persisted
+equity drawdown, explicit stop modes, deterministic strategy scenarios and a
+per-trader activity timeline. The V3 Paper readiness gate remains separate
+from any Binance Production or Stripe Live integration; see
+[`docs/product/digital-trader-runtime-v3.md`](./docs/product/digital-trader-runtime-v3.md).
+
 All work flows from `feature/*` to `develop`. Only the owner may update `main`.
 
 ## Current browser stabilization round

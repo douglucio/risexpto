@@ -62,7 +62,7 @@ export function runBacktest(
     equity: initialCapital,
     fees: 0,
   };
-  const returns: number[] = [];
+  const periodReturns: number[] = [];
   const tradePnl: number[] = [];
   const equityCurve: { timestamp: number; equity: number }[] = [];
   let peak = initialCapital;
@@ -99,20 +99,20 @@ export function runBacktest(
     }
     state = { ...state, equity: state.cash + state.quantity * candle.close };
     equityCurve.push({ timestamp: candle.openTime, equity: state.equity });
-    const previous = returns.at(-1) ?? initialCapital;
-    returns.push(state.equity);
+    const previousEquity = i === 0 ? initialCapital : equityCurve[i - 1]!.equity;
+    const periodReturn = previousEquity > 0 ? state.equity / previousEquity - 1 : 0;
+    periodReturns.push(periodReturn);
     peak = Math.max(peak, state.equity);
     maxDrawdown = Math.max(maxDrawdown, peak === 0 ? 0 : (peak - state.equity) / peak);
-    if (previous > 0) returns[i] = state.equity / previous - 1;
   }
   const completed = tradePnl.filter((pnl) => pnl !== 0);
   const gains = completed.filter((pnl) => pnl > 0);
   const losses = completed.filter((pnl) => pnl < 0);
-  const mean = returns.length ? returns.reduce((a, b) => a + b, 0) / returns.length : 0;
+  const mean = periodReturns.length ? periodReturns.reduce((a, b) => a + b, 0) / periodReturns.length : 0;
   const deviation =
-    returns.length > 1
+    periodReturns.length > 1
       ? Math.sqrt(
-          returns.reduce((sum, value) => sum + (value - mean) ** 2, 0) / (returns.length - 1),
+          periodReturns.reduce((sum, value) => sum + (value - mean) ** 2, 0) / (periodReturns.length - 1),
         )
       : 0;
   return {
@@ -125,7 +125,7 @@ export function runBacktest(
       profitFactor: losses.length
         ? gains.reduce((a, b) => a + b, 0) / Math.abs(losses.reduce((a, b) => a + b, 0))
         : null,
-      sharpe: deviation ? (mean / deviation) * Math.sqrt(returns.length) : null,
+      sharpe: deviation ? (mean / deviation) * Math.sqrt(periodReturns.length) : null,
       tradeCount: completed.length,
       averageTrade: completed.length ? completed.reduce((a, b) => a + b, 0) / completed.length : 0,
       bestTrade: gains.length ? Math.max(...gains) : 0,

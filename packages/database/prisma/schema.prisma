@@ -36,6 +36,16 @@ enum BotStatus {
   ARCHIVED
 }
 
+enum StopMode {
+  STOP_AND_KEEP_ASSETS
+  STOP_AND_LIQUIDATE
+}
+
+enum UnmanagedHoldingStatus {
+  ACTIVE
+  CLOSED
+}
+
 enum TradingMode {
   PAPER
   LIVE
@@ -177,6 +187,7 @@ model User {
   usages              Usage[]
   aiCredits           AiCreditLedgerEntry[]
   paperPortfolios     PaperPortfolio[]
+  unmanagedHoldings   UnmanagedHolding[]
 
   @@index([createdAt])
   @@index([deletedAt])
@@ -264,6 +275,9 @@ model Bot {
   digitalTraderSlug    String?             @db.VarChar(80)
   waitingReason        String?             @db.VarChar(80)
   waitingSince         DateTime?           @db.Timestamptz(3)
+  equityHighWaterMark  Decimal             @default(0) @db.Decimal(38, 18)
+  stopMode             StopMode?
+  stopRequestedAt      DateTime?           @db.Timestamptz(3)
   createdAt            DateTime            @default(now()) @db.Timestamptz(3)
   updatedAt            DateTime            @updatedAt @db.Timestamptz(3)
   nextRunAt            DateTime?           @db.Timestamptz(3)
@@ -287,6 +301,7 @@ model Bot {
   auditLogs            AuditLog[]
   gridLevels           PaperGridLevel[]
   notifications        Notification[]
+  unmanagedHoldings     UnmanagedHolding[]
 
   @@unique([userId, name])
   @@index([userId, status])
@@ -301,6 +316,10 @@ model BotConfiguration {
   allowedSymbols    String[]
   authorizedCapital Decimal  @db.Decimal(38, 18)
   quoteCurrency     String   @db.VarChar(16)
+  evaluationIntervalMs Int    @default(60000)
+  marketDataTimeframe  String @default("1m") @db.VarChar(12)
+  historyDepth         Int    @default(60)
+  minimumCandles       Int    @default(1)
   revision          Int      @default(1)
   createdAt         DateTime @default(now()) @db.Timestamptz(3)
   updatedAt         DateTime @updatedAt @db.Timestamptz(3)
@@ -388,6 +407,7 @@ model Position {
   tradingMode  TradingMode
   symbol       String         @db.VarChar(32)
   status       PositionStatus @default(OPEN)
+  managed      Boolean        @default(true)
   quantity     Decimal        @db.Decimal(38, 18)
   averagePrice Decimal        @db.Decimal(38, 18)
   realizedPnl  Decimal        @default(0) @db.Decimal(38, 18)
@@ -442,6 +462,7 @@ model PaperPortfolio {
   realizedPnl     Decimal                  @default(0) @db.Decimal(38, 18)
   unrealizedPnl   Decimal                  @default(0) @db.Decimal(38, 18)
   todayRealizedPnl Decimal                 @default(0) @db.Decimal(38, 18)
+  equityHighWaterMark Decimal              @default(0) @db.Decimal(38, 18)
   maximumExposure Decimal                  @default(0) @db.Decimal(38, 18)
   maximumDailyLoss Decimal                 @default(0) @db.Decimal(38, 18)
   killSwitchActive Boolean                  @default(false)
@@ -450,9 +471,31 @@ model PaperPortfolio {
   user            User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
   bots            Bot[]
   allocations     PaperCapitalAllocation[]
+  unmanagedHoldings UnmanagedHolding[]
 
   @@unique([userId, provider, baseCurrency])
   @@index([userId, provider])
+}
+
+model UnmanagedHolding {
+  id                    String                 @id @default(uuid()) @db.Uuid
+  userId                String                 @db.Uuid
+  paperPortfolioId      String                 @db.Uuid
+  originBotInstanceId   String?                @db.Uuid
+  symbol                String                 @db.VarChar(32)
+  quantity              Decimal                @db.Decimal(38, 18)
+  averagePrice          Decimal                @db.Decimal(38, 18)
+  costBasis             Decimal                @db.Decimal(38, 18)
+  status                UnmanagedHoldingStatus @default(ACTIVE)
+  createdAt             DateTime               @default(now()) @db.Timestamptz(3)
+  updatedAt             DateTime               @updatedAt @db.Timestamptz(3)
+  closedAt              DateTime?              @db.Timestamptz(3)
+  user                  User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  paperPortfolio        PaperPortfolio         @relation(fields: [paperPortfolioId], references: [id], onDelete: Restrict)
+  originBot             Bot?                   @relation(fields: [originBotInstanceId], references: [id], onDelete: SetNull)
+
+  @@index([userId, status])
+  @@index([paperPortfolioId, status])
 }
 
 model PaperGridLevel {
@@ -626,6 +669,7 @@ model Notification {
   botId     String?             @db.Uuid
   connectionId String?          @db.Uuid
   type      String              @db.VarChar(80)
+  dedupeKey String?             @db.VarChar(180)
   title     String              @db.VarChar(180)
   body      String              @db.Text
   data      Json?
@@ -637,6 +681,7 @@ model Notification {
 
   @@index([userId, status, createdAt])
   @@index([botId, createdAt])
+  @@index([botId, dedupeKey, createdAt])
 }
 
 model AuditLog {

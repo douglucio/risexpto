@@ -68,6 +68,18 @@ importers:
       '@risexpto/digital-traders':
         specifier: workspace:*
         version: link:../../packages/digital-traders
+      '@risexpto/strategy-breakout':
+        specifier: workspace:*
+        version: link:../../packages/strategy-breakout
+      '@risexpto/strategy-dca':
+        specifier: workspace:*
+        version: link:../../packages/strategy-dca
+      '@risexpto/strategy-grid':
+        specifier: workspace:*
+        version: link:../../packages/strategy-grid
+      '@risexpto/strategy-trend':
+        specifier: workspace:*
+        version: link:../../packages/strategy-trend
       bullmq:
         specifier: 5.63.0
         version: 5.63.0
