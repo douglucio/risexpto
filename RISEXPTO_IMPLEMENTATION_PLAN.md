@@ -3671,3 +3671,52 @@ As fases históricas 01–102 permanecem preservadas. A nova evolução comercia
 - `git diff --check`: ✅;
 - secrets: ✅ nenhuma credencial real, Binance Production ou Stripe Live adicionados;
 - branch: `feature/digital-trader-product-v1`; commits locais incrementais criados. O merge em `develop` permanece como etapa de integração local após esta revisão.
+
+## 2026-09-12 — Digital Trader Runtime V2 — Fases 119–133
+
+Esta rodada preserva as fases 01–118 e mantém `Bot`, `StrategyDefinition` e
+`StrategyVersion` como entidades técnicas. A fonte de verdade Paper é
+PostgreSQL; `PaperGlobalCapitalAllocation` não participa de novos ciclos e a
+alocação operacional passa por `PaperPortfolio`, escopado por usuário,
+provider e moeda-base.
+
+| Fase | Escopo | Estado |
+|---:|---|---|
+| 119 | Stateful Trader Runtime | ✅ Concluída — `TraderRuntimeStateService` centraliza capital, posição, P&L, timestamps e risco. |
+| 120 | Real Paper Position State | ✅ Concluída — fills usam Decimal, average cost ponderado e realized P&L em trades. |
+| 121 | DCA One State Accuracy | ✅ Concluída — DCA recebe spent capital e last buy persistidos; limites permanecem hard. |
+| 122 | Atlas Grid Runtime V2 | ✅ Concluída — ciclo seleciona compra/venda por nível e mantém base para níveis persistidos. |
+| 123 | Luna Trend Entry/Exit | ✅ Concluída — BUY, SELL, HOLD, fechamento e reentrada usam posição real. |
+| 124 | Pulse Breakout Entry/Exit | ✅ Concluída — saída Paper determinística por stop/take-profit e cooldown versionável. |
+| 125 | Compound Capital Realization | ✅ Concluída — operational capital usa realized P&L e exclui unrealized. |
+| 126 | Allocation Lifecycle | ✅ Concluída — portfolio allocation idempotente; PAUSED mantém capital. |
+| 127 | Portfolio Risk Real State | 🟨 Base implementada — runtime injeta daily loss/exposure persistidos; agregação completa segue hardening. |
+| 128 | Real P&L / Exposure | 🟨 Base implementada — P&L de posição/trade persistido; API/dashboard ainda recebem a reconciliação final. |
+| 129 | My Team Dashboard V2 | 🟨 Em integração — payload mantém compatibilidade técnica enquanto a UI migra textos e métricas. |
+| 130 | Trader Backtesting | 🟨 Foundation existente — engine já suporta sinais; fluxo persistido/API fica no próximo incremento. |
+| 131 | Trader Notifications | ✅ Concluída — Notification persistida, API list/unread/read e evento WAITING no worker. |
+| 132 | Paper Multi-Trader E2E | 🟨 Preparada — testes unitários e idempotência passam; execução PostgreSQL/Redis depende do ambiente externo. |
+| 133 | Commercial Readiness Gate | 🟨 Em andamento — ADRs, limites de Live e modelo de escala documentados nesta rodada. |
+
+### Runtime V2 — regras de segurança e operação
+
+- `FIXED` mantém o capital autorizado; `COMPOUND` adiciona somente P&L realizado.
+- `RUNNING → PAUSED → RUNNING` não altera a hard allocation; `STOPPED`, archive
+  e delete liberam-na uma única vez.
+- Uma operação passa por Trader Risk, Portfolio Risk e só então Paper
+  Execution. O worker não trata `availableCapital = 0` como infinito para Live.
+- Posições Spot são long-only; compras fazem weighted average cost e vendas
+  parciais preservam o custo médio. `today` usa UTC.
+- Saídas Pulse são Paper-only, com stop loss padrão de 3% e take profit de 6%,
+  parâmetros versionáveis; não há ativação Live.
+- Escala futura (100/1.000/2.000/10.000 traders) requer fan-out de market data,
+  scheduler/queue partition, Redis/BullMQ, índices de PostgreSQL, replicas de
+  worker e pool de conexões; esta rodada não antecipa essa infraestrutura.
+
+### Histórico de conclusão Runtime V2
+
+- 2026-09-12: auditoria de plano, README, Product Definition V1, ADRs, schema,
+  worker Paper, strategies, risk, billing/entitlements e frontend concluída.
+- 2026-09-12: runtime state, Paper Portfolio schema, allocation lifecycle,
+  Decimal position fills, Pulse exits e notification API implementados em branch
+  local. Binance Production, Stripe Live e credenciais reais não foram usados.

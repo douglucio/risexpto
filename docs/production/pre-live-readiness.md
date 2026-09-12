@@ -1,6 +1,27 @@
 # RiseXPTO — Pre-Live Readiness
 
-## Current status — 2026-09-09 browser regression audit
+## Current status — 2026-09-12 Digital Trader Runtime V2
+
+Runtime V2 makes the four Crypto Spot specialists Paper-operational in code:
+state is reconstructed from PostgreSQL, positions use weighted average cost,
+hard allocation is user-scoped through `PaperPortfolio`, and the risk pipeline
+is Trader Risk → Portfolio Risk → Paper Execution. This is still not a Live
+readiness approval. Binance Production and Stripe Live remain disabled.
+
+### Manual Paper Runtime V2 runbook
+
+1. Start PostgreSQL, Redis, Keycloak and the API/worker with `LIVE_TRADING_ENABLED=false`; apply migrations and seed the catalog.
+2. Sign in and open **Explore Traders**. Create Atlas on BTCUSDT, Luna on ETHUSDT, DCA One on SOLUSDT and Pulse on DOGEUSDT, all in PAPER, using the same connection/portfolio where available.
+3. Allocate distinct capital (for example 2,000 / 2,000 / 1,000 / 1,000 USDT), select Balanced/Conservative presets, and confirm the portfolio rejects a fifth allocation over the available balance.
+4. Activate each trader. Confirm `PaperPortfolio.allocatedCapital` equals the sum of hard allocations and each `PaperCapitalAllocation` is active exactly once.
+5. Run cycles with persisted MarketSnapshot candles. Confirm DCA interval/range waiting; Atlas level execution and later sell; Luna BUY/HOLD/SELL; Pulse breakout entry and documented stop/take-profit exit.
+6. Pause Atlas, resume it, then stop it. Confirm pause keeps allocation, resume does not duplicate it, and stop releases it. Repeat with a failed/duplicate job.
+7. Inspect My Traders: allocated capital, current exposure, today P&L, total P&L, asset, provider, risk preset and friendly WAITING reason. Compare values with Position/Trade Decimal values in PostgreSQL.
+8. Open Notifications, verify `TRADER_WAITING`/fill/risk events, unread state and mark-read behavior. Run a persisted backtest with trader, version, symbol, period and capital; verify result metrics and historical-performance disclaimer.
+9. Restart the worker while positions/orders exist. Requeue the same job and verify no duplicate order/trade, allocation remains unchanged, and runtime state is reconstructed from PostgreSQL.
+10. Before any future Live gate, separately execute Binance Testnet balance sync, reconciliation, rate-limit, drain and observability checks. Never substitute Production credentials.
+
+## Historical status — 2026-09-09 browser regression audit
 
 Esta é a matriz vigente. `CODE_IMPLEMENTED` indica caminho implementado; `LOCALLY_VALIDATED` exige teste ou execução local; `BROWSER_VALIDATED` exige fluxo autenticado no navegador; `EXTERNAL_TEST_VALIDATED` exige exercício da dependência externa; `PRODUCTION_READY` exige todos os gates e aprovação humana.
 
@@ -16,7 +37,7 @@ Esta é a matriz vigente. `CODE_IMPLEMENTED` indica caminho implementado; `LOCAL
 | Binance Connection/Vault        |                          ✅ UI Testnet, key masked, secret cifrado |                                                               ✅ testes |                ⬜ |          ⬜ credenciais Testnet |               ❌ |
 | Binance LIVE Testnet            |                                            ✅ pipeline fail-closed |                                                   ✅ testes sanitizados |                ⬜ |    ⬜ smoke/ordem/reconciliação |               ❌ |
 | Stripe Test Mode                | ✅ provider, Checkout, Portal, webhook, subscription, entitlements |                                            ✅ lint/typecheck/test/build |                ⬜ |             ⬜ Stripe Test real |               ❌ |
-| Notifications                   |                                                   ⬜ não integrada |                                                                      ⬜ |               N/A |                             N/A |               ❌ |
+| Notifications                   |                                      ✅ persisted/API/in-app |                                             ✅ unit/typecheck |                ⬜ |                             N/A |               ❌ |
 | Admin/auditoria/observabilidade |                                                         🟨 parcial |                                                    🟨 contratos/pacotes |                ⬜ |           ⬜ operação integrada |               ❌ |
 
 O caminho atual está em `TESTABLE MVP READINESS`, não em `PRODUCTION_READY`. Binance Production e Stripe Live continuam proibidos.

@@ -47,14 +47,6 @@ export async function recoverOrphanedReservations(
         where: { id: reservation.id, status: 'ACTIVE' },
         data: { status: 'RELEASED' },
       }),
-      database.paperCapitalAllocation.updateMany({
-        where: { botId: reservation.botId, allocated: { gte: reservation.amount } },
-        data: { allocated: { decrement: reservation.amount } },
-      }),
-      database.paperGlobalCapitalAllocation.updateMany({
-        where: { id: 'global', allocated: { gte: reservation.amount } },
-        data: { allocated: { decrement: reservation.amount } },
-      }),
       database.botEvent.create({
         data: {
           botId: reservation.botId,

@@ -49,6 +49,8 @@ export default async function SectionPage({ params }: { params: Promise<{ sectio
     section === 'exchange-connections' ||
     section === 'trades' ||
     section === 'portfolio' ||
+    section === 'backtests' ||
+    section === 'notifications' ||
     section === 'billing'
       ? await loadSectionData(section)
       : null;
@@ -72,6 +74,8 @@ type SectionData =
   | { kind: 'trades'; value: TradeRecord[] }
   | { kind: 'positions'; value: PositionRecord[] }
   | { kind: 'billing'; value: BillingRecord }
+  | { kind: 'backtests'; value: BacktestRecord[] }
+  | { kind: 'notifications'; value: NotificationRecord[] }
   | { kind: 'error'; message: string; status: number };
 type BotRecord = {
   id: string;
@@ -131,9 +135,11 @@ type BillingRecord = {
   mode: string;
   subscription: { status: string; plan: string; entitlements: Record<string, unknown> } | null;
 };
+type BacktestRecord = { id: string; symbol: string; status: string; initialCapital: string; createdAt: string; result?: { returnPercent: string; maxDrawdown: string; tradeCount: number } | null };
+type NotificationRecord = { id: string; type: string; severity: string; title: string; body: string; readAt?: string | null; createdAt: string };
 
 async function loadSectionData(
-  section: 'bots' | 'strategies' | 'exchange-connections' | 'trades' | 'portfolio' | 'billing',
+  section: 'bots' | 'strategies' | 'exchange-connections' | 'trades' | 'portfolio' | 'billing' | 'backtests' | 'notifications',
 ): Promise<SectionData> {
   // Server Components cannot persist refreshed cookies. They still use a fresh
   // access token for this request; BFF route handlers persist refresh results.
@@ -154,6 +160,8 @@ async function loadSectionData(
       return { kind: 'exchange-connections', value: payload as ExchangeConnectionRecord[] };
     if (section === 'trades') return { kind: 'trades', value: payload as TradeRecord[] };
     if (section === 'billing') return { kind: 'billing', value: payload as BillingRecord };
+    if (section === 'backtests') return { kind: 'backtests', value: payload as BacktestRecord[] };
+    if (section === 'notifications') return { kind: 'notifications', value: payload as NotificationRecord[] };
     return { kind: 'positions', value: payload as PositionRecord[] };
   } catch {
     return { kind: 'error', message: 'error.unavailable', status: 503 };
@@ -161,7 +169,7 @@ async function loadSectionData(
 }
 
 function sectionError(
-  section: 'bots' | 'strategies' | 'exchange-connections' | 'trades' | 'portfolio' | 'billing',
+  section: 'bots' | 'strategies' | 'exchange-connections' | 'trades' | 'portfolio' | 'billing' | 'backtests' | 'notifications',
   status: number,
 ): SectionData {
   if (status === 401) return { kind: 'error', message: 'dashboard.signInAgain', status };
@@ -313,10 +321,7 @@ function SectionContent({
         <Alert title={t('workspace.historicalResults')}>
           {t('workspace.performanceDisclaimer')}
         </Alert>
-        <EmptyState
-          title={t('workspace.backtestsSoon')}
-          description={t('workspace.backtestsSoonDescription')}
-        />
+        {data?.kind === 'backtests' && data.value.length ? <DataTable columns={[t('workspace.symbol'), t('workspace.status'), t('workspace.return'), t('workspace.maximumDrawdown'), t('workspace.trades')]} rows={data.value.map((item) => [item.symbol, item.status, item.result?.returnPercent ?? '—', item.result?.maxDrawdown ?? '—', item.result?.tradeCount ?? 0])} /> : <EmptyState title={t('workspace.backtestsSoon')} description={t('workspace.backtestsSoonDescription')} />}
       </>
     );
   if (section === 'trades')
@@ -403,12 +408,7 @@ function SectionContent({
     );
   if (section === 'risk') return <RiskPanel />;
   if (section === 'notifications')
-    return (
-      <EmptyState
-        title={t('workspace.notificationsSoon')}
-        description={t('workspace.notificationsSoonDescription')}
-      />
-    );
+    return data?.kind === 'notifications' && data.value.length ? <div className="content-stack">{data.value.map((item) => <Card key={item.id}><Badge tone={item.severity === 'ERROR' ? 'negative' : 'brand'}>{item.type}</Badge><h2>{item.title}</h2><p>{item.body}</p><small>{new Date(item.createdAt).toLocaleString()}</small></Card>)}</div> : <EmptyState title={t('workspace.notificationsSoon')} description={t('workspace.notificationsSoonDescription')} />;
   if (section === 'billing')
     return data?.kind === 'billing' ? (
       <BillingPanel />

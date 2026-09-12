@@ -58,6 +58,13 @@ Authentication is provided by Keycloak using OIDC Authorization Code with PKCE. 
 
 The public site is always `/`; authenticated users enter at `/dashboard`. The Web BFF refreshes the session access token before forwarding it to the API and never accepts a caller-provided `Authorization` override. Routing, provider-neutral trading, Digital Traders and risk decisions are recorded in [`docs/architecture/`](./docs/architecture/).
 
+Paper Runtime V2 reconstructs each Digital Trader from persisted PostgreSQL
+state. Paper portfolios are user-scoped, positions use weighted average cost,
+and Trader Risk always precedes Portfolio Risk. PAUSED instances keep their
+hard allocation; STOPPED instances release it. Backtesting and notifications
+remain Paper/product surfaces only, while Binance Production and Stripe Live
+remain disabled.
+
 All work flows from `feature/*` to `develop`. Only the owner may update `main`.
 
 ## Current browser stabilization round

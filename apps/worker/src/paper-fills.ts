@@ -44,7 +44,7 @@ export async function applyPaperFill(database: PrismaClient, input: PaperFillInp
       requested.greaterThan(0) && filled.greaterThanOrEqualTo(requested)
         ? 'FILLED'
         : 'PARTIALLY_FILLED';
-    await applyFillBalancesAndPosition(tx, order, input);
+    const realizedPnl = await applyFillBalancesAndPosition(tx, order, input);
     await tx.trade.create({
       data: {
         orderId: order.id,
@@ -53,6 +53,7 @@ export async function applyPaperFill(database: PrismaClient, input: PaperFillInp
         price,
         fee: input.fee ?? 0,
         feeAsset: input.feeAsset ?? null,
+        realizedPnl,
         executedAt: new Date(),
       },
     });
@@ -84,7 +85,7 @@ async function applyFillBalancesAndPosition(
   tx: Parameters<Parameters<PrismaClient['$transaction']>[0]>[0],
   order: { id: string; botId: string; symbol: string; side: 'BUY' | 'SELL' },
   fill: PaperFillInput,
-) {
+): Promise<Decimal> {
   const quote = quoteAsset(order.symbol);
   const base = order.symbol.slice(0, -quote.length);
   const quantity = new Decimal(fill.quantity);
@@ -131,7 +132,7 @@ async function applyFillBalancesAndPosition(
         },
       });
     }
-    return;
+    return new Decimal(0);
   }
   const sold = await tx.paperBalance.updateMany({
     where: { botId: order.botId, asset: base, free: { gte: fill.quantity } },
@@ -149,15 +150,17 @@ async function applyFillBalancesAndPosition(
   if (!position || new Decimal(position.quantity).lessThan(quantity))
     throw new Error('PAPER_INSUFFICIENT_POSITION');
   const remaining = new Decimal(position.quantity).minus(quantity);
+  const realizedPnl = price.minus(position.averagePrice).times(quantity).minus(fee);
   await tx.position.update({
     where: { id: position.id },
     data: {
       quantity: remaining,
-      realizedPnl: { increment: price.minus(position.averagePrice).times(quantity).minus(fee) },
+      realizedPnl: { increment: realizedPnl },
       status: remaining.isZero() ? 'CLOSED' : 'OPEN',
       closedAt: remaining.isZero() ? new Date() : null,
     },
   });
+  return realizedPnl;
 }
 
 function quoteAsset(symbol: string): string {

@@ -12,6 +12,8 @@ import { TradingActivityModule } from './trading-activity/trading-activity.modul
 import { AdminModule } from './admin/admin.module';
 import { BillingModule } from './billing/billing.module';
 import { TradersModule } from './traders/traders.module';
+import { NotificationsModule } from './notifications/notifications.module';
+import { BacktestsModule } from './backtests/backtests.module';
 
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl && process.env.NODE_ENV !== 'test')
@@ -30,6 +32,8 @@ const database = createDatabaseClient(databaseUrl ?? 'postgresql://test:test@loc
     AdminModule.withDatabase(database),
     BillingModule.withDatabase(database),
     TradersModule,
+    NotificationsModule,
+    BacktestsModule,
   ],
   controllers: [AppController, ProfileController],
 })
