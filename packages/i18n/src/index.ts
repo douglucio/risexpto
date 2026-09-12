@@ -611,6 +611,8 @@ const workspaceMessages: Record<Locale, Record<string, string>> = {
     'workspace.backtestRunning': 'Running…',
     'workspace.backtestSaved': 'Backtest persisted.',
     'workspace.backtestError': 'Unable to run backtest. Check persisted market data and period.',
+    'workspace.notificationRead': 'Read',
+    'workspace.notificationMarkRead': 'Mark as read',
     'workspace.restrictedArea': 'Restricted area',
     'workspace.adminRoleRequired':
       'Admin access requires an explicit privileged role and audited actions.',
@@ -762,6 +764,8 @@ const workspaceMessages: Record<Locale, Record<string, string>> = {
     'workspace.backtestRunning': 'Executando…',
     'workspace.backtestSaved': 'Backtest persistido.',
     'workspace.backtestError': 'Não foi possível executar. Verifique os candles persistidos e o período.',
+    'workspace.notificationRead': 'Lida',
+    'workspace.notificationMarkRead': 'Marcar como lida',
     'workspace.restrictedArea': 'Área restrita',
     'workspace.adminRoleRequired':
       'O acesso administrativo exige uma função privilegiada explícita e ações auditadas.',
@@ -915,6 +919,8 @@ const workspaceMessages: Record<Locale, Record<string, string>> = {
     'workspace.backtestRunning': 'Ejecutando…',
     'workspace.backtestSaved': 'Backtest persistido.',
     'workspace.backtestError': 'No fue posible ejecutarlo. Verifica los datos persistidos y el período.',
+    'workspace.notificationRead': 'Leída',
+    'workspace.notificationMarkRead': 'Marcar como leída',
     'workspace.restrictedArea': 'Área restringida',
     'workspace.adminRoleRequired':
       'El acceso administrativo requiere un rol privilegiado explícito y acciones auditadas.',

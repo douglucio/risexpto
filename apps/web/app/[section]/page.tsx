@@ -420,7 +420,7 @@ function SectionContent({
     );
   if (section === 'risk') return <RiskPanel />;
   if (section === 'notifications')
-    return data?.kind === 'notifications' && data.value.length ? <NotificationsPanel items={data.value} /> : <EmptyState title={t('workspace.notificationsSoon')} description={t('workspace.notificationsSoonDescription')} />;
+    return data?.kind === 'notifications' && data.value.length ? <NotificationsPanel items={data.value} labels={{ read: t('workspace.notificationRead'), markRead: t('workspace.notificationMarkRead') }} /> : <EmptyState title={t('workspace.notificationsSoon')} description={t('workspace.notificationsSoonDescription')} />;
   if (section === 'billing')
     return data?.kind === 'billing' ? (
       <BillingPanel />
