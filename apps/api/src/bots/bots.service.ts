@@ -140,6 +140,7 @@ export class BotsService {
       READY: ['RUNNING'],
       RUNNING: ['PAUSED', 'STOPPED'],
       PAUSED: ['RUNNING', 'STOPPED'],
+      RISK_BLOCKED: ['RUNNING', 'PAUSED', 'STOPPED'],
       STOPPED: ['READY'],
     };
     if (!allowed[bot.status]?.includes(status))

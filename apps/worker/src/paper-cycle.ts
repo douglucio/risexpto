@@ -221,6 +221,7 @@ export async function processPaperCycle(
       },
     });
     if (risk.decision !== 'APPROVED') {
+      await database.bot.update({ where: { id: bot.id }, data: { status: 'RISK_BLOCKED' } });
       await notifyTrader(database, { userId: bot.userId, botId: bot.id, connectionId: bot.exchangeConnectionId, type: 'RISK_PAUSED', severity: 'WARNING', title: 'Trader risk blocked an order', body: risk.reason, data: { reasonCode: risk.reasonCode, proposalId: storedProposal.id } });
     }
     if (risk.decision === 'APPROVED') {
