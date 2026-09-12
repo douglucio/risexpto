@@ -12,6 +12,7 @@ import type { AuthenticatedUser } from '../auth/auth.types';
 import type { BotStatusChange, CreateBotBody, RiskProfileBody } from './bots.types';
 import { BillingService } from '../billing/billing.service';
 import { cryptoDigitalTraders, mapBotState, type CapitalMode, type RiskPreset } from '@risexpto/digital-traders';
+import { Decimal } from 'decimal.js';
 
 @Injectable()
 export class BotsService {
@@ -28,14 +29,26 @@ export class BotsService {
         configuration: true,
         riskProfile: true,
         exchangeConnection: { select: { provider: true, label: true } },
-        positions: { select: { realizedPnl: true } },
+        positions: { where: { status: 'OPEN' }, select: { symbol: true, quantity: true, averagePrice: true, realizedPnl: true } },
       },
     });
-    return bots.map((bot) => ({
-      ...bot,
-      productState: mapBotState(bot.status, bot.waitingReason),
-      totalPnl: bot.positions.reduce((sum, position) => sum + Number(position.realizedPnl), 0),
-      todayPnl: bot.positions.reduce((sum, position) => sum + Number(position.realizedPnl), 0),
+    return Promise.all(bots.map(async (bot) => {
+      const realized = bot.positions.reduce((sum, position) => sum.plus(position.realizedPnl), new Decimal(0));
+      const price = bot.assetSymbol ? await this.db.marketSnapshot.findFirst({ where: { symbol: bot.assetSymbol }, orderBy: { closeTime: 'desc' }, select: { close: true } }) : null;
+      const exposure = bot.positions.reduce((sum, position) => sum.plus(new Decimal(position.quantity).times(price?.close ?? position.averagePrice)), new Decimal(0));
+      const today = new Date(); today.setUTCHours(0, 0, 0, 0);
+      const todayTrades = await this.db.trade.aggregate({ where: { order: { botId: bot.id, tradingMode: bot.tradingMode }, executedAt: { gte: today } }, _sum: { realizedPnl: true } });
+      const todayRealized = new Decimal(todayTrades._sum.realizedPnl ?? 0);
+      const unrealized = bot.positions.reduce((sum, position) => sum.plus(new Decimal(price?.close ?? position.averagePrice).minus(position.averagePrice).times(position.quantity)), new Decimal(0));
+      return {
+        ...bot,
+        productState: mapBotState(bot.status, bot.waitingReason),
+        realizedPnl: realized.toString(),
+        unrealizedPnl: unrealized.toString(),
+        currentExposure: exposure.toString(),
+        totalPnl: Number(realized.plus(unrealized)),
+        todayPnl: Number(todayRealized.plus(unrealized)),
+      };
     }));
   }
 
@@ -65,8 +78,15 @@ export class BotsService {
       if (!connection) throw new BadRequestException('Exchange connection not found');
     }
     try {
-      return await this.db.$transaction(async (tx) =>
-        tx.bot.create({
+      return await this.db.$transaction(async (tx) => {
+        const paperPortfolio = input.tradingMode === 'PAPER' && typeof tx.paperPortfolio?.upsert === 'function'
+          ? await tx.paperPortfolio.upsert({
+              where: { userId_provider_baseCurrency: { userId, provider: 'BINANCE', baseCurrency: input.quoteCurrency } },
+              create: { userId, provider: 'BINANCE', baseCurrency: input.quoteCurrency },
+              update: {},
+            })
+          : null;
+        return tx.bot.create({
           data: {
             userId,
             name: input.name,
@@ -78,6 +98,7 @@ export class BotsService {
             ...(input.exchangeConnectionId
               ? { exchangeConnectionId: input.exchangeConnectionId }
               : {}),
+            ...(paperPortfolio ? { paperPortfolioId: paperPortfolio.id } : {}),
             configuration: {
               create: {
                 parameters: input.parameters as Prisma.InputJsonValue,
@@ -88,12 +109,12 @@ export class BotsService {
             },
             riskProfile: { create: input.riskProfile },
             ...(input.tradingMode === 'PAPER'
-              ? { paperCapitalAllocation: { create: { allocated: 0 } } }
+              ? { paperCapitalAllocation: { create: { allocated: 0, ...(paperPortfolio ? { paperPortfolioId: paperPortfolio.id } : {}) } } }
               : {}),
           },
           include: { configuration: true, riskProfile: true },
-        }),
-      );
+        });
+      });
     } catch (error) {
       if (isUniqueViolation(error)) throw new ConflictException('Bot name already exists');
       throw error;
@@ -114,7 +135,25 @@ export class BotsService {
     if (typeof this.db.$transaction !== 'function')
       return this.db.bot.update({ where: { id: bot.id }, data: { status } });
     return this.db.$transaction(async (tx) => {
-      if (status === 'RUNNING' && bot.exchangeConnectionId && bot.configuration) {
+      if (bot.tradingMode === 'PAPER' && bot.configuration && typeof tx.paperCapitalAllocation?.update === 'function') {
+        const allocation = await tx.paperCapitalAllocation.findUnique({ where: { botId: bot.id } });
+        if (status === 'RUNNING' && !allocation?.active) {
+          const portfolio = bot.paperPortfolioId && typeof tx.paperPortfolio?.update === 'function'
+            ? await tx.paperPortfolio.findUnique({ where: { id: bot.paperPortfolioId } })
+            : null;
+          if (portfolio) {
+            const available = portfolio.availableCapital.minus(portfolio.allocatedCapital);
+            if (available.lessThan(bot.configuration.authorizedCapital))
+              throw new ConflictException('Paper portfolio capital allocation is unavailable');
+            await tx.paperPortfolio.update({ where: { id: portfolio.id }, data: { allocatedCapital: { increment: bot.configuration.authorizedCapital }, availableCapital: { decrement: bot.configuration.authorizedCapital } } });
+          }
+          await tx.paperCapitalAllocation.upsert({ where: { botId: bot.id }, create: { botId: bot.id, paperPortfolioId: bot.paperPortfolioId, allocated: bot.configuration.authorizedCapital, active: true }, update: { allocated: bot.configuration.authorizedCapital, active: true, releasedAt: null } });
+        }
+        if (status === 'STOPPED' && allocation?.active) {
+          if (bot.paperPortfolioId && typeof tx.paperPortfolio?.update === 'function') await tx.paperPortfolio.update({ where: { id: bot.paperPortfolioId }, data: { allocatedCapital: { decrement: allocation.allocated }, availableCapital: { increment: allocation.allocated } } });
+          await tx.paperCapitalAllocation.update({ where: { botId: bot.id }, data: { active: false, allocated: 0, releasedAt: new Date() } });
+        }
+      } else if (status === 'RUNNING' && bot.exchangeConnectionId && bot.configuration) {
         const result = await tx.$executeRaw`
           UPDATE "ExchangeConnection"
           SET "allocatedCapital" = "allocatedCapital" + ${bot.configuration.authorizedCapital}
@@ -123,7 +162,7 @@ export class BotsService {
             AND "killSwitchActive" = false`;
         if (result !== 1) throw new ConflictException('Connection capital allocation is unavailable');
       }
-      if (status === 'STOPPED' && bot.exchangeConnectionId && bot.configuration) {
+      if (bot.tradingMode !== 'PAPER' && status === 'STOPPED' && bot.exchangeConnectionId && bot.configuration) {
         await tx.$executeRaw`
           UPDATE "ExchangeConnection"
           SET "allocatedCapital" = GREATEST(0, "allocatedCapital" - ${bot.configuration.authorizedCapital})

@@ -1,0 +1,140 @@
+import { Decimal } from 'decimal.js';
+import type { PrismaClient } from '@risexpto/database';
+
+export type TraderRuntimeContext = {
+  traderInstanceId: string;
+  userId: string;
+  connectionId: string | null;
+  assetSymbol: string;
+  capitalMode: 'FIXED' | 'COMPOUND';
+  authorizedCapital: Decimal;
+  operationalCapital: Decimal;
+  allocatedCapital: Decimal;
+  availableCapital: Decimal;
+  spentCapital: Decimal;
+  reservedCapital: Decimal;
+  positionQuantity: Decimal;
+  averageEntryPrice: Decimal;
+  currentMarketPrice: Decimal;
+  currentPositionValue: Decimal;
+  realizedPnl: Decimal;
+  unrealizedPnl: Decimal;
+  todayRealizedPnl: Decimal;
+  todayUnrealizedPnl: Decimal;
+  currentExposure: Decimal;
+  openOrders: number;
+  openPositions: number;
+  lastTradeAt: Date | null;
+  lastBuyAt: Date | null;
+  lastSellAt: Date | null;
+  currentDrawdown: Decimal;
+  dailyLoss: Decimal;
+  traderStatus: string;
+  riskPreset: string | null;
+  connectionRiskState: {
+    allocatedCapital: Decimal;
+    currentExposure: Decimal;
+    dailyLoss: Decimal;
+    killSwitchActive: boolean;
+  };
+};
+
+export class TraderRuntimeStateService {
+  constructor(private readonly database: PrismaClient) {}
+
+  async load(botId: string, currentMarketPrice: Decimal | string | number): Promise<TraderRuntimeContext> {
+    const bot = await this.database.bot.findUniqueOrThrow({
+      where: { id: botId },
+      include: {
+        configuration: true,
+        riskProfile: true,
+        exchangeConnection: true,
+        positions: { where: { status: 'OPEN', tradingMode: 'PAPER' } },
+        paperReservations: { where: { status: 'ACTIVE' } },
+        orders: { where: { tradingMode: 'PAPER', status: { in: ['CREATED', 'SUBMITTED', 'PARTIALLY_FILLED'] } } },
+      },
+    });
+    const configuration = bot.configuration;
+    if (!configuration) throw new Error('TRADER_RUNTIME_CONFIGURATION_MISSING');
+    const position = bot.positions.find((item) => item.symbol === (bot.assetSymbol ?? configuration.allowedSymbols[0]));
+    const price = new Decimal(currentMarketPrice);
+    const quantity = new Decimal(position?.quantity ?? 0);
+    const average = new Decimal(position?.averagePrice ?? 0);
+    const currentValue = quantity.times(price);
+    const realizedPnl = new Decimal(position?.realizedPnl ?? 0);
+    const reservations = bot.paperReservations.reduce((sum, item) => sum.plus(item.amount), new Decimal(0));
+    const spentCapital = await this.spentCapital(botId);
+    const authorized = new Decimal(configuration.authorizedCapital);
+    const operational = bot.capitalMode === 'COMPOUND'
+      ? Decimal.max(0, authorized.plus(realizedPnl))
+      : authorized;
+    const allocated = new Decimal(bot.exchangeConnection?.allocatedCapital ?? authorized);
+    const available = Decimal.max(0, authorized.minus(reservations).minus(spentCapital));
+    const unrealized = price.minus(average).times(quantity);
+    const trades = await this.database.trade.findMany({
+      where: { order: { botId, tradingMode: 'PAPER' } },
+      orderBy: { executedAt: 'desc' },
+      take: 100,
+      select: { executedAt: true, order: { select: { side: true } } },
+    });
+    const today = new Date();
+    today.setUTCHours(0, 0, 0, 0);
+    const todayRealized = (await this.database.trade.findMany({
+      where: { order: { botId, tradingMode: 'PAPER' }, executedAt: { gte: today } },
+      select: { realizedPnl: true },
+    })).reduce((sum, item) => sum.plus(item.realizedPnl), new Decimal(0));
+    const lastBuy = trades.find((item) => item.order.side === 'BUY')?.executedAt ?? null;
+    const lastSell = trades.find((item) => item.order.side === 'SELL')?.executedAt ?? null;
+    const lastTradeAt = trades[0]?.executedAt ?? null;
+    return {
+      traderInstanceId: bot.id,
+      userId: bot.userId,
+      connectionId: bot.exchangeConnectionId,
+      assetSymbol: bot.assetSymbol ?? configuration.allowedSymbols[0] ?? '',
+      capitalMode: bot.capitalMode,
+      authorizedCapital: authorized,
+      operationalCapital: operational,
+      allocatedCapital: allocated,
+      availableCapital: available,
+      spentCapital,
+      reservedCapital: reservations,
+      positionQuantity: quantity,
+      averageEntryPrice: average,
+      currentMarketPrice: price,
+      currentPositionValue: currentValue,
+      realizedPnl,
+      unrealizedPnl: unrealized,
+      todayRealizedPnl: todayRealized,
+      todayUnrealizedPnl: unrealized,
+      currentExposure: currentValue,
+      openOrders: bot.orders.length,
+      openPositions: position ? 1 : 0,
+      lastTradeAt,
+      lastBuyAt: lastBuy,
+      lastSellAt: lastSell,
+      currentDrawdown: Decimal.max(0, realizedPnl.negated()),
+      dailyLoss: Decimal.max(0, todayRealized.negated()),
+      traderStatus: bot.status,
+      riskPreset: bot.riskProfile?.preset ?? null,
+      connectionRiskState: {
+        allocatedCapital: new Decimal(bot.exchangeConnection?.allocatedCapital ?? 0),
+        currentExposure: currentValue,
+        dailyLoss: Decimal.max(0, todayRealized.negated()),
+        killSwitchActive: bot.exchangeConnection?.killSwitchActive ?? false,
+      },
+    };
+  }
+
+  private async spentCapital(botId: string): Promise<Decimal> {
+    const buys = await this.database.trade.findMany({
+      where: { order: { botId, tradingMode: 'PAPER', side: 'BUY' } },
+      select: { quantity: true, price: true, fee: true },
+    });
+    const sells = await this.database.trade.findMany({
+      where: { order: { botId, tradingMode: 'PAPER', side: 'SELL' } },
+      select: { quantity: true, price: true, fee: true },
+    });
+    return buys.reduce((sum, item) => sum.plus(new Decimal(item.quantity).times(item.price).plus(item.fee)), new Decimal(0))
+      .minus(sells.reduce((sum, item) => sum.plus(new Decimal(item.quantity).times(item.price).minus(item.fee)), new Decimal(0)));
+  }
+}

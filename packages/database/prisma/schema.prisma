@@ -109,6 +109,19 @@ enum NotificationStatus {
   FAILED
 }
 
+enum NotificationSeverity {
+  INFO
+  SUCCESS
+  WARNING
+  ERROR
+}
+
+enum PaperGridLevelStatus {
+  OPEN
+  EXECUTED
+  REPLACED
+}
+
 enum AuditEventType {
   USER_ACTION
   BOT_ACTION
@@ -163,6 +176,7 @@ model User {
   subscriptions       Subscription[]
   usages              Usage[]
   aiCredits           AiCreditLedgerEntry[]
+  paperPortfolios     PaperPortfolio[]
 
   @@index([createdAt])
   @@index([deletedAt])
@@ -240,6 +254,7 @@ model Bot {
   id                   String              @id @default(uuid()) @db.Uuid
   userId               String              @db.Uuid
   exchangeConnectionId String?             @db.Uuid
+  paperPortfolioId     String?             @db.Uuid
   strategyVersionId    String              @db.Uuid
   name                 String              @db.VarChar(120)
   status               BotStatus           @default(DRAFT)
@@ -255,6 +270,7 @@ model Bot {
   archivedAt           DateTime?           @db.Timestamptz(3)
   user                 User                @relation(fields: [userId], references: [id], onDelete: Cascade)
   exchangeConnection   ExchangeConnection? @relation(fields: [exchangeConnectionId], references: [id], onDelete: Restrict)
+  paperPortfolio       PaperPortfolio?    @relation(fields: [paperPortfolioId], references: [id], onDelete: Restrict)
   strategyVersion      StrategyVersion     @relation(fields: [strategyVersionId], references: [id], onDelete: Restrict)
   configuration        BotConfiguration?
   proposals            TradeProposal[]
@@ -269,10 +285,13 @@ model Bot {
   events               BotEvent[]
   backtests            Backtest[]
   auditLogs            AuditLog[]
+  gridLevels           PaperGridLevel[]
+  notifications        Notification[]
 
   @@unique([userId, name])
   @@index([userId, status])
   @@index([status, tradingMode])
+  @@index([paperPortfolioId, status])
 }
 
 model BotConfiguration {
@@ -397,12 +416,60 @@ model PaperBalance {
 }
 
 model PaperCapitalAllocation {
-  id        String   @id @default(uuid()) @db.Uuid
-  botId     String   @unique @db.Uuid
-  allocated Decimal  @default(0) @db.Decimal(38, 18)
-  createdAt DateTime @default(now()) @db.Timestamptz(3)
-  updatedAt DateTime @updatedAt @db.Timestamptz(3)
-  bot       Bot      @relation(fields: [botId], references: [id], onDelete: Cascade)
+  id              String         @id @default(uuid()) @db.Uuid
+  botId           String         @unique @db.Uuid
+  paperPortfolioId String?        @db.Uuid
+  allocated       Decimal        @default(0) @db.Decimal(38, 18)
+  active          Boolean        @default(false)
+  releasedAt      DateTime?      @db.Timestamptz(3)
+  createdAt       DateTime       @default(now()) @db.Timestamptz(3)
+  updatedAt       DateTime       @updatedAt @db.Timestamptz(3)
+  bot             Bot            @relation(fields: [botId], references: [id], onDelete: Cascade)
+  paperPortfolio  PaperPortfolio? @relation(fields: [paperPortfolioId], references: [id], onDelete: SetNull)
+
+  @@index([paperPortfolioId, active])
+}
+
+model PaperPortfolio {
+  id              String                   @id @default(uuid()) @db.Uuid
+  userId          String                   @db.Uuid
+  provider        ExchangeProvider        @default(BINANCE)
+  baseCurrency    String                   @default("USDT") @db.VarChar(16)
+  initialCapital  Decimal                  @default(10000) @db.Decimal(38, 18)
+  availableCapital Decimal                 @default(10000) @db.Decimal(38, 18)
+  allocatedCapital Decimal                 @default(0) @db.Decimal(38, 18)
+  currentExposure Decimal                 @default(0) @db.Decimal(38, 18)
+  realizedPnl     Decimal                  @default(0) @db.Decimal(38, 18)
+  unrealizedPnl   Decimal                  @default(0) @db.Decimal(38, 18)
+  todayRealizedPnl Decimal                 @default(0) @db.Decimal(38, 18)
+  maximumExposure Decimal                  @default(0) @db.Decimal(38, 18)
+  maximumDailyLoss Decimal                 @default(0) @db.Decimal(38, 18)
+  killSwitchActive Boolean                  @default(false)
+  createdAt       DateTime                 @default(now()) @db.Timestamptz(3)
+  updatedAt       DateTime                 @updatedAt @db.Timestamptz(3)
+  user            User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bots            Bot[]
+  allocations     PaperCapitalAllocation[]
+
+  @@unique([userId, provider, baseCurrency])
+  @@index([userId, provider])
+}
+
+model PaperGridLevel {
+  id             String                @id @default(uuid()) @db.Uuid
+  botId          String                @db.Uuid
+  level          Int
+  price          Decimal               @db.Decimal(38, 18)
+  side           ProposalSide
+  status         PaperGridLevelStatus  @default(OPEN)
+  lastExecutedAt DateTime?             @db.Timestamptz(3)
+  executionCount Int                   @default(0)
+  createdAt      DateTime              @default(now()) @db.Timestamptz(3)
+  updatedAt      DateTime              @updatedAt @db.Timestamptz(3)
+  bot            Bot                   @relation(fields: [botId], references: [id], onDelete: Cascade)
+
+  @@unique([botId, level])
+  @@index([botId, status, price])
 }
 
 model PaperGlobalCapitalAllocation {
@@ -555,6 +622,9 @@ model Notification {
   userId    String              @db.Uuid
   channel   NotificationChannel
   status    NotificationStatus  @default(PENDING)
+  severity  NotificationSeverity @default(INFO)
+  botId     String?             @db.Uuid
+  connectionId String?          @db.Uuid
   type      String              @db.VarChar(80)
   title     String              @db.VarChar(180)
   body      String              @db.Text
@@ -563,8 +633,10 @@ model Notification {
   sentAt    DateTime?           @db.Timestamptz(3)
   createdAt DateTime            @default(now()) @db.Timestamptz(3)
   user      User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bot       Bot?               @relation(fields: [botId], references: [id], onDelete: SetNull)
 
   @@index([userId, status, createdAt])
+  @@index([botId, createdAt])
 }
 
 model AuditLog {

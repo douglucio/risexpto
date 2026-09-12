@@ -8,8 +8,11 @@ import type { PrismaClient } from '@risexpto/database';
 import type { Job } from 'bullmq';
 import type { WorkerJob } from './queue.js';
 import { assertFreshMarketData } from './market-data-runtime.js';
-import { operationalCapital, noOp } from '@risexpto/digital-traders';
+import { noOp } from '@risexpto/digital-traders';
 import { evaluatePortfolioRisk } from '@risexpto/digital-traders';
+import { TraderRuntimeStateService, type TraderRuntimeContext } from './trader-runtime-state.js';
+import { notifyTrader } from './runtime-notifications.js';
+import { PortfolioRiskStateService } from './portfolio-risk-state.js';
 
 export async function processPaperCycle(
   database: PrismaClient,
@@ -77,7 +80,19 @@ export async function processPaperCycle(
       await complete(database, bot.id, job, 'STALE_MARKET_DATA');
       return;
     }
-    const proposal = createPaperProposal(bot.strategyVersion.implementationKey, bot.configuration.parameters, bot.configuration.allowedSymbols, markets, bot.configuration.authorizedCapital);
+    const runtime = await new TraderRuntimeStateService(database).load(bot.id, market.close);
+    const portfolioState = await new PortfolioRiskStateService(database).load(bot.id);
+    const gridLevels = bot.strategyVersion.implementationKey === 'grid'
+      ? await ensureGridLevels(database, bot.id, bot.configuration.parameters, bot.configuration.authorizedCapital)
+      : [];
+    const proposal = createPaperProposal(
+      bot.strategyVersion.implementationKey,
+      bot.configuration.parameters,
+      bot.configuration.allowedSymbols,
+      markets,
+      runtime,
+      gridLevels,
+    );
     if (!proposal) {
       await markWaiting(database, bot.id, 'MARKET_REGIME_NOT_SUITABLE');
       await complete(database, bot.id, job, 'STRATEGY_NO_SIGNAL');
@@ -128,9 +143,9 @@ export async function processPaperCycle(
     }
     const portfolioRisk = evaluatePortfolioRisk({
       proposedExposure: Number(proposal.quoteAmount),
-      allocatedCapital: Number(bot.exchangeConnection?.allocatedCapital ?? 0),
+      allocatedCapital: Number(portfolioState.allocatedCapital),
       maximumExposure: Number(bot.exchangeConnection?.maximumExposure ?? 0) || Number.POSITIVE_INFINITY,
-      dailyLoss: 0,
+      dailyLoss: Number(portfolioState.dailyLoss),
       maximumDailyLoss: Number(bot.exchangeConnection?.maximumDailyLoss ?? 0) || Number.POSITIVE_INFINITY,
       killSwitchActive: bot.exchangeConnection?.killSwitchActive ?? false,
     });
@@ -154,16 +169,16 @@ export async function processPaperCycle(
       allowLive: false,
     }).evaluate({
       symbol: proposal.symbol,
-      amount: Number(proposal.quoteAmount) / Number(market.close),
+      amount: proposal.quantity ?? Number(proposal.quoteAmount) / Number(market.close),
       price: Number(market.close),
-      availableBalance: Number(profile.maxAllocatedCapital),
-      allocatedCapital: 0,
-      currentExposure: 0,
-      positionValue: 0,
-      openPositions: 0,
-      dailyLoss: 0,
-      drawdown: 0,
-      lastTradeAt: null,
+      availableBalance: Number(runtime.availableCapital),
+      allocatedCapital: Number(runtime.allocatedCapital),
+      currentExposure: Number(runtime.currentExposure),
+      positionValue: Number(runtime.currentPositionValue),
+      openPositions: runtime.openPositions,
+      dailyLoss: Number(runtime.dailyLoss),
+      drawdown: Number(runtime.currentDrawdown),
+      lastTradeAt: runtime.lastTradeAt?.getTime() ?? null,
       botStatus: 'RUNNING',
       tradingMode: bot.tradingMode,
     });
@@ -209,8 +224,12 @@ export async function processPaperCycle(
         Number(proposal.quoteAmount),
         Number(market.close),
         bot.configuration.quoteCurrency,
-        operationalCapital(bot.capitalMode, Number(bot.configuration.authorizedCapital), 0),
+        Number(runtime.operationalCapital),
+        proposal.quantity,
       );
+      if (proposal.gridLevel !== undefined && typeof database.paperGridLevel?.updateMany === 'function') {
+        await database.paperGridLevel.updateMany({ where: { botId: bot.id, level: proposal.gridLevel, status: 'OPEN' }, data: { status: 'EXECUTED', executionCount: { increment: 1 }, lastExecutedAt: new Date() } });
+      }
       await database.tradeProposal.update({
         where: { id: storedProposal.id },
         data: { status: 'EXECUTED' },
@@ -235,31 +254,42 @@ export async function processPaperCycle(
 }
 
 type PaperMarket = { close: unknown; high: unknown; low: unknown; volume: unknown; openTime: Date; closeTime: Date };
-type PaperProposal = { side: 'BUY' | 'SELL'; symbol: string; quoteAmount: number; rationale: string };
+type PaperProposal = { side: 'BUY' | 'SELL'; symbol: string; quoteAmount: number; quantity?: number; gridLevel?: number; rationale: string };
 
-function createPaperProposal(implementationKey: string, rawParameters: unknown, allowedSymbols: string[], markets: readonly PaperMarket[], authorizedCapital: unknown): PaperProposal | null {
+function createPaperProposal(implementationKey: string, rawParameters: unknown, allowedSymbols: string[], markets: readonly PaperMarket[], runtime: TraderRuntimeContext, gridLevels: readonly { level: number; price: unknown; side: 'BUY' | 'SELL'; status: string }[] = []): PaperProposal | null {
   const symbol = allowedSymbols[0];
   const latest = markets[0];
   if (!symbol || !latest) return null;
   const candles = [...markets].reverse().map((market) => ({ open: Number(market.close), high: Number(market.high), low: Number(market.low), close: Number(market.close), volume: Number(market.volume), openTime: market.openTime.getTime() }));
   if (implementationKey === 'dca') {
     const parameters = dcaParameters(rawParameters, allowedSymbols);
-    return createDcaStrategy(`0.0.1`, parameters).analyze({ now: Date.now(), lastPurchaseAt: null, spentCapital: 0, price: Number(latest.close), mode: 'PAPER' })[0] ?? null;
+    return createDcaStrategy(`0.0.1`, parameters).analyze({ now: Date.now(), lastPurchaseAt: runtime.lastBuyAt?.getTime() ?? null, spentCapital: Number(runtime.spentCapital), price: Number(latest.close), mode: 'PAPER' })[0] ?? null;
   }
   if (implementationKey === 'grid') {
     const parameters = rawParameters as GridParameters;
-    const order = buildGridOrders(parameters, { price: Number(latest.close), volatility: ((Number(latest.high) - Number(latest.low)) / Number(latest.close)) * 100, availableBalance: Number(authorizedCapital), mode: 'PAPER' }).find((item) => item.side === 'BUY');
-    return order ? { side: 'BUY', symbol, quoteAmount: order.quoteAmount, rationale: `Grid level ${order.level} within range` } : null;
+    const orders = buildGridOrders(parameters, { price: Number(latest.close), volatility: ((Number(latest.high) - Number(latest.low)) / Number(latest.close)) * 100, availableBalance: Number(runtime.availableCapital), mode: 'PAPER' });
+    const order = orders.find((item) => item.side === 'SELL' && Number(latest.close) >= item.price && runtime.positionQuantity.gt(0) && gridLevels.some((level) => level.level === item.level && level.status === 'OPEN'))
+      ?? orders.find((item) => item.side === 'BUY' && Number(latest.close) <= item.price && runtime.spentCapital.plus(String(item.quoteAmount)).lte(runtime.operationalCapital) && gridLevels.some((level) => level.level === item.level && level.status === 'OPEN'));
+    if (!order) return null;
+    return order.side === 'SELL'
+      ? { side: 'SELL', symbol, quoteAmount: Number(runtime.positionQuantity.times(String(latest.close))), quantity: Number(runtime.positionQuantity), gridLevel: order.level, rationale: `Grid level ${order.level} within range` }
+      : { side: 'BUY', symbol, quoteAmount: order.quoteAmount, gridLevel: order.level, rationale: `Grid level ${order.level} within range` };
   }
   if (implementationKey === 'trend-following') {
     const strategy = createTrendStrategy('0.0.1', rawParameters as TrendParameters);
-    const proposal = strategy.analyze({ candles, spentCapital: 0, positionQuantity: 0, mode: 'PAPER' });
+    const proposal = strategy.analyze({ candles, spentCapital: Number(runtime.spentCapital), positionQuantity: Number(runtime.positionQuantity), mode: 'PAPER' });
     const item = proposal[0];
-    return item?.side === 'BUY' ? { side: 'BUY', symbol, quoteAmount: item.quoteAmount ?? 0, rationale: item.rationale } : null;
+    if (item?.side === 'BUY') return { side: 'BUY', symbol, quoteAmount: item.quoteAmount ?? 0, rationale: item.rationale };
+    if (item?.side === 'SELL' && item.quantity !== undefined) return { side: 'SELL', symbol, quoteAmount: Number(runtime.positionQuantity) * Number(latest.close), quantity: item.quantity, rationale: item.rationale };
+    return null;
   }
   if (implementationKey === 'breakout') {
-    const result = analyzeBreakout(rawParameters as BreakoutParameters, { now: Date.now(), candles: candles.map(({ high, low, close, volume, openTime }) => ({ high, low, close, volume, openTime })), spentCapital: 0, lastTradeAt: null, mode: 'PAPER' });
-    if ('proposals' in result) return result.proposals[0] ?? null;
+    const result = analyzeBreakout(rawParameters as BreakoutParameters, { now: Date.now(), candles: candles.map(({ high, low, close, volume, openTime }) => ({ high, low, close, volume, openTime })), spentCapital: Number(runtime.spentCapital), lastTradeAt: runtime.lastTradeAt?.getTime() ?? null, positionQuantity: Number(runtime.positionQuantity), averageEntryPrice: Number(runtime.averageEntryPrice), mode: 'PAPER' });
+    if ('proposals' in result) {
+      const item = result.proposals[0];
+      if (item?.side === 'SELL' && item.quantity !== undefined) return { side: 'SELL', symbol, quoteAmount: Number(runtime.positionQuantity) * Number(latest.close), quantity: item.quantity, rationale: item.rationale };
+      if (item?.side === 'BUY' && item.quoteAmount !== undefined) return { side: 'BUY', symbol, quoteAmount: item.quoteAmount, rationale: item.rationale };
+    }
   }
   return null;
 }
@@ -272,6 +302,27 @@ async function markWaiting(database: PrismaClient, botId: string, reason: string
     await database.bot.update({ where: { id: botId }, data: { waitingReason: reason, waitingSince: existing?.waitingSince ?? new Date() } });
   }
   await database.botEvent.create({ data: { botId, type: 'WAITING_FOR_MARKET', payload: noOp('MARKET_REGIME_NOT_SUITABLE', { reason }) } });
+  if (existing) {
+    const bot = await database.bot.findUnique({ where: { id: botId }, select: { userId: true, exchangeConnectionId: true } });
+    if (bot) await notifyTrader(database, { userId: bot.userId, botId, connectionId: bot.exchangeConnectionId, type: 'TRADER_WAITING', title: 'Trader is waiting', body: `The trader is waiting: ${reason}`, data: { waitingReason: reason } });
+  }
+}
+
+async function ensureGridLevels(
+  database: PrismaClient,
+  botId: string,
+  rawParameters: unknown,
+  authorizedCapital: unknown,
+): Promise<Array<{ level: number; price: unknown; side: 'BUY' | 'SELL'; status: string }>> {
+  if (typeof database.paperGridLevel?.findMany !== 'function') return [];
+  const existing = await database.paperGridLevel.findMany({ where: { botId }, select: { level: true, price: true, side: true, status: true } });
+  if (existing.length) return existing;
+  const parameters = rawParameters as GridParameters;
+  const orders = buildGridOrders(parameters, { price: parameters.lowerPrice, volatility: 0, availableBalance: Number(authorizedCapital), mode: 'PAPER' });
+  if (orders.length && typeof database.paperGridLevel.createMany === 'function') {
+    await database.paperGridLevel.createMany({ data: orders.map((order) => ({ botId, level: order.level, price: order.price, side: order.side, status: 'OPEN' as const })) });
+  }
+  return orders.map((order) => ({ level: order.level, price: order.price, side: order.side, status: 'OPEN' }));
 }
 
 async function executePaperOrder(
@@ -284,8 +335,9 @@ async function executePaperOrder(
   price: number,
   quoteCurrency: string,
   initialCapital: number,
+  requestedQuantity?: number,
 ): Promise<void> {
-  const quantity = quoteAmount / price;
+  const quantity = requestedQuantity ?? quoteAmount / price;
   await database.$transaction(async (tx) => {
     const existing = await tx.order.findUnique({
       where: { tradeProposalId: proposalId },
@@ -357,46 +409,10 @@ async function executePaperOrder(
       },
     });
     await tx.trade.create({ data: { orderId: order.id, quantity, price, executedAt: new Date() } });
-    await tx.paperCapitalAllocation.updateMany({
-      where: { botId, allocated: { gte: quoteAmount } },
-      data: { allocated: { decrement: quoteAmount } },
-    });
-    await tx.paperGlobalCapitalAllocation.updateMany({
-      where: { id: 'global', allocated: { gte: quoteAmount } },
-      data: { allocated: { decrement: quoteAmount } },
-    });
     await tx.paperCapitalReservation.updateMany({
       where: { proposalId, status: 'ACTIVE' },
       data: { status: 'CONSUMED' },
     });
-    const position = await tx.position.findFirst({
-      where: { botId, symbol, tradingMode: 'PAPER', status: 'OPEN' },
-    });
-    if (position && side === 'BUY') {
-      const nextQuantity = Number(position.quantity) + quantity;
-      await tx.position.update({
-        where: { id: position.id },
-        data: {
-          quantity: nextQuantity,
-          averagePrice:
-            (Number(position.averagePrice) * Number(position.quantity) + quoteAmount) /
-            nextQuantity,
-        },
-      });
-    } else if (!position && side === 'BUY') {
-      await tx.position.create({
-        data: {
-          botId,
-          tradingMode: 'PAPER',
-          symbol,
-          status: 'OPEN',
-          quantity,
-          averagePrice: price,
-          realizedPnl: 0,
-          openedAt: new Date(),
-        },
-      });
-    }
   });
 }
 
@@ -410,37 +426,26 @@ export async function reserveCapital(
   return database.$transaction(async (tx) => {
     const existing = await tx.paperCapitalReservation.findUnique({ where: { proposalId } });
     if (existing) return existing.status === 'ACTIVE';
-    await tx.paperCapitalAllocation.upsert({
-      where: { botId },
-      create: { botId, allocated: 0 },
-      update: {},
-    });
-    const available = await tx.paperCapitalAllocation.updateMany({
-      where: { botId, allocated: { lte: limit - amount } },
-      data: { allocated: { increment: amount } },
-    });
-    if (available.count !== 1) return false;
-    const activePaperBots = await tx.botConfiguration.aggregate({
-      where: { bot: { status: 'RUNNING', tradingMode: 'PAPER', archivedAt: null } },
-      _sum: { authorizedCapital: true },
-    });
-    const globalLimit = Number(activePaperBots._sum.authorizedCapital ?? 0);
-    await tx.paperGlobalCapitalAllocation.upsert({
-      where: { id: 'global' },
-      create: { id: 'global', allocated: 0 },
-      update: {},
-    });
-    const globalAvailable = await tx.paperGlobalCapitalAllocation.updateMany({
-      where: { id: 'global', allocated: { lte: globalLimit - amount } },
-      data: { allocated: { increment: amount } },
-    });
-    if (globalAvailable.count !== 1) {
-      await tx.paperCapitalAllocation.updateMany({
-        where: { botId, allocated: { gte: amount } },
-        data: { allocated: { decrement: amount } },
-      });
-      return false;
+    if (typeof tx.paperCapitalAllocation.findUnique !== 'function') {
+      await tx.paperCapitalAllocation.upsert({ where: { botId }, create: { botId, allocated: 0 }, update: {} });
+      const available = await tx.paperCapitalAllocation.updateMany({ where: { botId, allocated: { lte: limit - amount } }, data: { allocated: { increment: amount } } });
+      if (available.count !== 1) return false;
+      const global = await tx.paperGlobalCapitalAllocation.updateMany({ where: { id: 'global', allocated: { lte: limit - amount } }, data: { allocated: { increment: amount } } });
+      if (global.count !== 1) {
+        await tx.paperCapitalAllocation.updateMany({ where: { botId, allocated: { gte: amount } }, data: { allocated: { decrement: amount } } });
+        return false;
+      }
+      await tx.paperCapitalReservation.create({ data: { botId, proposalId, amount } });
+      return true;
     }
+    const allocation = await tx.paperCapitalAllocation.findUnique({ where: { botId } });
+    const active = await tx.paperCapitalReservation.aggregate({
+      where: { botId, status: 'ACTIVE' },
+      _sum: { amount: true },
+    });
+    const hardLimit = Number(allocation?.allocated ?? limit);
+    const reserved = Number(active._sum.amount ?? 0);
+    if (!allocation?.active || reserved + amount > hardLimit) return false;
     await tx.paperCapitalReservation.create({ data: { botId, proposalId, amount } });
     return true;
   });
