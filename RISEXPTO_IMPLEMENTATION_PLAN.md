@@ -3726,3 +3726,8 @@ provider e moeda-base.
   Team e reconciliação de notifications. A suíte unitária passou; o E2E real
   PostgreSQL/Redis e dois testes HTTP de autenticação continuam dependentes do
   ambiente externo.
+- 2026-09-12: auditoria final corrigiu persistência de Position no caminho de
+  execução Paper, permitiu saídas SELL com risco redutor e adicionou fixture
+  de quatro traders para restart/reprocessamento. A execução contra
+  PostgreSQL local foi tentada fora do sandbox, mas o servidor `127.0.0.1:5432`
+  não estava disponível.

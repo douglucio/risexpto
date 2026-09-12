@@ -15,6 +15,11 @@ Portfolio/Connection Risk → Paper execution. PAUSED keeps hard allocation;
 STOPPED releases it idempotently. `PaperGlobalCapitalAllocation` is a legacy
 compatibility table and is not the source of new user balances.
 
+Risk checks distinguish exposure-increasing BUY proposals from risk-reducing
+SELL exits. SELL still passes both risk layers and position validation, but is
+not blocked by quote-balance, cooldown, or new-exposure checks; this allows a
+trader to unwind a position after a limit or risk condition is reached.
+
 Pulse exits are explicit Paper rules: a 3% stop loss or 6% take profit from
 average entry, with cooldown and no automatic strategy switching. WAITING is a
 normal product state and is persisted with structured reason data.
@@ -48,7 +53,8 @@ Manual validation sequence:
 6. Restart the worker with open Paper positions, rerun the cycle and verify no
    duplicate order/trade, preserved allocation and continued P&L calculation.
 
-The full PostgreSQL/Redis scenario is exposed through
-`apps/worker/src/paper-trading.integration.test.ts` and the `E2E_DATABASE_URL`
-runbook. Live provider balance synchronization remains a prerequisite for any
-future Live phase.
+The full PostgreSQL/Redis scenarios are exposed through
+`apps/worker/src/paper-trading.integration.test.ts` and
+`apps/worker/src/paper-runtime-v2.integration.test.ts`, using
+`E2E_DATABASE_URL`. Live provider balance synchronization remains a
+prerequisite for any future Live phase.
