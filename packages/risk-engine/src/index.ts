@@ -16,6 +16,7 @@ export type RiskLimits = {
   allowLive: boolean;
 };
 export type RiskContext = {
+  side?: 'BUY' | 'SELL';
   symbol: string;
   amount: number;
   price: number;
@@ -68,6 +69,7 @@ export class RiskEngine {
       proposedValue,
       symbol: context.symbol.trim().toUpperCase(),
     };
+    const isExit = context.side === 'SELL';
     const checks: Array<[string, string, boolean]> = [
       [
         'INVALID_AMOUNT',
@@ -96,7 +98,7 @@ export class RiskEngine {
       [
         'INSUFFICIENT_BALANCE',
         'Available balance is insufficient.',
-        proposedValueDecimal.lte(context.availableBalance),
+        isExit || proposedValueDecimal.lte(context.availableBalance),
       ],
       [
         'TRADE_LIMIT',
@@ -106,28 +108,28 @@ export class RiskEngine {
       [
         'ALLOCATED_CAPITAL_LIMIT',
         'Allocated capital limit would be exceeded.',
-        new Decimal(context.allocatedCapital)
+        isExit || new Decimal(context.allocatedCapital)
           .plus(proposedValueDecimal)
           .lte(this.limits.maxAllocatedCapital),
       ],
       [
         'EXPOSURE_LIMIT',
         'Maximum exposure would be exceeded.',
-        new Decimal(context.currentExposure)
-          .plus(proposedValueDecimal)
-          .lte(this.limits.maxExposure),
+        isExit
+          ? proposedValueDecimal.lte(new Decimal(context.positionValue))
+          : new Decimal(context.currentExposure).plus(proposedValueDecimal).lte(this.limits.maxExposure),
       ],
       [
         'POSITION_PERCENT_LIMIT',
         'Position percentage limit would be exceeded.',
-        proposedValueDecimal.lte(
+        isExit || proposedValueDecimal.lte(
           new Decimal(this.limits.maxExposure).times(this.limits.maxPositionPercent),
         ),
       ],
       [
         'MAX_POSITIONS',
         'Maximum open positions reached.',
-        context.openPositions < this.limits.maxPositions,
+        isExit || context.openPositions < this.limits.maxPositions,
       ],
       [
         'DAILY_LOSS_LIMIT',
@@ -138,7 +140,7 @@ export class RiskEngine {
       [
         'COOLDOWN',
         'Trading cooldown is active.',
-        context.lastTradeAt === null || timestamp - context.lastTradeAt >= this.limits.cooldownMs,
+        isExit || context.lastTradeAt === null || timestamp - context.lastTradeAt >= this.limits.cooldownMs,
       ],
     ];
     const failure = checks.find(([, , passed]) => !passed);

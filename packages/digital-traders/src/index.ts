@@ -98,9 +98,11 @@ export function noOp(waitingReason: WaitingReason, details?: Readonly<Record<str
   return { kind: 'NO_OP', waitingReason, ...(details ? { details } : {}) };
 }
 
-export type PortfolioRiskInput = Readonly<{ proposedExposure: number; allocatedCapital: number; maximumExposure: number; dailyLoss: number; maximumDailyLoss: number; killSwitchActive: boolean }>;
+export type PortfolioRiskInput = Readonly<{ proposedExposure: number; allocatedCapital: number; maximumExposure: number; dailyLoss: number; maximumDailyLoss: number; killSwitchActive: boolean; side?: 'BUY' | 'SELL' }>;
 export function evaluatePortfolioRisk(input: PortfolioRiskInput): { approved: boolean; reasonCode: string } {
+  const isExit = input.side === 'SELL';
   if (input.killSwitchActive) return { approved: false, reasonCode: 'CONNECTION_KILL_SWITCH' };
+  if (isExit) return { approved: true, reasonCode: 'APPROVED_RISK_REDUCTION' };
   if (input.allocatedCapital > input.maximumExposure) return { approved: false, reasonCode: 'ACCOUNT_EXPOSURE_LIMIT' };
   if (input.proposedExposure > input.maximumExposure) return { approved: false, reasonCode: 'ACCOUNT_EXPOSURE_LIMIT' };
   if (input.dailyLoss >= input.maximumDailyLoss) return { approved: false, reasonCode: 'ACCOUNT_DAILY_LOSS_LIMIT' };

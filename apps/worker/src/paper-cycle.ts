@@ -145,6 +145,7 @@ export async function processPaperCycle(
       return;
     }
     const portfolioRisk = evaluatePortfolioRisk({
+      side: proposal.side,
       proposedExposure: Number(proposal.quoteAmount),
       allocatedCapital: Number(portfolioState.allocatedCapital),
       maximumExposure: Number(portfolioState.maximumExposure) || Number.POSITIVE_INFINITY,
@@ -171,6 +172,7 @@ export async function processPaperCycle(
       cooldownMs: profile.cooldownSeconds * 1000,
       allowLive: false,
     }).evaluate({
+      side: proposal.side,
       symbol: proposal.symbol,
       amount: proposal.quantity ?? Number(proposal.quoteAmount) / Number(market.close),
       price: Number(market.close),

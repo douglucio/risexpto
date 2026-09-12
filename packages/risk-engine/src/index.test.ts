@@ -62,4 +62,8 @@ describe('RiskEngine', () => {
     expect(result.reasonCode).toBe('APPROVED');
     expect(result.riskSnapshot.proposedValue).toBe(0.02);
   });
+  it('allows a SELL exit without quote balance, cooldown, or exposure expansion', () => {
+    const result = engine().evaluate({ ...context, side: 'SELL', amount: 0.01, availableBalance: 0, currentExposure: 100, positionValue: 100, openPositions: 1, lastTradeAt: 999 });
+    expect(result.decision).toBe('APPROVED');
+  });
 });
