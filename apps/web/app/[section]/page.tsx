@@ -11,6 +11,8 @@ import { BillingPanel } from '../../components/billing-panel';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { translate, type Locale } from '@risexpto/i18n';
+import { NotificationsPanel } from '../../components/notifications-panel';
+import { BacktestRunner } from '../../components/backtest-runner';
 
 const pages = {
   bots: ['section.automation', 'nav.bots', 'section.botsDescription'],
@@ -86,6 +88,7 @@ type BotRecord = {
   waitingReason?: string | null;
   totalPnl?: number;
   todayPnl?: number;
+  currentExposure?: string;
   exchangeConnection?: { provider: string; label: string } | null;
   riskProfile?: { preset?: string | null } | null;
   tradingMode: string;
@@ -130,6 +133,8 @@ type PositionRecord = {
   quantity: string;
   averagePrice: string;
   realizedPnl: string;
+  unrealizedPnl?: string;
+  currentValue?: string;
 };
 type BillingRecord = {
   mode: string;
@@ -232,6 +237,7 @@ function SectionContent({
                 t('workspace.provider'),
                 t('workspace.mode'),
                 t('workspace.capital'),
+                t('workspace.exposure'),
                 t('workspace.todayPnl'),
                 t('workspace.totalPnl'),
                 t('workspace.riskPreset'),
@@ -250,6 +256,7 @@ function SectionContent({
                   value={Number(bot.configuration?.authorizedCapital ?? 0)}
                   currency={bot.configuration?.quoteCurrency ?? 'USD'}
                 />,
+                <CurrencyDisplay key={`${bot.id}-exposure`} value={Number(bot.currentExposure ?? 0)} currency={bot.configuration?.quoteCurrency ?? 'USD'} />,
                 <CurrencyDisplay key={`${bot.id}-today-pnl`} value={bot.todayPnl ?? 0} currency={bot.configuration?.quoteCurrency ?? 'USD'} />,
                 <CurrencyDisplay key={`${bot.id}-total-pnl`} value={bot.totalPnl ?? 0} currency={bot.configuration?.quoteCurrency ?? 'USD'} />,
                 bot.riskProfile?.preset ?? t('workspace.advanced'),
@@ -321,6 +328,7 @@ function SectionContent({
         <Alert title={t('workspace.historicalResults')}>
           {t('workspace.performanceDisclaimer')}
         </Alert>
+        <BacktestRunner labels={{ strategy: t('workspace.backtestStrategy'), asset: t('workspace.asset'), capital: t('workspace.initialCapital'), start: t('workspace.periodStart'), end: t('workspace.periodEnd'), submit: t('workspace.runBacktest'), running: t('workspace.backtestRunning'), success: t('workspace.backtestSaved'), error: t('workspace.backtestError') }} />
         {data?.kind === 'backtests' && data.value.length ? <DataTable columns={[t('workspace.symbol'), t('workspace.status'), t('workspace.return'), t('workspace.maximumDrawdown'), t('workspace.trades')]} rows={data.value.map((item) => [item.symbol, item.status, item.result?.returnPercent ?? '—', item.result?.maxDrawdown ?? '—', item.result?.tradeCount ?? 0])} /> : <EmptyState title={t('workspace.backtestsSoon')} description={t('workspace.backtestsSoonDescription')} />}
       </>
     );
@@ -383,7 +391,9 @@ function SectionContent({
           t('workspace.symbol'),
           t('workspace.quantity'),
           t('workspace.averagePrice'),
-          t('workspace.pnl'),
+          t('workspace.realizedPnl'),
+          t('workspace.unrealizedPnl'),
+          t('workspace.exposure'),
           t('workspace.status'),
           t('workspace.mode'),
         ]}
@@ -397,6 +407,8 @@ function SectionContent({
                   value={Number(position.averagePrice)}
                 />,
                 <CurrencyDisplay key={`${position.id}-pnl`} value={Number(position.realizedPnl)} />,
+                <CurrencyDisplay key={`${position.id}-unrealized`} value={Number(position.unrealizedPnl ?? 0)} />,
+                <CurrencyDisplay key={`${position.id}-exposure`} value={Number(position.currentValue ?? 0)} />,
                 <Badge key={`${position.id}-status`}>{position.status}</Badge>,
                 <Badge key={`${position.id}-mode`} tone="brand">
                   {position.tradingMode}
@@ -408,7 +420,7 @@ function SectionContent({
     );
   if (section === 'risk') return <RiskPanel />;
   if (section === 'notifications')
-    return data?.kind === 'notifications' && data.value.length ? <div className="content-stack">{data.value.map((item) => <Card key={item.id}><Badge tone={item.severity === 'ERROR' ? 'negative' : 'brand'}>{item.type}</Badge><h2>{item.title}</h2><p>{item.body}</p><small>{new Date(item.createdAt).toLocaleString()}</small></Card>)}</div> : <EmptyState title={t('workspace.notificationsSoon')} description={t('workspace.notificationsSoonDescription')} />;
+    return data?.kind === 'notifications' && data.value.length ? <NotificationsPanel items={data.value} /> : <EmptyState title={t('workspace.notificationsSoon')} description={t('workspace.notificationsSoonDescription')} />;
   if (section === 'billing')
     return data?.kind === 'billing' ? (
       <BillingPanel />

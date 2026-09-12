@@ -10,6 +10,40 @@ export type PaperFillInput = {
   feeAsset?: string;
 };
 
+export type PaperPositionState = {
+  quantity: Decimal;
+  averagePrice: Decimal;
+  realizedPnl: Decimal;
+};
+
+export function applySpotPositionFill(
+  state: PaperPositionState,
+  side: 'BUY' | 'SELL',
+  quantity: Decimal.Value,
+  price: Decimal.Value,
+  fee: Decimal.Value = 0,
+): PaperPositionState {
+  const fillQuantity = new Decimal(quantity);
+  const fillPrice = new Decimal(price);
+  const fillFee = new Decimal(fee);
+  if (fillQuantity.lte(0) || fillPrice.lte(0)) throw new Error('Invalid paper fill');
+  if (side === 'BUY') {
+    const nextQuantity = state.quantity.plus(fillQuantity);
+    return {
+      quantity: nextQuantity,
+      averagePrice: state.averagePrice.times(state.quantity).plus(fillQuantity.times(fillPrice)).dividedBy(nextQuantity),
+      realizedPnl: state.realizedPnl,
+    };
+  }
+  if (state.quantity.lessThan(fillQuantity)) throw new Error('PAPER_INSUFFICIENT_POSITION');
+  const remaining = state.quantity.minus(fillQuantity);
+  return {
+    quantity: remaining,
+    averagePrice: remaining.isZero() ? new Decimal(0) : state.averagePrice,
+    realizedPnl: state.realizedPnl.plus(fillPrice.minus(state.averagePrice).times(fillQuantity).minus(fillFee)),
+  };
+}
+
 export async function applyPaperFill(database: PrismaClient, input: PaperFillInput) {
   if (
     !input.externalTradeId ||
@@ -107,15 +141,12 @@ async function applyFillBalancesAndPosition(
       where: { botId: order.botId, symbol: order.symbol, tradingMode: 'PAPER', status: 'OPEN' },
     });
     if (position) {
-      const nextQuantity = new Decimal(position.quantity).plus(quantity);
+      const next = applySpotPositionFill({ quantity: new Decimal(position.quantity), averagePrice: new Decimal(position.averagePrice), realizedPnl: new Decimal(position.realizedPnl) }, 'BUY', quantity, price);
       await tx.position.update({
         where: { id: position.id },
         data: {
-          quantity: nextQuantity,
-          averagePrice: new Decimal(position.averagePrice)
-            .times(position.quantity)
-            .plus(value)
-            .dividedBy(nextQuantity),
+          quantity: next.quantity,
+          averagePrice: next.averagePrice,
         },
       });
     } else {
@@ -149,13 +180,15 @@ async function applyFillBalancesAndPosition(
   });
   if (!position || new Decimal(position.quantity).lessThan(quantity))
     throw new Error('PAPER_INSUFFICIENT_POSITION');
-  const remaining = new Decimal(position.quantity).minus(quantity);
-  const realizedPnl = price.minus(position.averagePrice).times(quantity).minus(fee);
+  const next = applySpotPositionFill({ quantity: new Decimal(position.quantity), averagePrice: new Decimal(position.averagePrice), realizedPnl: new Decimal(position.realizedPnl) }, 'SELL', quantity, price, fee);
+  const remaining = next.quantity;
+  const realizedPnl = next.realizedPnl.minus(position.realizedPnl);
   await tx.position.update({
     where: { id: position.id },
     data: {
-      quantity: remaining,
-      realizedPnl: { increment: realizedPnl },
+      quantity: next.quantity,
+      averagePrice: next.averagePrice,
+      realizedPnl: next.realizedPnl,
       status: remaining.isZero() ? 'CLOSED' : 'OPEN',
       closedAt: remaining.isZero() ? new Date() : null,
     },

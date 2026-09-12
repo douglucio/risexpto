@@ -73,8 +73,12 @@ describe('paper trading persistence integration', () => {
                 allowedSymbols: ['BTCUSDT'],
               },
             },
+            paperCapitalAllocation: { create: { allocated: 100, active: true } },
+            paperBalances: { create: { asset: 'USDT', free: 100, locked: 0 } },
           },
         });
+        const paperPortfolio = await database.paperPortfolio.create({ data: { userId, provider: 'BINANCE', baseCurrency: 'USDT', initialCapital: 10000, availableCapital: 9900, allocatedCapital: 100 } });
+        await database.bot.update({ where: { id: botId }, data: { paperPortfolioId: paperPortfolio.id } });
         await database.marketSnapshot.create({
           data: {
             id: marketId,

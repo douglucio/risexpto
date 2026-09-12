@@ -2,6 +2,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import type { PrismaClient } from '@risexpto/database';
 import { DATABASE } from '../users/user-provisioning.service';
 import type { AuthenticatedUser } from '../auth/auth.types';
+import { Decimal } from 'decimal.js';
 
 @Injectable()
 export class TradingActivityService {
@@ -35,7 +36,11 @@ export class TradingActivityService {
       orderBy: { updatedAt: 'desc' },
       take: 100,
     });
-    return rows.map((position) => ({
+    return Promise.all(rows.map(async (position) => {
+      const market = await this.db.marketSnapshot.findFirst({ where: { symbol: position.symbol }, orderBy: { closeTime: 'desc' }, select: { close: true } });
+      const mark = new Decimal(market?.close ?? position.averagePrice);
+      const unrealizedPnl = position.status === 'OPEN' ? mark.minus(position.averagePrice).times(position.quantity) : new Decimal(0);
+      return {
       id: position.id,
       botId: position.botId,
       symbol: position.symbol,
@@ -44,8 +49,12 @@ export class TradingActivityService {
       quantity: String(position.quantity),
       averagePrice: String(position.averagePrice),
       realizedPnl: String(position.realizedPnl),
+      unrealizedPnl: unrealizedPnl.toString(),
+      currentValue: position.status === 'OPEN' ? mark.times(position.quantity).toString() : '0',
+      currentExposure: position.status === 'OPEN' ? mark.times(position.quantity).toString() : '0',
       openedAt: position.openedAt,
       closedAt: position.closedAt,
+      };
     }));
   }
 }

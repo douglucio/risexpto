@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { Decimal } from 'decimal.js';
 import { createDcaStrategy, type DcaParameters } from '@risexpto/strategy-dca';
 import { buildGridOrders, type GridParameters } from '@risexpto/strategy-grid';
 import { createTrendStrategy, type TrendParameters } from '@risexpto/strategy-trend';
@@ -94,8 +95,9 @@ export async function processPaperCycle(
       gridLevels,
     );
     if (!proposal) {
-      await markWaiting(database, bot.id, 'MARKET_REGIME_NOT_SUITABLE');
-      await complete(database, bot.id, job, 'STRATEGY_NO_SIGNAL');
+      const waitingReason = waitingReasonForStrategy(bot.strategyVersion.implementationKey, bot.configuration.parameters, runtime, Number(market.close));
+      await markWaiting(database, bot.id, waitingReason);
+      await complete(database, bot.id, job, waitingReason);
       return;
     }
     await database.bot.update({ where: { id: bot.id }, data: { waitingReason: null, waitingSince: null } });
@@ -144,10 +146,10 @@ export async function processPaperCycle(
     const portfolioRisk = evaluatePortfolioRisk({
       proposedExposure: Number(proposal.quoteAmount),
       allocatedCapital: Number(portfolioState.allocatedCapital),
-      maximumExposure: Number(bot.exchangeConnection?.maximumExposure ?? 0) || Number.POSITIVE_INFINITY,
+      maximumExposure: Number(portfolioState.maximumExposure) || Number.POSITIVE_INFINITY,
       dailyLoss: Number(portfolioState.dailyLoss),
-      maximumDailyLoss: Number(bot.exchangeConnection?.maximumDailyLoss ?? 0) || Number.POSITIVE_INFINITY,
-      killSwitchActive: bot.exchangeConnection?.killSwitchActive ?? false,
+      maximumDailyLoss: Number(portfolioState.maximumDailyLoss) || Number.POSITIVE_INFINITY,
+      killSwitchActive: portfolioState.killSwitchActive,
     });
     if (!portfolioRisk.approved) {
       await database.riskEvent.create({ data: { botId: bot.id, riskProfileId: profile.id, tradeProposalId: storedProposal.id, decision: 'REJECTED', reasonCode: portfolioRisk.reasonCode, reason: 'Connection portfolio risk rejected the proposal.', riskSnapshot: portfolioRisk } });
@@ -189,6 +191,7 @@ export async function processPaperCycle(
         storedProposal.id,
         Number(profile.maxAllocatedCapital),
         Number(proposal.quoteAmount),
+        proposal.side,
       );
       if (!reserved) {
         risk.decision = 'REJECTED';
@@ -214,6 +217,9 @@ export async function processPaperCycle(
         decidedAt: new Date(),
       },
     });
+    if (risk.decision !== 'APPROVED') {
+      await notifyTrader(database, { userId: bot.userId, botId: bot.id, connectionId: bot.exchangeConnectionId, type: 'RISK_PAUSED', severity: 'WARNING', title: 'Trader risk blocked an order', body: risk.reason, data: { reasonCode: risk.reasonCode, proposalId: storedProposal.id } });
+    }
     if (risk.decision === 'APPROVED') {
       await executePaperOrder(
         database,
@@ -234,6 +240,7 @@ export async function processPaperCycle(
         where: { id: storedProposal.id },
         data: { status: 'EXECUTED' },
       });
+      await notifyTrader(database, { userId: bot.userId, botId: bot.id, connectionId: bot.exchangeConnectionId, type: 'ORDER_FILLED', severity: 'SUCCESS', title: `${bot.name} filled an order`, body: `${proposal.side} ${proposal.symbol} Paper order filled.`, data: { proposalId: storedProposal.id, quoteAmount: proposal.quoteAmount } });
     }
     await complete(
       database,
@@ -301,11 +308,24 @@ async function markWaiting(database: PrismaClient, botId: string, reason: string
   if (typeof database.bot.update === 'function') {
     await database.bot.update({ where: { id: botId }, data: { waitingReason: reason, waitingSince: existing?.waitingSince ?? new Date() } });
   }
-  await database.botEvent.create({ data: { botId, type: 'WAITING_FOR_MARKET', payload: noOp('MARKET_REGIME_NOT_SUITABLE', { reason }) } });
+  const knownReason = ['MARKET_REGIME_NOT_SUITABLE', 'INSUFFICIENT_MARKET_DATA', 'OUTSIDE_SCHEDULE', 'INTERVAL_NOT_REACHED', 'PRICE_OUT_OF_RANGE', 'CAPITAL_INSUFFICIENT'].includes(reason)
+    ? reason as 'MARKET_REGIME_NOT_SUITABLE' | 'INSUFFICIENT_MARKET_DATA' | 'OUTSIDE_SCHEDULE' | 'INTERVAL_NOT_REACHED' | 'PRICE_OUT_OF_RANGE' | 'CAPITAL_INSUFFICIENT'
+    : 'MARKET_REGIME_NOT_SUITABLE';
+  await database.botEvent.create({ data: { botId, type: 'WAITING_FOR_MARKET', payload: noOp(knownReason, { reason }) } });
   if (existing) {
     const bot = await database.bot.findUnique({ where: { id: botId }, select: { userId: true, exchangeConnectionId: true } });
     if (bot) await notifyTrader(database, { userId: bot.userId, botId, connectionId: bot.exchangeConnectionId, type: 'TRADER_WAITING', title: 'Trader is waiting', body: `The trader is waiting: ${reason}`, data: { waitingReason: reason } });
   }
+}
+
+function waitingReasonForStrategy(implementationKey: string, rawParameters: unknown, runtime: TraderRuntimeContext, price: number): string {
+  if (implementationKey !== 'dca') return 'MARKET_REGIME_NOT_SUITABLE';
+  const parameters = rawParameters && typeof rawParameters === 'object' ? rawParameters as Partial<DcaParameters> : {};
+  if (typeof parameters.maxCapital === 'number' && runtime.spentCapital.plus(String(parameters.quoteAmount ?? 0)).gt(String(parameters.maxCapital))) return 'CAPITAL_INSUFFICIENT';
+  if (runtime.lastBuyAt && typeof parameters.intervalMs === 'number' && Date.now() - runtime.lastBuyAt.getTime() < parameters.intervalMs) return 'INTERVAL_NOT_REACHED';
+  if (typeof parameters.minPrice === 'number' && price < parameters.minPrice) return 'PRICE_OUT_OF_RANGE';
+  if (typeof parameters.maxPrice === 'number' && price > parameters.maxPrice) return 'PRICE_OUT_OF_RANGE';
+  return 'MARKET_REGIME_NOT_SUITABLE';
 }
 
 async function ensureGridLevels(
@@ -337,7 +357,9 @@ async function executePaperOrder(
   initialCapital: number,
   requestedQuantity?: number,
 ): Promise<void> {
-  const quantity = requestedQuantity ?? quoteAmount / price;
+  const priceDecimal = new Decimal(price);
+  const requestedQuote = new Decimal(quoteAmount);
+  const quantity = new Decimal(requestedQuantity ?? requestedQuote.dividedBy(priceDecimal));
   await database.$transaction(async (tx) => {
     const existing = await tx.order.findUnique({
       where: { tradeProposalId: proposalId },
@@ -350,11 +372,13 @@ async function executePaperOrder(
       update: {},
     });
     const base = baseAsset(symbol, quoteCurrency);
-    const fee = quoteAmount * 0.001;
+    const value = quantity.times(priceDecimal);
+    const fee = value.times('0.001');
+    let realizedPnl = new Decimal(0);
     if (side === 'BUY') {
       const spent = await tx.paperBalance.updateMany({
-        where: { botId, asset: quoteCurrency, free: { gte: quoteAmount + fee } },
-        data: { free: { decrement: quoteAmount + fee } },
+        where: { botId, asset: quoteCurrency, free: { gte: value.plus(fee) } },
+        data: { free: { decrement: value.plus(fee) } },
       });
       if (spent.count !== 1) throw new Error('PAPER_INSUFFICIENT_BALANCE');
       await tx.paperBalance.upsert({
@@ -366,7 +390,7 @@ async function executePaperOrder(
       const position = await tx.position.findFirst({
         where: { botId, symbol, tradingMode: 'PAPER', status: 'OPEN' },
       });
-      if (!position || Number(position.quantity) < quantity)
+      if (!position || new Decimal(position.quantity).lessThan(quantity))
         throw new Error('PAPER_INSUFFICIENT_POSITION');
       const sold = await tx.paperBalance.updateMany({
         where: { botId, asset: base, free: { gte: quantity } },
@@ -375,17 +399,18 @@ async function executePaperOrder(
       if (sold.count !== 1) throw new Error('PAPER_INSUFFICIENT_BALANCE');
       await tx.paperBalance.upsert({
         where: { botId_asset: { botId, asset: quoteCurrency } },
-        create: { botId, asset: quoteCurrency, free: quoteAmount - fee },
-        update: { free: { increment: quoteAmount - fee } },
+        create: { botId, asset: quoteCurrency, free: value.minus(fee) },
+        update: { free: { increment: value.minus(fee) } },
       });
-      const remaining = Number(position.quantity) - quantity;
+      const remaining = new Decimal(position.quantity).minus(quantity);
+      realizedPnl = priceDecimal.minus(position.averagePrice).times(quantity).minus(fee);
       await tx.position.update({
         where: { id: position.id },
         data: {
           quantity: remaining,
-          realizedPnl: { increment: (price - Number(position.averagePrice)) * quantity - fee },
-          status: remaining === 0 ? 'CLOSED' : 'OPEN',
-          closedAt: remaining === 0 ? new Date() : null,
+          realizedPnl: { increment: realizedPnl },
+          status: remaining.isZero() ? 'CLOSED' : 'OPEN',
+          closedAt: remaining.isZero() ? new Date() : null,
         },
       });
     }
@@ -400,15 +425,15 @@ async function executePaperOrder(
         side,
         type: 'MARKET',
         status: 'FILLED',
-        requestedQuantity: null,
-        requestedQuoteAmount: quoteAmount,
+        requestedQuantity: quantity,
+        requestedQuoteAmount: value,
         filledQuantity: quantity,
-        averageFillPrice: price,
+        averageFillPrice: priceDecimal,
         submittedAt: new Date(),
         completedAt: new Date(),
       },
     });
-    await tx.trade.create({ data: { orderId: order.id, quantity, price, executedAt: new Date() } });
+    await tx.trade.create({ data: { orderId: order.id, quantity, price: priceDecimal, realizedPnl, executedAt: new Date() } });
     await tx.paperCapitalReservation.updateMany({
       where: { proposalId, status: 'ACTIVE' },
       data: { status: 'CONSUMED' },
@@ -422,20 +447,22 @@ export async function reserveCapital(
   proposalId: string,
   limit: number,
   amount: number,
+  side: 'BUY' | 'SELL' = 'BUY',
 ): Promise<boolean> {
+  const reservationAmount = side === 'SELL' ? 0 : amount;
   return database.$transaction(async (tx) => {
     const existing = await tx.paperCapitalReservation.findUnique({ where: { proposalId } });
     if (existing) return existing.status === 'ACTIVE';
     if (typeof tx.paperCapitalAllocation.findUnique !== 'function') {
       await tx.paperCapitalAllocation.upsert({ where: { botId }, create: { botId, allocated: 0 }, update: {} });
-      const available = await tx.paperCapitalAllocation.updateMany({ where: { botId, allocated: { lte: limit - amount } }, data: { allocated: { increment: amount } } });
+      const available = await tx.paperCapitalAllocation.updateMany({ where: { botId, allocated: { lte: limit - reservationAmount } }, data: { allocated: { increment: reservationAmount } } });
       if (available.count !== 1) return false;
-      const global = await tx.paperGlobalCapitalAllocation.updateMany({ where: { id: 'global', allocated: { lte: limit - amount } }, data: { allocated: { increment: amount } } });
+      const global = await tx.paperGlobalCapitalAllocation.updateMany({ where: { id: 'global', allocated: { lte: limit - reservationAmount } }, data: { allocated: { increment: reservationAmount } } });
       if (global.count !== 1) {
-        await tx.paperCapitalAllocation.updateMany({ where: { botId, allocated: { gte: amount } }, data: { allocated: { decrement: amount } } });
+        await tx.paperCapitalAllocation.updateMany({ where: { botId, allocated: { gte: reservationAmount } }, data: { allocated: { decrement: reservationAmount } } });
         return false;
       }
-      await tx.paperCapitalReservation.create({ data: { botId, proposalId, amount } });
+      await tx.paperCapitalReservation.create({ data: { botId, proposalId, amount: reservationAmount } });
       return true;
     }
     const allocation = await tx.paperCapitalAllocation.findUnique({ where: { botId } });
@@ -445,8 +472,8 @@ export async function reserveCapital(
     });
     const hardLimit = Number(allocation?.allocated ?? limit);
     const reserved = Number(active._sum.amount ?? 0);
-    if (!allocation?.active || reserved + amount > hardLimit) return false;
-    await tx.paperCapitalReservation.create({ data: { botId, proposalId, amount } });
+    if (!allocation?.active || reserved + reservationAmount > hardLimit) return false;
+    await tx.paperCapitalReservation.create({ data: { botId, proposalId, amount: reservationAmount } });
     return true;
   });
 }

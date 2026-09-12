@@ -23,3 +23,32 @@ Backtests consume persisted candles and record trader/version/parameters and
 metrics. Notifications are persisted in-app. These features do not authorize
 Live execution; Binance Production, Stripe Live and AI execution are outside
 this cycle.
+
+## Runtime acceptance and manual validation
+
+The worker is restart-safe because proposals, orders, trades, positions,
+reservations and notifications are persisted. Reprocessing a job with the same
+correlation id is a no-op after execution. Paper portfolios are isolated by
+`userId`; the legacy global allocation table is only a migration compatibility
+surface.
+
+Manual validation sequence:
+
+1. In Explore Traders, create Atlas/BTCUSDT, Luna/ETHUSDT, DCA One/SOLUSDT and
+   Pulse/DOGEUSDT in Paper, allocating distinct capital from one Paper portfolio.
+2. Activate one trader as FIXED and another as COMPOUND; verify capital,
+   position, exposure, realized/unrealized P&L and allocation in My Team.
+3. Pause and resume both traders; verify allocation is unchanged. Stop them and
+   verify allocation is released exactly once.
+4. Use an interval/range or unsuitable-market fixture and verify WAITING plus
+   `waitingReason`/`waitingSince`, without an error notification.
+5. Verify ORDER_FILLED, TRADER_WAITING and RISK_PAUSED in Notifications; run a
+   backtest with trader, asset, period, capital and risk preset and inspect the
+   metrics/equity curve.
+6. Restart the worker with open Paper positions, rerun the cycle and verify no
+   duplicate order/trade, preserved allocation and continued P&L calculation.
+
+The full PostgreSQL/Redis scenario is exposed through
+`apps/worker/src/paper-trading.integration.test.ts` and the `E2E_DATABASE_URL`
+runbook. Live provider balance synchronization remains a prerequisite for any
+future Live phase.

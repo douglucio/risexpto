@@ -29,17 +29,19 @@ export class BotsService {
         configuration: true,
         riskProfile: true,
         exchangeConnection: { select: { provider: true, label: true } },
-        positions: { where: { status: 'OPEN' }, select: { symbol: true, quantity: true, averagePrice: true, realizedPnl: true } },
+        positions: { select: { symbol: true, quantity: true, averagePrice: true, realizedPnl: true, status: true, openedAt: true } },
       },
     });
     return Promise.all(bots.map(async (bot) => {
       const realized = bot.positions.reduce((sum, position) => sum.plus(position.realizedPnl), new Decimal(0));
       const price = bot.assetSymbol ? await this.db.marketSnapshot.findFirst({ where: { symbol: bot.assetSymbol }, orderBy: { closeTime: 'desc' }, select: { close: true } }) : null;
-      const exposure = bot.positions.reduce((sum, position) => sum.plus(new Decimal(position.quantity).times(price?.close ?? position.averagePrice)), new Decimal(0));
+      const openPositions = bot.positions.filter((position) => position.status === 'OPEN');
+      const exposure = openPositions.reduce((sum, position) => sum.plus(new Decimal(position.quantity).times(price?.close ?? position.averagePrice)), new Decimal(0));
       const today = new Date(); today.setUTCHours(0, 0, 0, 0);
       const todayTrades = await this.db.trade.aggregate({ where: { order: { botId: bot.id, tradingMode: bot.tradingMode }, executedAt: { gte: today } }, _sum: { realizedPnl: true } });
       const todayRealized = new Decimal(todayTrades._sum.realizedPnl ?? 0);
-      const unrealized = bot.positions.reduce((sum, position) => sum.plus(new Decimal(price?.close ?? position.averagePrice).minus(position.averagePrice).times(position.quantity)), new Decimal(0));
+      const unrealized = openPositions.reduce((sum, position) => sum.plus(new Decimal(price?.close ?? position.averagePrice).minus(position.averagePrice).times(position.quantity)), new Decimal(0));
+      const todayUnrealized = openPositions.filter((position) => position.openedAt >= today).reduce((sum, position) => sum.plus(new Decimal(price?.close ?? position.averagePrice).minus(position.averagePrice).times(position.quantity)), new Decimal(0));
       return {
         ...bot,
         productState: mapBotState(bot.status, bot.waitingReason),
@@ -47,7 +49,9 @@ export class BotsService {
         unrealizedPnl: unrealized.toString(),
         currentExposure: exposure.toString(),
         totalPnl: Number(realized.plus(unrealized)),
-        todayPnl: Number(todayRealized.plus(unrealized)),
+        todayRealizedPnl: todayRealized.toString(),
+        todayUnrealizedPnl: todayUnrealized.toString(),
+        todayPnl: Number(todayRealized.plus(todayUnrealized)),
       };
     }));
   }
@@ -148,6 +152,13 @@ export class BotsService {
             await tx.paperPortfolio.update({ where: { id: portfolio.id }, data: { allocatedCapital: { increment: bot.configuration.authorizedCapital }, availableCapital: { decrement: bot.configuration.authorizedCapital } } });
           }
           await tx.paperCapitalAllocation.upsert({ where: { botId: bot.id }, create: { botId: bot.id, paperPortfolioId: bot.paperPortfolioId, allocated: bot.configuration.authorizedCapital, active: true }, update: { allocated: bot.configuration.authorizedCapital, active: true, releasedAt: null } });
+          if (typeof tx.paperBalance?.upsert === 'function') {
+            await tx.paperBalance.upsert({
+              where: { botId_asset: { botId: bot.id, asset: bot.configuration.quoteCurrency } },
+              create: { botId: bot.id, asset: bot.configuration.quoteCurrency, free: bot.configuration.authorizedCapital, locked: 0 },
+              update: {},
+            });
+          }
         }
         if (status === 'STOPPED' && allocation?.active) {
           if (bot.paperPortfolioId && typeof tx.paperPortfolio?.update === 'function') await tx.paperPortfolio.update({ where: { id: bot.paperPortfolioId }, data: { allocatedCapital: { decrement: allocation.allocated }, availableCapital: { increment: allocation.allocated } } });

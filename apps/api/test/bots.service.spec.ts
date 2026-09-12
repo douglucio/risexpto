@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { AuthenticatedUser } from '../src/auth/auth.types';
 import { BotsService } from '../src/bots/bots.service';
+import { Decimal } from 'decimal.js';
 
 const user: AuthenticatedUser = {
   id: 'keycloak-sub',
@@ -115,5 +116,34 @@ describe('BotsService', () => {
       bot: { findFirst: vi.fn().mockResolvedValue(null) },
     } as never);
     await expect(service.get(user, 'foreign-bot')).rejects.toThrow('Bot not found');
+  });
+
+  it('keeps Paper allocation across pause/resume and releases it once on stop', async () => {
+    let status: 'READY' | 'RUNNING' | 'PAUSED' | 'STOPPED' = 'READY';
+    const allocation = { active: false, allocated: new Decimal(200), paperPortfolioId: 'portfolio-1' };
+    const portfolio = { availableCapital: new Decimal(800), allocatedCapital: new Decimal(200) };
+    const findFirst = vi.fn().mockImplementation(() => ({ id: 'paper-bot', userId: user.applicationUserId, status, tradingMode: 'PAPER', archivedAt: null, paperPortfolioId: 'portfolio-1', configuration: { authorizedCapital: new Decimal(200), quoteCurrency: 'USDT' } }));
+    const tx = {
+      paperCapitalAllocation: {
+        findUnique: vi.fn().mockResolvedValue(allocation),
+        upsert: vi.fn().mockImplementation(() => { allocation.active = true; return allocation; }),
+        update: vi.fn().mockImplementation(() => { allocation.active = false; return allocation; }),
+      },
+      paperPortfolio: {
+        findUnique: vi.fn().mockResolvedValue(portfolio),
+        update: vi.fn().mockResolvedValue(portfolio),
+      },
+      paperBalance: { upsert: vi.fn() },
+      bot: { update: vi.fn().mockImplementation(({ data }: { data: { status: typeof status } }) => { status = data.status; return { id: 'paper-bot', status }; }) },
+    };
+    const service = new BotsService({ bot: { findFirst }, $transaction: vi.fn((callback: (value: unknown) => unknown) => callback(tx)) } as never);
+    await service.changeStatus(user, 'paper-bot', 'RUNNING');
+    status = 'PAUSED';
+    await service.changeStatus(user, 'paper-bot', 'RUNNING');
+    status = 'PAUSED';
+    await service.changeStatus(user, 'paper-bot', 'STOPPED');
+    expect(tx.paperPortfolio.update).toHaveBeenCalledTimes(2);
+    expect(tx.paperCapitalAllocation.upsert).toHaveBeenCalledTimes(1);
+    expect(tx.paperCapitalAllocation.update).toHaveBeenCalledTimes(1);
   });
 });
