@@ -2,6 +2,14 @@
 
 Status geral: `NOT_READY`
 
+## Digital Trader V1 commercial gate
+
+Before any live pilot, validate Atlas, Luna, DCA One and Pulse, one-asset
+Trader Instance allocation, connection sharing, FREE/STARTER/PRO/ADVANCED
+limits, the Paper funnel, WAITING state and the Copilot non-execution boundary.
+Stripe remains Test Mode and Binance remains Testnet until the separate
+production approval gate is passed.
+
 Este checklist acompanha a prontidão comercial. Nenhum item autoriza Stripe Live,
 operação financeira real ou lançamento público por si só.
 

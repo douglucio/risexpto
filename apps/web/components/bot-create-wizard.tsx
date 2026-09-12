@@ -25,6 +25,8 @@ type FormState = {
   dailyLoss: string;
   drawdown: string;
   cooldown: string;
+  capitalMode: 'FIXED' | 'COMPOUND';
+  riskPreset: 'CONSERVATIVE' | 'BALANCED' | 'AGGRESSIVE';
 };
 const initial: FormState = {
   name: '',
@@ -39,6 +41,8 @@ const initial: FormState = {
   dailyLoss: '5',
   drawdown: '10',
   cooldown: '60',
+  capitalMode: 'FIXED',
+  riskPreset: 'BALANCED',
 };
 
 export function BotCreateWizard() {
@@ -93,6 +97,7 @@ export function BotCreateWizard() {
       },
     };
     setForm((current) => ({ ...current, ...(presets[value] ?? {}) }));
+    if (value !== 'custom') setForm((current) => ({ ...current, riskPreset: value.toUpperCase() as FormState['riskPreset'] }));
   }
   async function create() {
     setStatus(t('workspace.creating'));
@@ -103,6 +108,8 @@ export function BotCreateWizard() {
         name: form.name,
         strategyVersionId: form.strategyVersionId,
         tradingMode: 'PAPER',
+        capitalMode: form.capitalMode,
+        digitalTraderSlug: form.strategyKey === 'dca' ? 'dca-one' : form.strategyKey === 'trend-following' ? 'luna' : form.strategyKey === 'grid' ? 'atlas' : form.strategyKey === 'breakout' ? 'pulse' : undefined,
         allowedSymbols: [form.symbol],
         authorizedCapital: form.capital,
         quoteCurrency: 'USDT',
@@ -123,6 +130,7 @@ export function BotCreateWizard() {
           maxDrawdownPercent: form.drawdown,
           allowedSymbols: [form.symbol],
           cooldownSeconds: Number(form.cooldown),
+          preset: form.riskPreset,
         },
       }),
     });
@@ -213,6 +221,12 @@ export function BotCreateWizard() {
                   inputMode="decimal"
                 />
               </FormField>
+              <FormField label="Capital mode">
+                <Select value={form.capitalMode} onChange={(event) => update('capitalMode', event.target.value)}>
+                  <option value="FIXED">FIXED — base capital stays constant</option>
+                  <option value="COMPOUND">COMPOUND — profits may compound</option>
+                </Select>
+              </FormField>
               <FormField label={t('workspace.maximumTradeUsdt')}>
                 <Input
                   value={form.trade}
@@ -226,7 +240,7 @@ export function BotCreateWizard() {
             <>
               <FormField label={t('workspace.riskPreset')}>
                 <Select
-                  defaultValue="balanced"
+                  value={form.riskPreset.toLowerCase()}
                   onChange={(event) => applyPreset(event.target.value)}
                 >
                   <option value="conservative">{t('workspace.conservative')}</option>

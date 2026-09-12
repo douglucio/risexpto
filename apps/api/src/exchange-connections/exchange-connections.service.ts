@@ -5,6 +5,7 @@ import {
   Injectable,
   NotFoundException,
   ServiceUnavailableException,
+  Optional,
 } from '@nestjs/common';
 import {
   BinanceAccountConnection,
@@ -15,12 +16,13 @@ import type { PrismaClient } from '@risexpto/database';
 import { DATABASE } from '../users/user-provisioning.service';
 import type { AuthenticatedUser } from '../auth/auth.types';
 import { resolveBinancePrivateBaseUrl } from './binance-environment';
+import { BillingService } from '../billing/billing.service';
 
 type CreateConnectionBody = { label?: unknown; apiKey?: unknown; apiSecret?: unknown };
 
 @Injectable()
 export class ExchangeConnectionsService {
-  constructor(@Inject(DATABASE) private readonly db: PrismaClient) {}
+  constructor(@Inject(DATABASE) private readonly db: PrismaClient, @Optional() private readonly billing?: BillingService) {}
 
   async list(user: AuthenticatedUser) {
     return this.db.exchangeConnection.findMany({
@@ -41,6 +43,7 @@ export class ExchangeConnectionsService {
 
   async create(user: AuthenticatedUser, body: CreateConnectionBody) {
     const userId = applicationUserId(user);
+    if (this.billing) await this.billing.assertCanCreateConnection(user);
     const label = text(body.label, 'label', 80);
     const apiKey = text(body.apiKey, 'apiKey', 256);
     const apiSecret = text(body.apiSecret, 'apiSecret', 256);

@@ -1,6 +1,6 @@
 # RiseXPTO
 
-RiseXPTO is a non-custodial SaaS for controlled automation of crypto trading strategies. The MVP begins with Binance Spot and PAPER mode. It never requests withdrawal permission and never promises returns.
+RiseXPTO is a non-custodial platform of Digital Traders / Trading Specialists. The MVP begins with Crypto Spot, Binance Testnet/local validation and PAPER mode. It never requests withdrawal permission and never promises returns. Read the [Product Definition V1](./docs/product/product-definition-v1.md) for the commercial model.
 
 ## Requirements
 
@@ -56,7 +56,7 @@ The web app runs on port 3000 and the API on 3001 (`GET /health`). Infrastructur
 
 Authentication is provided by Keycloak using OIDC Authorization Code with PKCE. Generate `AUTH_SESSION_SECRET` from a cryptographically secure source with at least 32 bytes; never reuse a database, Stripe, or exchange secret. Browser refresh tokens remain in encrypted `HttpOnly` cookies, while the API independently validates bearer tokens and roles.
 
-The public site is always `/`; authenticated users enter at `/dashboard`. The Web BFF refreshes the session access token before forwarding it to the API and never accepts a caller-provided `Authorization` override. Routing and provider-neutral trading decisions are recorded in [`docs/architecture/ADR-014-routing-auth.md`](./docs/architecture/ADR-014-routing-auth.md), [`docs/architecture/ADR-012-trading-provider-registry.md`](./docs/architecture/ADR-012-trading-provider-registry.md), and [`docs/architecture/ADR-013-i18n.md`](./docs/architecture/ADR-013-i18n.md).
+The public site is always `/`; authenticated users enter at `/dashboard`. The Web BFF refreshes the session access token before forwarding it to the API and never accepts a caller-provided `Authorization` override. Routing, provider-neutral trading, Digital Traders and risk decisions are recorded in [`docs/architecture/`](./docs/architecture/).
 
 All work flows from `feature/*` to `develop`. Only the owner may update `main`.
 

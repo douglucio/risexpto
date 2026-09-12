@@ -47,7 +47,7 @@ export class UserProvisioningService {
     }
     if (stored.deletedAt) throw new UserProvisioningError('DEACTIVATED');
     try {
-      await this.ensureStarterPlan(stored.id);
+      await this.ensureFreePlan(stored.id);
     } catch (error) {
       this.logProvisioningFailure(error);
       throw new UserProvisioningError('UNAVAILABLE', error);
@@ -65,7 +65,7 @@ export class UserProvisioningService {
     );
   }
 
-  private async ensureStarterPlan(userId: string): Promise<void> {
+  private async ensureFreePlan(userId: string): Promise<void> {
     const database = this.db as PrismaClient & {
       plan?: PrismaClient['plan'];
       subscription?: PrismaClient['subscription'];
@@ -77,7 +77,7 @@ export class UserProvisioningService {
     });
     if (existing) return;
     const plan = await database.plan.findUnique({
-      where: { key: 'STARTER' },
+      where: { key: 'FREE' },
       select: { id: true },
     });
     if (!plan) throw new UserProvisioningError('UNAVAILABLE');

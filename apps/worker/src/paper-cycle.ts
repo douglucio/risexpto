@@ -1,10 +1,15 @@
 import { createHash } from 'node:crypto';
 import { createDcaStrategy, type DcaParameters } from '@risexpto/strategy-dca';
+import { buildGridOrders, type GridParameters } from '@risexpto/strategy-grid';
+import { createTrendStrategy, type TrendParameters } from '@risexpto/strategy-trend';
+import { analyzeBreakout, type BreakoutParameters } from '@risexpto/strategy-breakout';
 import { RiskEngine } from '@risexpto/risk-engine';
 import type { PrismaClient } from '@risexpto/database';
 import type { Job } from 'bullmq';
 import type { WorkerJob } from './queue.js';
 import { assertFreshMarketData } from './market-data-runtime.js';
+import { operationalCapital, noOp } from '@risexpto/digital-traders';
+import { evaluatePortfolioRisk } from '@risexpto/digital-traders';
 
 export async function processPaperCycle(
   database: PrismaClient,
@@ -13,7 +18,7 @@ export async function processPaperCycle(
   if (job.data.type !== 'bot-cycle' || !job.data.botId) return;
   const bot = await database.bot.findFirst({
     where: { id: job.data.botId, tradingMode: 'PAPER', status: 'RUNNING', archivedAt: null },
-    include: { configuration: true, strategyVersion: { include: { definition: true } } },
+    include: { configuration: true, exchangeConnection: true, strategyVersion: { include: { definition: true } } },
   });
   if (!bot?.configuration) return;
   const killSwitch = await database.killSwitchState.findFirst({
@@ -41,40 +46,44 @@ export async function processPaperCycle(
     data: { botId: bot.id, type: 'CYCLE_STARTED', payload: { jobId: job.id } },
   });
   try {
-    if (bot.strategyVersion.implementationKey !== 'dca') {
-      await complete(database, bot.id, job, 'UNSUPPORTED_STRATEGY');
+    const symbol = bot.configuration.allowedSymbols[0];
+    if (!symbol) {
+      await markWaiting(database, bot.id, 'INSUFFICIENT_MARKET_DATA');
+      await complete(database, bot.id, job, 'MARKET_DATA_UNAVAILABLE');
       return;
     }
-    const parameters = dcaParameters(
-      bot.configuration.parameters,
-      bot.configuration.allowedSymbols,
-    );
-    const market = await database.marketSnapshot.findFirst({
-      where: { symbol: parameters.symbol },
-      orderBy: { closeTime: 'desc' },
-      select: { close: true, closeTime: true },
-    });
+    const markets = typeof database.marketSnapshot.findMany === 'function'
+      ? await database.marketSnapshot.findMany({
+          where: { symbol },
+          orderBy: { closeTime: 'desc' },
+          select: { close: true, high: true, low: true, volume: true, openTime: true, closeTime: true },
+          take: 60,
+        })
+      : await database.marketSnapshot.findFirst({
+          where: { symbol },
+          orderBy: { closeTime: 'desc' },
+          select: { close: true, high: true, low: true, volume: true, openTime: true, closeTime: true },
+        }).then((market) => (market ? [market] : []));
+    const market = markets[0];
     if (!market) {
+      await markWaiting(database, bot.id, 'INSUFFICIENT_MARKET_DATA');
       await complete(database, bot.id, job, 'MARKET_DATA_UNAVAILABLE');
       return;
     }
     try {
       assertFreshMarketData(market.closeTime);
     } catch {
+      await markWaiting(database, bot.id, 'MARKET_REGIME_NOT_SUITABLE');
       await complete(database, bot.id, job, 'STALE_MARKET_DATA');
       return;
     }
-    const proposal = createDcaStrategy(`0.0.${bot.strategyVersion.version}`, parameters).analyze({
-      now: Date.now(),
-      lastPurchaseAt: null,
-      spentCapital: 0,
-      price: Number(market.close),
-      mode: 'PAPER',
-    })[0];
+    const proposal = createPaperProposal(bot.strategyVersion.implementationKey, bot.configuration.parameters, bot.configuration.allowedSymbols, markets, bot.configuration.authorizedCapital);
     if (!proposal) {
+      await markWaiting(database, bot.id, 'MARKET_REGIME_NOT_SUITABLE');
       await complete(database, bot.id, job, 'STRATEGY_NO_SIGNAL');
       return;
     }
+    await database.bot.update({ where: { id: bot.id }, data: { waitingReason: null, waitingSince: null } });
     const id = correlationId(String(job.id));
     await database.tradeProposal.upsert({
       where: { botId_correlationId: { botId: bot.id, correlationId: id } },
@@ -115,6 +124,20 @@ export async function processPaperCycle(
         data: { status: 'REJECTED', decidedAt: new Date() },
       });
       await complete(database, bot.id, job, 'RISK_REJECTED');
+      return;
+    }
+    const portfolioRisk = evaluatePortfolioRisk({
+      proposedExposure: Number(proposal.quoteAmount),
+      allocatedCapital: Number(bot.exchangeConnection?.allocatedCapital ?? 0),
+      maximumExposure: Number(bot.exchangeConnection?.maximumExposure ?? 0) || Number.POSITIVE_INFINITY,
+      dailyLoss: 0,
+      maximumDailyLoss: Number(bot.exchangeConnection?.maximumDailyLoss ?? 0) || Number.POSITIVE_INFINITY,
+      killSwitchActive: bot.exchangeConnection?.killSwitchActive ?? false,
+    });
+    if (!portfolioRisk.approved) {
+      await database.riskEvent.create({ data: { botId: bot.id, riskProfileId: profile.id, tradeProposalId: storedProposal.id, decision: 'REJECTED', reasonCode: portfolioRisk.reasonCode, reason: 'Connection portfolio risk rejected the proposal.', riskSnapshot: portfolioRisk } });
+      await database.tradeProposal.update({ where: { id: storedProposal.id }, data: { status: 'REJECTED', decidedAt: new Date() } });
+      await complete(database, bot.id, job, 'PORTFOLIO_RISK_REJECTED');
       return;
     }
     const risk = new RiskEngine({
@@ -186,7 +209,7 @@ export async function processPaperCycle(
         Number(proposal.quoteAmount),
         Number(market.close),
         bot.configuration.quoteCurrency,
-        Number(bot.configuration.authorizedCapital),
+        operationalCapital(bot.capitalMode, Number(bot.configuration.authorizedCapital), 0),
       );
       await database.tradeProposal.update({
         where: { id: storedProposal.id },
@@ -209,6 +232,46 @@ export async function processPaperCycle(
     });
     throw error;
   }
+}
+
+type PaperMarket = { close: unknown; high: unknown; low: unknown; volume: unknown; openTime: Date; closeTime: Date };
+type PaperProposal = { side: 'BUY' | 'SELL'; symbol: string; quoteAmount: number; rationale: string };
+
+function createPaperProposal(implementationKey: string, rawParameters: unknown, allowedSymbols: string[], markets: readonly PaperMarket[], authorizedCapital: unknown): PaperProposal | null {
+  const symbol = allowedSymbols[0];
+  const latest = markets[0];
+  if (!symbol || !latest) return null;
+  const candles = [...markets].reverse().map((market) => ({ open: Number(market.close), high: Number(market.high), low: Number(market.low), close: Number(market.close), volume: Number(market.volume), openTime: market.openTime.getTime() }));
+  if (implementationKey === 'dca') {
+    const parameters = dcaParameters(rawParameters, allowedSymbols);
+    return createDcaStrategy(`0.0.1`, parameters).analyze({ now: Date.now(), lastPurchaseAt: null, spentCapital: 0, price: Number(latest.close), mode: 'PAPER' })[0] ?? null;
+  }
+  if (implementationKey === 'grid') {
+    const parameters = rawParameters as GridParameters;
+    const order = buildGridOrders(parameters, { price: Number(latest.close), volatility: ((Number(latest.high) - Number(latest.low)) / Number(latest.close)) * 100, availableBalance: Number(authorizedCapital), mode: 'PAPER' }).find((item) => item.side === 'BUY');
+    return order ? { side: 'BUY', symbol, quoteAmount: order.quoteAmount, rationale: `Grid level ${order.level} within range` } : null;
+  }
+  if (implementationKey === 'trend-following') {
+    const strategy = createTrendStrategy('0.0.1', rawParameters as TrendParameters);
+    const proposal = strategy.analyze({ candles, spentCapital: 0, positionQuantity: 0, mode: 'PAPER' });
+    const item = proposal[0];
+    return item?.side === 'BUY' ? { side: 'BUY', symbol, quoteAmount: item.quoteAmount ?? 0, rationale: item.rationale } : null;
+  }
+  if (implementationKey === 'breakout') {
+    const result = analyzeBreakout(rawParameters as BreakoutParameters, { now: Date.now(), candles: candles.map(({ high, low, close, volume, openTime }) => ({ high, low, close, volume, openTime })), spentCapital: 0, lastTradeAt: null, mode: 'PAPER' });
+    if ('proposals' in result) return result.proposals[0] ?? null;
+  }
+  return null;
+}
+
+async function markWaiting(database: PrismaClient, botId: string, reason: string): Promise<void> {
+  const existing = typeof database.bot.findUnique === 'function'
+    ? await database.bot.findUnique({ where: { id: botId }, select: { waitingSince: true } })
+    : null;
+  if (typeof database.bot.update === 'function') {
+    await database.bot.update({ where: { id: botId }, data: { waitingReason: reason, waitingSince: existing?.waitingSince ?? new Date() } });
+  }
+  await database.botEvent.create({ data: { botId, type: 'WAITING_FOR_MARKET', payload: noOp('MARKET_REGIME_NOT_SUITABLE', { reason }) } });
 }
 
 async function executePaperOrder(

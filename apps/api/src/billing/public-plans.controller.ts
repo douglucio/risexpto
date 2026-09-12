@@ -18,7 +18,7 @@ export class PublicPlansController {
     return plans.map((plan) => ({
       plan: plan.key,
       displayName: plan.name,
-      monthlyPrice: Number(process.env[`STRIPE_TEST_PRICE_${plan.key}_AMOUNT`] ?? 0),
+      monthlyPrice: Number(process.env[`STRIPE_TEST_PRICE_${plan.key}_AMOUNT`] ?? ({ FREE: 0, STARTER: 20, PRO: 50, ADVANCED: 100 } as Record<string, number>)[plan.key] ?? 0),
       currency: process.env.STRIPE_TEST_PRICE_CURRENCY ?? 'USD',
       features: plan.entitlements.map((item) => item.key),
       limits: Object.fromEntries(plan.entitlements.map((item) => [item.key, item.value])),

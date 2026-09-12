@@ -46,12 +46,22 @@ export class BillingService {
       orderBy: { createdAt: 'desc' },
       include: { plan: { include: { entitlements: true } } },
     });
-    const maxBots = subscription?.plan.entitlements.find((item) => item.key === 'maxBots')?.value;
+    const maxBots = subscription?.plan.entitlements.find((item) => item.key === 'maxActiveTraderInstances')?.value
+      ?? subscription?.plan.entitlements.find((item) => item.key === 'maxBots')?.value;
     const limit = typeof maxBots === 'number' ? maxBots : null;
     if (!subscription || limit === null)
       throw new BadRequestException('An active plan is required to create a bot');
-    const count = await this.db.bot.count({ where: { userId, archivedAt: null } });
+    const count = await this.db.bot.count({ where: { userId, archivedAt: null, status: { not: 'STOPPED' } } });
     if (count >= limit) throw new BadRequestException('Bot limit reached for the current plan');
+  }
+
+  async assertCanCreateConnection(user: AuthenticatedUser): Promise<void> {
+    const userId = applicationUserId(user);
+    const subscription = await this.db.subscription.findFirst({ where: { userId, status: { in: ['ACTIVE', 'TRIALING'] } }, orderBy: { createdAt: 'desc' }, include: { plan: { include: { entitlements: true } } } });
+    const entitlement = subscription?.plan.entitlements.find((item) => item.key === 'maxLiveConnections')?.value;
+    const limit = typeof entitlement === 'number' ? entitlement : 0;
+    const count = await this.db.exchangeConnection.count({ where: { userId, revokedAt: null } });
+    if (!subscription || count >= limit) throw new BadRequestException('Live connection limit reached for the current plan');
   }
 
   async checkout(user: AuthenticatedUser, body: Record<string, unknown>) {

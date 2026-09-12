@@ -1,5 +1,12 @@
 # Production Readiness
 
+## Digital Trader V1 boundary
+
+The commercial product language is Digital Traders, but this document does not
+authorize Binance Production or Stripe Live. Validation remains Paper Trading
+and Binance Spot Testnet/local mocks, with backend entitlements and both risk
+layers active.
+
 ## Pré-requisitos
 
 - Node.js `>=22.12.0` e pnpm `10.34.5`;

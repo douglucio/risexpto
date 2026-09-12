@@ -41,6 +41,11 @@ enum TradingMode {
   LIVE
 }
 
+enum CapitalMode {
+  FIXED
+  COMPOUND
+}
+
 enum ProposalSide {
   BUY
   SELL
@@ -157,6 +162,7 @@ model User {
   billingCustomer     BillingCustomer?
   subscriptions       Subscription[]
   usages              Usage[]
+  aiCredits           AiCreditLedgerEntry[]
 
   @@index([createdAt])
   @@index([deletedAt])
@@ -189,6 +195,11 @@ model ExchangeConnection {
   revokedAt            DateTime?                @db.Timestamptz(3)
   createdAt            DateTime                 @default(now()) @db.Timestamptz(3)
   updatedAt            DateTime                 @updatedAt @db.Timestamptz(3)
+  availableCapital     Decimal                  @default(0) @db.Decimal(38, 18)
+  allocatedCapital     Decimal                  @default(0) @db.Decimal(38, 18)
+  maximumExposure      Decimal                  @default(0) @db.Decimal(38, 18)
+  maximumDailyLoss     Decimal                  @default(0) @db.Decimal(38, 18)
+  killSwitchActive     Boolean                  @default(false)
   user                 User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
   bots                 Bot[]
   orders               Order[]
@@ -233,6 +244,11 @@ model Bot {
   name                 String              @db.VarChar(120)
   status               BotStatus           @default(DRAFT)
   tradingMode          TradingMode         @default(PAPER)
+  capitalMode          CapitalMode         @default(FIXED)
+  assetSymbol          String?             @db.VarChar(32)
+  digitalTraderSlug    String?             @db.VarChar(80)
+  waitingReason        String?             @db.VarChar(80)
+  waitingSince         DateTime?           @db.Timestamptz(3)
   createdAt            DateTime            @default(now()) @db.Timestamptz(3)
   updatedAt            DateTime            @updatedAt @db.Timestamptz(3)
   nextRunAt            DateTime?           @db.Timestamptz(3)
@@ -426,6 +442,7 @@ model RiskProfile {
   maxDrawdownPercent  Decimal     @db.Decimal(8, 4)
   allowedSymbols      String[]
   cooldownSeconds     Int         @default(0)
+  preset              String?     @db.VarChar(32)
   createdAt           DateTime    @default(now()) @db.Timestamptz(3)
   updatedAt           DateTime    @updatedAt @db.Timestamptz(3)
   user                User        @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -664,4 +681,22 @@ model BillingWebhookEvent {
   createdAt   DateTime @default(now()) @db.Timestamptz(3)
 
   @@index([provider, type])
+}
+
+enum AiCreditBucket {
+  SUBSCRIPTION_CREDITS
+  PURCHASED_CREDITS
+}
+
+model AiCreditLedgerEntry {
+  id          String         @id @default(uuid()) @db.Uuid
+  userId      String         @db.Uuid
+  bucket      AiCreditBucket
+  amount      Int
+  reason      String         @db.VarChar(120)
+  expiresAt   DateTime?      @db.Timestamptz(3)
+  createdAt   DateTime       @default(now()) @db.Timestamptz(3)
+  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, bucket, createdAt])
 }

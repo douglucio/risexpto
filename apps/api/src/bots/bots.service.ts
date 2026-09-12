@@ -11,6 +11,7 @@ import { DATABASE } from '../users/user-provisioning.service';
 import type { AuthenticatedUser } from '../auth/auth.types';
 import type { BotStatusChange, CreateBotBody, RiskProfileBody } from './bots.types';
 import { BillingService } from '../billing/billing.service';
+import { cryptoDigitalTraders, mapBotState, type CapitalMode, type RiskPreset } from '@risexpto/digital-traders';
 
 @Injectable()
 export class BotsService {
@@ -20,11 +21,12 @@ export class BotsService {
   ) {}
 
   async list(user: AuthenticatedUser) {
-    return this.db.bot.findMany({
+    const bots = await this.db.bot.findMany({
       where: { userId: applicationUserId(user), archivedAt: null },
       orderBy: { createdAt: 'desc' },
-      include: { configuration: true },
+      include: { configuration: true, riskProfile: true, exchangeConnection: { select: { provider: true, label: true } } },
     });
+    return bots.map((bot) => ({ ...bot, productState: mapBotState(bot.status, bot.waitingReason) }));
   }
 
   async get(user: AuthenticatedUser, id: string) {
@@ -60,6 +62,9 @@ export class BotsService {
             name: input.name,
             strategyVersionId: input.strategyVersionId,
             tradingMode: input.tradingMode,
+            capitalMode: input.capitalMode,
+            assetSymbol: input.assetSymbol,
+            ...(input.digitalTraderSlug ? { digitalTraderSlug: input.digitalTraderSlug } : {}),
             ...(input.exchangeConnectionId
               ? { exchangeConnectionId: input.exchangeConnectionId }
               : {}),
@@ -96,7 +101,26 @@ export class BotsService {
     };
     if (!allowed[bot.status]?.includes(status))
       throw new ConflictException(`Invalid bot transition: ${bot.status} to ${status}`);
-    return this.db.bot.update({ where: { id: bot.id }, data: { status } });
+    if (typeof this.db.$transaction !== 'function')
+      return this.db.bot.update({ where: { id: bot.id }, data: { status } });
+    return this.db.$transaction(async (tx) => {
+      if (status === 'RUNNING' && bot.exchangeConnectionId && bot.configuration) {
+        const result = await tx.$executeRaw`
+          UPDATE "ExchangeConnection"
+          SET "allocatedCapital" = "allocatedCapital" + ${bot.configuration.authorizedCapital}
+          WHERE "id" = ${bot.exchangeConnectionId}
+            AND ("availableCapital" = 0 OR "allocatedCapital" + ${bot.configuration.authorizedCapital} <= "availableCapital")
+            AND "killSwitchActive" = false`;
+        if (result !== 1) throw new ConflictException('Connection capital allocation is unavailable');
+      }
+      if (status === 'STOPPED' && bot.exchangeConnectionId && bot.configuration) {
+        await tx.$executeRaw`
+          UPDATE "ExchangeConnection"
+          SET "allocatedCapital" = GREATEST(0, "allocatedCapital" - ${bot.configuration.authorizedCapital})
+          WHERE "id" = ${bot.exchangeConnectionId}`;
+      }
+      return tx.bot.update({ where: { id: bot.id }, data: { status } });
+    });
   }
 
   async riskProfile(user: AuthenticatedUser, id: string) {
@@ -166,6 +190,10 @@ function parseCreateBody(body: CreateBotBody, userId: string) {
   const allowedSymbols = body.allowedSymbols.map((symbol) =>
     text(symbol, 'allowedSymbols', 20).toUpperCase(),
   );
+  if (new Set(allowedSymbols).size !== 1) throw new BadRequestException('A Trader Instance supports exactly one asset');
+  const capitalMode: CapitalMode = body.capitalMode === 'COMPOUND' ? 'COMPOUND' : 'FIXED';
+  const digitalTraderSlug = body.digitalTraderSlug === undefined ? undefined : text(body.digitalTraderSlug, 'digitalTraderSlug', 80).toLowerCase();
+  if (digitalTraderSlug && !cryptoDigitalTraders.some((trader) => trader.slug === digitalTraderSlug)) throw new BadRequestException('Unknown Digital Trader');
   if (!allowedSymbols.every((symbol) => /^[A-Z0-9]{5,20}$/.test(symbol)))
     throw new BadRequestException('Invalid allowedSymbols');
   const authorizedCapital = decimal(body.authorizedCapital, 'authorizedCapital');
@@ -175,6 +203,9 @@ function parseCreateBody(body: CreateBotBody, userId: string) {
     name,
     strategyVersionId,
     tradingMode,
+    capitalMode,
+    assetSymbol: allowedSymbols[0]!,
+    digitalTraderSlug,
     exchangeConnectionId,
     parameters: isRecord(body.parameters) ? body.parameters : {},
     allowedSymbols: [...new Set(allowedSymbols)],
@@ -223,6 +254,8 @@ function parseRiskProfile(
   ];
   if (!allowedSymbols.every((symbol) => botSymbols.includes(symbol)))
     throw new BadRequestException('Risk symbols must be allowed by the bot');
+  const preset = body.preset === undefined ? undefined : text(body.preset, 'riskProfile.preset', 32).toUpperCase();
+  if (preset !== undefined && !['CONSERVATIVE', 'BALANCED', 'AGGRESSIVE'].includes(preset)) throw new BadRequestException('Invalid risk preset');
   return {
     name,
     maxAllocatedCapital,
@@ -234,6 +267,7 @@ function parseRiskProfile(
     maxDrawdownPercent,
     allowedSymbols,
     cooldownSeconds,
+    ...(preset ? { preset: preset as RiskPreset } : {}),
     ...(userId ? { userId } : {}),
   };
 }
