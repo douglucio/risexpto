@@ -41,7 +41,15 @@ export class BotsService {
       const todayTrades = await this.db.trade.aggregate({ where: { order: { botId: bot.id, tradingMode: bot.tradingMode }, executedAt: { gte: today } }, _sum: { realizedPnl: true } });
       const todayRealized = new Decimal(todayTrades._sum.realizedPnl ?? 0);
       const unrealized = openPositions.reduce((sum, position) => sum.plus(new Decimal(price?.close ?? position.averagePrice).minus(position.averagePrice).times(position.quantity)), new Decimal(0));
-      const todayUnrealized = openPositions.filter((position) => position.openedAt >= today).reduce((sum, position) => sum.plus(new Decimal(price?.close ?? position.averagePrice).minus(position.averagePrice).times(position.quantity)), new Decimal(0));
+      const todayUnrealized = await openPositions.reduce(async (pending, position) => {
+        const sum = await pending;
+        const currentPrice = new Decimal(price?.close ?? position.averagePrice);
+        const current = currentPrice.minus(position.averagePrice).times(position.quantity);
+        if (position.openedAt >= today) return sum.plus(current);
+        const dayStart = await this.db.marketSnapshot.findFirst({ where: { symbol: position.symbol, closeTime: { lte: today } }, orderBy: { closeTime: 'desc' }, select: { close: true } });
+        const baseline = dayStart ? new Decimal(dayStart.close).minus(position.averagePrice).times(position.quantity) : new Decimal(0);
+        return sum.plus(current.minus(baseline));
+      }, Promise.resolve(new Decimal(0)));
       return {
         ...bot,
         productState: mapBotState(bot.status, bot.waitingReason),

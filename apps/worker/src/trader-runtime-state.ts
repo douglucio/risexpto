@@ -46,6 +46,20 @@ export function calculateSpentCapital(positions: readonly { quantity: Decimal.Va
   );
 }
 
+export function calculateTodayUnrealizedPnl(input: {
+  currentPrice: Decimal.Value;
+  averagePrice: Decimal.Value;
+  quantity: Decimal.Value;
+  openedAt: Date;
+  dayStart: Date;
+  dayStartPrice?: Decimal.Value;
+}): Decimal {
+  const current = new Decimal(input.currentPrice).minus(input.averagePrice).times(input.quantity);
+  if (input.openedAt >= input.dayStart || input.dayStartPrice === undefined) return current;
+  const baseline = new Decimal(input.dayStartPrice).minus(input.averagePrice).times(input.quantity);
+  return current.minus(baseline);
+}
+
 export class TraderRuntimeStateService {
   constructor(private readonly database: PrismaClient) {}
 
@@ -91,8 +105,11 @@ export class TraderRuntimeStateService {
     today.setUTCHours(0, 0, 0, 0);
     const todayTrades = allTrades.filter((trade) => trade.executedAt >= today);
     const todayRealized = todayTrades.reduce((sum, item) => sum.plus(item.realizedPnl), new Decimal(0));
-    const todayUnrealized = position && position.openedAt >= today
-      ? unrealized
+    const dayStartMarket = position && position.openedAt < today
+      ? await this.database.marketSnapshot.findFirst({ where: { symbol: position.symbol, closeTime: { lte: today } }, orderBy: { closeTime: 'desc' }, select: { close: true } })
+      : null;
+    const todayUnrealized = position
+      ? calculateTodayUnrealizedPnl({ currentPrice: price, averagePrice: average, quantity, openedAt: position.openedAt, dayStart: today, ...(dayStartMarket ? { dayStartPrice: dayStartMarket.close } : {}) })
       : new Decimal(0);
     const lastBuy = allTrades.find((item) => item.order.side === 'BUY')?.executedAt ?? null;
     const lastSell = allTrades.find((item) => item.order.side === 'SELL')?.executedAt ?? null;
