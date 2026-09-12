@@ -9,9 +9,9 @@ const [emailArgument, planArgument = 'STARTER'] = process.argv.slice(2);
 const email = emailArgument?.trim().toLowerCase();
 const planKey = planArgument.trim().toUpperCase();
 if (!email || !email.includes('@'))
-  throw new Error('Usage: pnpm dev:grant-plan <email> [STARTER|PRO]');
-if (!['STARTER', 'PRO'].includes(planKey))
-  throw new Error('Development plan must be STARTER or PRO');
+  throw new Error('Usage: pnpm dev:grant-plan <email> [FREE|STARTER|PRO|ADVANCED]');
+if (!['FREE', 'STARTER', 'PRO', 'ADVANCED'].includes(planKey))
+  throw new Error('Development plan must be FREE, STARTER, PRO or ADVANCED');
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) throw new Error('DATABASE_URL is required');
 const { createDatabaseClient } = await import('@risexpto/database');

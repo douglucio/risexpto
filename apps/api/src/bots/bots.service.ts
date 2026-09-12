@@ -40,7 +40,7 @@ export class BotsService {
 
   async create(user: AuthenticatedUser, body: CreateBotBody) {
     const userId = applicationUserId(user);
-    if (this.billing) await this.billing.assertCanCreateBot(user);
+    if (this.billing) await this.billing.assertCanCreateBot(user, body.tradingMode === 'LIVE' ? 'LIVE' : 'PAPER');
     const input = parseCreateBody(body, userId);
     const strategy = await this.db.strategyVersion.findFirst({
       where: { id: input.strategyVersionId, active: true, definition: { active: true } },

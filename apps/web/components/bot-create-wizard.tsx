@@ -113,12 +113,7 @@ export function BotCreateWizard() {
         allowedSymbols: [form.symbol],
         authorizedCapital: form.capital,
         quoteCurrency: 'USDT',
-        parameters: {
-          symbol: form.symbol,
-          intervalMs: 86_400_000,
-          quoteAmount: Number(form.trade),
-          maxCapital: Number(form.capital),
-        },
+        parameters: strategyParameters(form.strategyKey, form.symbol, Number(form.trade), Number(form.capital)),
         riskProfile: {
           name: `${form.name} risk`,
           maxAllocatedCapital: form.capital,
@@ -331,4 +326,11 @@ export function BotCreateWizard() {
       ) : null}
     </>
   );
+}
+
+function strategyParameters(strategyKey: string, symbol: string, quoteAmount: number, maxCapital: number): Record<string, number | string> {
+  if (strategyKey === 'grid') return { symbol, lowerPrice: 1, upperPrice: 2, levels: 4, capital: maxCapital, maxVolatility: 10 };
+  if (strategyKey === 'trend-following') return { symbol, fastEmaPeriod: 5, slowEmaPeriod: 12, atrPeriod: 5, momentumPeriod: 3, minMomentumPercent: 0.1, minVolumeRatio: 1, maxAtrPercent: 5, quoteAmount, maxCapital };
+  if (strategyKey === 'breakout') return { symbol, lookback: 20, breakoutPercent: 1, quoteAmount, maxCapital, cooldownMs: 60_000 };
+  return { symbol, intervalMs: 86_400_000, quoteAmount, maxCapital };
 }
