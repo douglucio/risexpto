@@ -26,7 +26,6 @@ export function analyzeBreakout(parameters: BreakoutParameters, context: Breakou
   const p = validateBreakoutParameters(parameters);
   if (context.mode !== 'PAPER') return noOp('OUTSIDE_SCHEDULE', { mode: context.mode });
   if (context.candles.length < p.lookback + 1) return noOp('INSUFFICIENT_MARKET_DATA', { requiredCandles: p.lookback + 1 });
-  if (context.spentCapital + p.quoteAmount > p.maxCapital) return noOp('MARKET_REGIME_NOT_SUITABLE', { reason: 'CAPITAL_LIMIT' });
   if (context.lastTradeAt !== null && context.now - context.lastTradeAt < p.cooldownMs) return noOp('OUTSIDE_SCHEDULE', { reason: 'COOLDOWN' });
   const current = context.candles.at(-1)!;
   if ((context.positionQuantity ?? 0) > 0 && (context.averageEntryPrice ?? 0) > 0) {
@@ -35,8 +34,9 @@ export function analyzeBreakout(parameters: BreakoutParameters, context: Breakou
     const target = entry * (1 + (p.takeProfitPercent ?? 6) / 100);
     if (current.close <= stop || current.close >= target)
       return { proposals: [{ side: 'SELL', symbol: p.symbol, quantity: context.positionQuantity!, rationale: current.close <= stop ? `Breakout stop loss at ${current.close}` : `Breakout take profit at ${current.close}` }] };
-    return noOp('MARKET_REGIME_NOT_SUITABLE', { reason: 'POSITION_ACTIVE' });
+      return noOp('MARKET_REGIME_NOT_SUITABLE', { reason: 'POSITION_ACTIVE' });
   }
+  if (context.spentCapital + p.quoteAmount > p.maxCapital) return noOp('MARKET_REGIME_NOT_SUITABLE', { reason: 'CAPITAL_LIMIT' });
   const previous = context.candles.slice(-(p.lookback + 1), -1);
   const high = Math.max(...previous.map((candle) => candle.high));
   const threshold = high * (1 + p.breakoutPercent / 100);

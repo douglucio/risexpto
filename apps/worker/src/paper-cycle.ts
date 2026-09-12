@@ -14,6 +14,7 @@ import { evaluatePortfolioRisk } from '@risexpto/digital-traders';
 import { TraderRuntimeStateService, type TraderRuntimeContext } from './trader-runtime-state.js';
 import { notifyTrader } from './runtime-notifications.js';
 import { PortfolioRiskStateService } from './portfolio-risk-state.js';
+import { applySpotPositionFill } from './paper-fills.js';
 
 export async function processPaperCycle(
   database: PrismaClient,
@@ -386,6 +387,31 @@ async function executePaperOrder(
         create: { botId, asset: base, free: quantity },
         update: { free: { increment: quantity } },
       });
+      const position = await tx.position.findFirst({
+        where: { botId, symbol, tradingMode: 'PAPER', status: 'OPEN' },
+      });
+      if (position) {
+        const next = applySpotPositionFill(
+          { quantity: new Decimal(position.quantity), averagePrice: new Decimal(position.averagePrice), realizedPnl: new Decimal(position.realizedPnl) },
+          'BUY',
+          quantity,
+          priceDecimal,
+        );
+        await tx.position.update({ where: { id: position.id }, data: { quantity: next.quantity, averagePrice: next.averagePrice } });
+      } else {
+        await tx.position.create({
+          data: {
+            botId,
+            tradingMode: 'PAPER',
+            symbol,
+            status: 'OPEN',
+            quantity,
+            averagePrice: priceDecimal,
+            realizedPnl: 0,
+            openedAt: new Date(),
+          },
+        });
+      }
     } else {
       const position = await tx.position.findFirst({
         where: { botId, symbol, tradingMode: 'PAPER', status: 'OPEN' },
