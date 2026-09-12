@@ -39,6 +39,13 @@ export type TraderRuntimeContext = {
   };
 };
 
+export function calculateSpentCapital(positions: readonly { quantity: Decimal.Value; averagePrice: Decimal.Value }[]): Decimal {
+  return positions.reduce(
+    (sum, position) => sum.plus(new Decimal(position.quantity).times(position.averagePrice)),
+    new Decimal(0),
+  );
+}
+
 export class TraderRuntimeStateService {
   constructor(private readonly database: PrismaClient) {}
 
@@ -130,15 +137,10 @@ export class TraderRuntimeStateService {
   }
 
   private async spentCapital(botId: string): Promise<Decimal> {
-    const buys = await this.database.trade.findMany({
-      where: { order: { botId, tradingMode: 'PAPER', side: 'BUY' } },
-      select: { quantity: true, price: true, fee: true },
+    const positions = await this.database.position.findMany({
+      where: { botId, tradingMode: 'PAPER', status: 'OPEN' },
+      select: { quantity: true, averagePrice: true },
     });
-    const sells = await this.database.trade.findMany({
-      where: { order: { botId, tradingMode: 'PAPER', side: 'SELL' } },
-      select: { quantity: true, price: true, fee: true },
-    });
-    return buys.reduce((sum, item) => sum.plus(new Decimal(item.quantity).times(item.price).plus(item.fee)), new Decimal(0))
-      .minus(sells.reduce((sum, item) => sum.plus(new Decimal(item.quantity).times(item.price).minus(item.fee)), new Decimal(0)));
+    return calculateSpentCapital(positions);
   }
 }
