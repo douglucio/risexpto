@@ -3752,7 +3752,7 @@ reprodutibilidade Paper. LIVE continua bloqueado.
 | 142 | Unify Strategy Runtime and Backtest | ✅ CODE_IMPLEMENTED / TYPECHECKED — backtest chama os packages compartilhados de DCA/Grid/Trend/Breakout. |
 | 143 | Backtest Metrics Correctness | ✅ CODE_IMPLEMENTED / TESTED — retornos por equity anterior e Sharpe sem mistura de séries. |
 | 144 | Deterministic Trader Scenario Tests | ✅ TESTED — cenários determinísticos individuais para os quatro traders. |
-| 145 | Multi-Trader E2E V3 | 🟨 Preparada — assertions individuais fortalecidas; execução requer PostgreSQL/Redis E2E. |
+| 145 | Multi-Trader E2E V3 | ✅ WORKER_E2E_VALIDATED — PostgreSQL/Redis Docker executaram os quatro traders individualmente, reprocessamento e idempotência. |
 | 146 | Trader Activity Timeline | ✅ CODE_IMPLEMENTED / TYPECHECKED — BotEvent exposto com paginação limitada por trader. UI detalhada permanece no gate manual. |
 | 147 | Notifications Runtime Hardening | ✅ CODE_IMPLEMENTED / TESTED — dedupe/throttle por tipo e reason em IN_APP. |
 | 148 | Paper Operational Readiness Gate | 🟨 BLOCKED_EXTERNAL — código, testes determinísticos e documentação atualizados; gate E2E longo requer PostgreSQL/Redis disponíveis. |
@@ -3765,9 +3765,17 @@ reprodutibilidade Paper. LIVE continua bloqueado.
   continuam bloqueados pelo sandbox (`listen EPERM` em `0.0.0.0`) e os testes
   E2E de PostgreSQL/Redis permanecem opt-in/skipped sem os serviços externos.
 - A Fase 145 foi fortalecida para exigir evidência individual para Atlas, Luna,
-  DCA One e Pulse, mas não foi promovida a validação externa sem o ambiente.
+  DCA One e Pulse. Com Docker ativo, o worker E2E passou com 17 arquivos e 33
+  testes, incluindo o fluxo dos quatro traders, restart/reprocessamento e
+  idempotência.
+- A API passou com 12 arquivos, 35 testes e 1 skip quando executada sem URLs de
+  dependência injetadas no teste de readiness. Com `REDIS_URL` exportada, esse
+  teste unitário deve ser executado sem o ambiente de runtime para preservar a
+  expectativa de dependências não configuradas.
 - A Fase 148 não declara readiness para Binance Spot Testnet. LIVE permanece
   bloqueado; Binance Production e Stripe Live não foram usados.
+- O Playwright ainda requer API/Web em execução em `localhost:3000`; os
+  containers disponíveis nesta validação foram PostgreSQL, Redis e Keycloak.
 
 ### Conclusão das Fases 134–135
 

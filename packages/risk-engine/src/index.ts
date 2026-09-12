@@ -110,9 +110,7 @@ export class RiskEngine {
       [
         'ALLOCATED_CAPITAL_LIMIT',
         'Allocated capital limit would be exceeded.',
-        isExit || new Decimal(context.allocatedCapital)
-          .plus(proposedValueDecimal)
-          .lte(this.limits.maxAllocatedCapital),
+        isExit || new Decimal(context.allocatedCapital).lte(this.limits.maxAllocatedCapital),
       ],
       [
         'EXPOSURE_LIMIT',
