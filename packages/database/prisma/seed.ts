@@ -7,16 +7,28 @@ const db = createDatabaseClient(connectionString);
 
 const plans = [
   {
+    key: 'FREE',
+    name: 'Free',
+    description: 'Paper Trading access for trying every basic Digital Trader.',
+    entitlements: { maxBots: 3, maxActiveTraderInstances: 3, maxPaperTraderInstances: 3, maxLiveConnections: 0, liveTrading: false, maxMonthlyBacktests: 0, features: ['paper-basic'] },
+  },
+  {
     key: 'STARTER',
     name: 'Starter',
     description: 'Paper Trading foundation for evaluating RiseXPTO safely.',
-    entitlements: { maxBots: 1, liveTrading: false, maxMonthlyBacktests: 5 },
+    entitlements: { maxBots: 3, maxActiveTraderInstances: 3, maxPaperTraderInstances: 3, maxLiveConnections: 1, liveTrading: true, maxMonthlyBacktests: 5, features: ['paper-basic'] },
   },
   {
     key: 'PRO',
     name: 'Professional',
     description: 'Expanded automation limits controlled by backend entitlements.',
-    entitlements: { maxBots: 10, liveTrading: true, maxMonthlyBacktests: 100 },
+    entitlements: { maxBots: 10, maxActiveTraderInstances: 10, maxPaperTraderInstances: 10, maxLiveConnections: 2, liveTrading: true, maxMonthlyBacktests: 100, features: ['paper-basic', 'advanced'] },
+  },
+  {
+    key: 'ADVANCED',
+    name: 'Advanced',
+    description: 'Premium Digital Trader workspace with expanded connections and instances.',
+    entitlements: { maxBots: 25, maxActiveTraderInstances: 25, maxPaperTraderInstances: 25, maxLiveConnections: 5, liveTrading: true, maxMonthlyBacktests: 250, features: ['paper-basic', 'advanced', 'premium'] },
   },
 ] as const;
 

@@ -24,8 +24,8 @@ describe('processPaperCycle', () => {
       data: { type: 'bot-cycle', botId: 'bot-1' },
     } as never);
 
-    expect(create).toHaveBeenCalledTimes(2);
-    expect(create.mock.calls[1]?.[0]).toEqual({
+    expect(create).toHaveBeenCalledTimes(3);
+    expect(create.mock.calls[2]?.[0]).toEqual({
       data: {
         botId: 'bot-1',
         type: 'CYCLE_COMPLETED',

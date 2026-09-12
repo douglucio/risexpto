@@ -7,6 +7,7 @@ describe('MVP strategy seed', () => {
       'dca',
       'grid',
       'trend-following',
+      'breakout',
     ]);
     expect(mvpStrategies.every((strategy) => strategy.implementationKey.length > 0)).toBe(true);
     expect(mvpStrategies.every((strategy) => strategy.parameterSchema.type === 'object')).toBe(

@@ -20,10 +20,14 @@
   "dependencies": {
     "@risexpto/binance-connection": "workspace:*",
     "@risexpto/database": "workspace:*",
+    "@risexpto/digital-traders": "workspace:*",
     "@risexpto/live-execution": "workspace:*",
     "@risexpto/market-data": "workspace:*",
     "@risexpto/risk-engine": "workspace:*",
     "@risexpto/strategy-dca": "workspace:*",
+    "@risexpto/strategy-grid": "workspace:*",
+    "@risexpto/strategy-trend": "workspace:*",
+    "@risexpto/strategy-breakout": "workspace:*",
     "bullmq": "5.63.0",
     "decimal.js": "10.6.0"
   }

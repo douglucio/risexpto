@@ -77,6 +77,13 @@ type BotRecord = {
   id: string;
   name: string;
   status: string;
+  productState?: string;
+  assetSymbol?: string | null;
+  waitingReason?: string | null;
+  totalPnl?: number;
+  todayPnl?: number;
+  exchangeConnection?: { provider: string; label: string } | null;
+  riskProfile?: { preset?: string | null } | null;
   tradingMode: string;
   configuration?: { authorizedCapital?: string; quoteCurrency?: string } | null;
 };
@@ -86,6 +93,13 @@ type StrategyRecord = {
   name: string;
   description: string;
   versions: Array<{ id: string; version: number; implementationKey: string }>;
+  specialty?: string;
+  marketType?: string;
+  idealMarketRegime?: string;
+  riskDescription?: string;
+  paperAvailable?: boolean;
+  liveAvailable?: boolean;
+  supportedProviders?: string[];
 };
 type ExchangeConnectionRecord = {
   id: string;
@@ -128,7 +142,7 @@ async function loadSectionData(
   try {
     const apiBaseUrl =
       process.env.API_BASE_URL ?? `http://localhost:${process.env.API_PORT ?? '3001'}`;
-    const response = await fetch(`${apiBaseUrl.replace(/\/$/, '')}/${section}`, {
+    const response = await fetch(`${apiBaseUrl.replace(/\/$/, '')}/${section === 'strategies' ? 'traders' : section}`, {
       headers: { authorization: `Bearer ${session.accessToken}` },
       cache: 'no-store',
     });
@@ -206,13 +220,20 @@ function SectionContent({
             <DataTable
               columns={[
                 t('workspace.name'),
+                t('workspace.asset'),
+                t('workspace.provider'),
                 t('workspace.mode'),
                 t('workspace.capital'),
+                t('workspace.todayPnl'),
+                t('workspace.totalPnl'),
+                t('workspace.riskPreset'),
                 t('workspace.status'),
                 t('workspace.actions'),
               ]}
               rows={data.value.map((bot) => [
                 <b key={`${bot.id}-name`}>{bot.name}</b>,
+                bot.assetSymbol ?? '—',
+                bot.exchangeConnection?.provider ?? 'Paper',
                 <Badge key={`${bot.id}-mode`} tone="brand">
                   {bot.tradingMode}
                 </Badge>,
@@ -221,7 +242,10 @@ function SectionContent({
                   value={Number(bot.configuration?.authorizedCapital ?? 0)}
                   currency={bot.configuration?.quoteCurrency ?? 'USD'}
                 />,
-                <Badge key={`${bot.id}-status`}>{bot.status}</Badge>,
+                <CurrencyDisplay key={`${bot.id}-today-pnl`} value={bot.todayPnl ?? 0} currency={bot.configuration?.quoteCurrency ?? 'USD'} />,
+                <CurrencyDisplay key={`${bot.id}-total-pnl`} value={bot.totalPnl ?? 0} currency={bot.configuration?.quoteCurrency ?? 'USD'} />,
+                bot.riskProfile?.preset ?? t('workspace.advanced'),
+                <Badge key={`${bot.id}-status`}>{bot.productState ?? bot.status}</Badge>,
                 <BotControls
                   key={`${bot.id}-actions`}
                   id={bot.id}
@@ -249,16 +273,18 @@ function SectionContent({
         {data?.kind === 'strategies'
           ? data.value.map((strategy) => (
               <Card key={strategy.id}>
-                <Badge tone="brand">{strategy.key}</Badge>
+                <Badge tone="brand">{strategy.specialty ?? strategy.key}</Badge>
                 <h2>{strategy.name}</h2>
                 <p>{strategy.description}</p>
+                {strategy.idealMarketRegime ? <small>{strategy.idealMarketRegime} · {strategy.riskDescription}</small> : null}
+                {strategy.supportedProviders ? <small>{t('workspace.providers')}: {strategy.supportedProviders.join(', ')}</small> : null}
                 {strategy.versions[0] ? (
                   <small>
                     {t('workspace.version')} {strategy.versions[0].version}
                   </small>
                 ) : null}
                 <Link className="rx-button" href="/bots">
-                  {t('workspace.useStrategy')}
+                  {strategy.paperAvailable ? t('workspace.tryPaper') : t('workspace.useStrategy')}
                 </Link>
               </Card>
             ))

@@ -68,4 +68,22 @@ export const mvpStrategies = [
       },
     },
   },
+  {
+    key: 'breakout',
+    name: 'Breakout / Momentum',
+    description: 'Paper-first breakout proposals with explicit confirmation and cooldown.',
+    implementationKey: 'breakout',
+    parameterSchema: {
+      type: 'object',
+      required: ['symbol', 'lookback', 'breakoutPercent', 'quoteAmount', 'maxCapital', 'cooldownMs'],
+      properties: {
+        symbol: { type: 'string', pattern: '^[A-Z0-9]{5,20}$' },
+        lookback: { type: 'integer', minimum: 2 },
+        breakoutPercent: { type: 'number', exclusiveMinimum: 0 },
+        quoteAmount: { type: 'number', exclusiveMinimum: 0 },
+        maxCapital: { type: 'number', exclusiveMinimum: 0 },
+        cooldownMs: { type: 'integer', minimum: 0 },
+      },
+    },
+  },
 ] as const;

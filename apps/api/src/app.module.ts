@@ -11,6 +11,7 @@ import { QueueModule } from './queue/queue.module';
 import { TradingActivityModule } from './trading-activity/trading-activity.module';
 import { AdminModule } from './admin/admin.module';
 import { BillingModule } from './billing/billing.module';
+import { TradersModule } from './traders/traders.module';
 
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl && process.env.NODE_ENV !== 'test')
@@ -28,6 +29,7 @@ const database = createDatabaseClient(databaseUrl ?? 'postgresql://test:test@loc
     TradingActivityModule,
     AdminModule.withDatabase(database),
     BillingModule.withDatabase(database),
+    TradersModule,
   ],
   controllers: [AppController, ProfileController],
 })

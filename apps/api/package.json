@@ -18,6 +18,7 @@
     "@risexpto/billing": "workspace:*",
     "@risexpto/binance-connection": "workspace:*",
     "@risexpto/database": "workspace:*",
+    "@risexpto/digital-traders": "workspace:*",
     "bullmq": "5.63.0",
     "class-transformer": "0.5.1",
     "class-validator": "0.14.2",

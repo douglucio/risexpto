@@ -2,6 +2,14 @@
 
 Este roteiro valida o caminho local do RiseXPTO sem Binance Production, Stripe Live ou dinheiro real.
 
+## Digital Trader V1 additions
+
+After the existing Paper flow, verify Explore Traders exposes Atlas, Luna, DCA
+One and Pulse; create two one-asset instances on the same connection; confirm
+over-allocation is rejected; confirm FIXED and COMPOUND are persisted; and
+confirm an unsuitable market produces WAITING with a persisted reason. Use only
+local/Testnet infrastructure.
+
 ## Bootstrap
 
 ```bash

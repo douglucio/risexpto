@@ -39,26 +39,38 @@ export class BillingService {
     };
   }
 
-  async assertCanCreateBot(user: AuthenticatedUser): Promise<void> {
+  async assertCanCreateBot(user: AuthenticatedUser, tradingMode: 'PAPER' | 'LIVE' = 'PAPER'): Promise<void> {
     const userId = applicationUserId(user);
     const subscription = await this.db.subscription.findFirst({
       where: { userId, status: { in: ['ACTIVE', 'TRIALING'] } },
       orderBy: { createdAt: 'desc' },
       include: { plan: { include: { entitlements: true } } },
     });
-    const maxBots = subscription?.plan.entitlements.find((item) => item.key === 'maxBots')?.value;
+    const preferredKey = tradingMode === 'PAPER' ? 'maxPaperTraderInstances' : 'maxActiveTraderInstances';
+    const maxBots = subscription?.plan.entitlements.find((item) => item.key === preferredKey)?.value
+      ?? subscription?.plan.entitlements.find((item) => item.key === 'maxActiveTraderInstances')?.value
+      ?? subscription?.plan.entitlements.find((item) => item.key === 'maxBots')?.value;
     const limit = typeof maxBots === 'number' ? maxBots : null;
     if (!subscription || limit === null)
       throw new BadRequestException('An active plan is required to create a bot');
-    const count = await this.db.bot.count({ where: { userId, archivedAt: null } });
-    if (count >= limit) throw new BadRequestException('Bot limit reached for the current plan');
+    const count = await this.db.bot.count({ where: { userId, archivedAt: null, status: { not: 'STOPPED' } } });
+    if (count >= limit) throw new BadRequestException('Trader Instance limit reached for the current plan');
+  }
+
+  async assertCanCreateConnection(user: AuthenticatedUser): Promise<void> {
+    const userId = applicationUserId(user);
+    const subscription = await this.db.subscription.findFirst({ where: { userId, status: { in: ['ACTIVE', 'TRIALING'] } }, orderBy: { createdAt: 'desc' }, include: { plan: { include: { entitlements: true } } } });
+    const entitlement = subscription?.plan.entitlements.find((item) => item.key === 'maxLiveConnections')?.value;
+    const limit = typeof entitlement === 'number' ? entitlement : 0;
+    const count = await this.db.exchangeConnection.count({ where: { userId, revokedAt: null } });
+    if (!subscription || count >= limit) throw new BadRequestException('Live connection limit reached for the current plan');
   }
 
   async checkout(user: AuthenticatedUser, body: Record<string, unknown>) {
     const userId = applicationUserId(user);
     const planKey = text(body.planKey, 'planKey').toUpperCase();
     const priceId = process.env[`STRIPE_TEST_PRICE_${planKey}`]?.trim();
-    if (!['STARTER', 'PRO'].includes(planKey) || !priceId)
+    if (!['STARTER', 'PRO', 'ADVANCED'].includes(planKey) || !priceId)
       throw new BadRequestException('A configured Stripe Test price is required');
     const customer = await this.db.billingCustomer.findUnique({ where: { userId } });
     const providerCustomerId =
@@ -159,7 +171,7 @@ function text(value: unknown, name: string): string {
 function planForPrice(priceId: string | undefined): string | null {
   if (!priceId) return null;
   return (
-    ['STARTER', 'PRO'].find((key) => process.env[`STRIPE_TEST_PRICE_${key}`] === priceId) ?? null
+    ['STARTER', 'PRO', 'ADVANCED'].find((key) => process.env[`STRIPE_TEST_PRICE_${key}`] === priceId) ?? null
   );
 }
 function dateFromSeconds(value: unknown): Date | null {
