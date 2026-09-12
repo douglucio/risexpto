@@ -23,7 +23,7 @@ export async function processPaperCycle(
   if (job.data.type !== 'bot-cycle' || !job.data.botId) return;
   const bot = await database.bot.findFirst({
     where: { id: job.data.botId, tradingMode: 'PAPER', status: 'RUNNING', archivedAt: null },
-    include: { configuration: true, exchangeConnection: true, strategyVersion: { include: { definition: true } } },
+    include: { configuration: true, riskProfile: true, exchangeConnection: true, strategyVersion: { include: { definition: true } } },
   });
   if (!bot?.configuration) return;
   const killSwitch = await database.killSwitchState.findFirst({
@@ -59,13 +59,13 @@ export async function processPaperCycle(
     }
     const markets = typeof database.marketSnapshot.findMany === 'function'
       ? await database.marketSnapshot.findMany({
-          where: { symbol },
+          where: { symbol, interval: bot.configuration.marketDataTimeframe },
           orderBy: { closeTime: 'desc' },
           select: { close: true, high: true, low: true, volume: true, openTime: true, closeTime: true },
-          take: 60,
+          take: bot.configuration.historyDepth,
         })
       : await database.marketSnapshot.findFirst({
-          where: { symbol },
+          where: { symbol, interval: bot.configuration.marketDataTimeframe },
           orderBy: { closeTime: 'desc' },
           select: { close: true, high: true, low: true, volume: true, openTime: true, closeTime: true },
         }).then((market) => (market ? [market] : []));
@@ -76,7 +76,7 @@ export async function processPaperCycle(
       return;
     }
     try {
-      assertFreshMarketData(market.closeTime);
+      assertFreshMarketData(market.closeTime, Date.now(), freshnessWindowMs(bot.configuration.marketDataTimeframe));
     } catch {
       await markWaiting(database, bot.id, 'MARKET_REGIME_NOT_SUITABLE');
       await complete(database, bot.id, job, 'STALE_MARKET_DATA');
@@ -85,7 +85,7 @@ export async function processPaperCycle(
     const runtime = await new TraderRuntimeStateService(database).load(bot.id, market.close);
     const portfolioState = await new PortfolioRiskStateService(database).load(bot.id);
     const gridLevels = bot.strategyVersion.implementationKey === 'grid'
-      ? await ensureGridLevels(database, bot.id, bot.configuration.parameters, bot.configuration.authorizedCapital)
+      ? await ensureGridLevels(database, bot.id, bot.configuration.parameters, bot.configuration.authorizedCapital, Number(market.close), bot.riskProfile?.preset)
       : [];
     const proposal = createPaperProposal(
       bot.strategyVersion.implementationKey,
@@ -147,6 +147,7 @@ export async function processPaperCycle(
     const portfolioRisk = evaluatePortfolioRisk({
       side: proposal.side,
       proposedExposure: Number(proposal.quoteAmount),
+      currentExposure: Number(portfolioState.currentExposure),
       allocatedCapital: Number(portfolioState.allocatedCapital),
       maximumExposure: Number(portfolioState.maximumExposure) || Number.POSITIVE_INFINITY,
       dailyLoss: Number(portfolioState.dailyLoss),
@@ -156,6 +157,8 @@ export async function processPaperCycle(
     if (!portfolioRisk.approved) {
       await database.riskEvent.create({ data: { botId: bot.id, riskProfileId: profile.id, tradeProposalId: storedProposal.id, decision: 'REJECTED', reasonCode: portfolioRisk.reasonCode, reason: 'Connection portfolio risk rejected the proposal.', riskSnapshot: portfolioRisk } });
       await database.tradeProposal.update({ where: { id: storedProposal.id }, data: { status: 'REJECTED', decidedAt: new Date() } });
+      if (portfolioRisk.action === 'PAUSE') await database.bot.update({ where: { id: bot.id }, data: { status: 'RISK_BLOCKED', waitingReason: portfolioRisk.reasonCode, waitingSince: new Date() } });
+      else await database.botEvent.create({ data: { botId: bot.id, type: 'RISK_SKIPPED', payload: { reasonCode: portfolioRisk.reasonCode, proposalId: storedProposal.id } } });
       await complete(database, bot.id, job, 'PORTFOLIO_RISK_REJECTED');
       return;
     }
@@ -221,7 +224,8 @@ export async function processPaperCycle(
       },
     });
     if (risk.decision !== 'APPROVED') {
-      await database.bot.update({ where: { id: bot.id }, data: { status: 'RISK_BLOCKED' } });
+      if (risk.action === 'PAUSE') await database.bot.update({ where: { id: bot.id }, data: { status: 'RISK_BLOCKED' } });
+      else await database.botEvent.create({ data: { botId: bot.id, type: 'RISK_SKIPPED', payload: { reasonCode: risk.reasonCode, proposalId: storedProposal.id } } });
       await notifyTrader(database, { userId: bot.userId, botId: bot.id, connectionId: bot.exchangeConnectionId, type: 'RISK_PAUSED', severity: 'WARNING', title: 'Trader risk blocked an order', body: risk.reason, data: { reasonCode: risk.reasonCode, proposalId: storedProposal.id } });
     }
     if (risk.decision === 'APPROVED') {
@@ -239,6 +243,11 @@ export async function processPaperCycle(
       );
       if (proposal.gridLevel !== undefined && typeof database.paperGridLevel?.updateMany === 'function') {
         await database.paperGridLevel.updateMany({ where: { botId: bot.id, level: proposal.gridLevel, status: 'OPEN' }, data: { status: 'EXECUTED', executionCount: { increment: 1 }, lastExecutedAt: new Date() } });
+        if (proposal.side === 'SELL') {
+          // A completed sell re-arms executed buy levels for the next bounded
+          // inventory cycle. The execution timestamp prevents same-tick replay.
+          await database.paperGridLevel.updateMany({ where: { botId: bot.id, side: 'BUY', status: 'EXECUTED' }, data: { status: 'OPEN' } });
+        }
       }
       await database.tradeProposal.update({
         where: { id: storedProposal.id },
@@ -264,6 +273,13 @@ export async function processPaperCycle(
   }
 }
 
+function freshnessWindowMs(timeframe: string): number {
+  const match = /^(\d+)([mhd])$/.exec(timeframe);
+  if (!match) return 120_000;
+  const unit = match[2] === 'h' ? 3_600_000 : match[2] === 'd' ? 86_400_000 : 60_000;
+  return Math.max(120_000, Number(match[1]) * unit * 2);
+}
+
 type PaperMarket = { close: unknown; high: unknown; low: unknown; volume: unknown; openTime: Date; closeTime: Date };
 type PaperProposal = { side: 'BUY' | 'SELL'; symbol: string; quoteAmount: number; quantity?: number; gridLevel?: number; rationale: string };
 
@@ -283,7 +299,7 @@ function createPaperProposal(implementationKey: string, rawParameters: unknown, 
       ?? orders.find((item) => item.side === 'BUY' && Number(latest.close) <= item.price && runtime.spentCapital.plus(String(item.quoteAmount)).lte(runtime.operationalCapital) && gridLevels.some((level) => level.level === item.level && level.status === 'OPEN'));
     if (!order) return null;
     return order.side === 'SELL'
-      ? { side: 'SELL', symbol, quoteAmount: Number(runtime.positionQuantity.times(String(latest.close))), quantity: Number(runtime.positionQuantity), gridLevel: order.level, rationale: `Grid level ${order.level} within range` }
+      ? { side: 'SELL', symbol, quoteAmount: Number(Decimal.min(runtime.positionQuantity, new Decimal(String(order.quoteAmount)).dividedBy(String(latest.close))).times(String(latest.close))), quantity: Number(Decimal.min(runtime.positionQuantity, new Decimal(String(order.quoteAmount)).dividedBy(String(latest.close)))), gridLevel: order.level, rationale: `Grid level ${order.level} within range` }
       : { side: 'BUY', symbol, quoteAmount: order.quoteAmount, gridLevel: order.level, rationale: `Grid level ${order.level} within range` };
   }
   if (implementationKey === 'trend-following') {
@@ -337,12 +353,24 @@ async function ensureGridLevels(
   botId: string,
   rawParameters: unknown,
   authorizedCapital: unknown,
+  currentPrice: number,
+  riskPreset?: string | null,
 ): Promise<Array<{ level: number; price: unknown; side: 'BUY' | 'SELL'; status: string }>> {
   if (typeof database.paperGridLevel?.findMany !== 'function') return [];
   const existing = await database.paperGridLevel.findMany({ where: { botId }, select: { level: true, price: true, side: true, status: true } });
   if (existing.length) return existing;
-  const parameters = rawParameters as GridParameters;
-  const orders = buildGridOrders(parameters, { price: parameters.lowerPrice, volatility: 0, availableBalance: Number(authorizedCapital), mode: 'PAPER' });
+  const raw = rawParameters && typeof rawParameters === 'object' ? rawParameters as Partial<GridParameters> : {};
+  const range = riskPreset === 'CONSERVATIVE' ? 0.08 : riskPreset === 'AGGRESSIVE' ? 0.20 : 0.12;
+  const parameters: GridParameters = {
+    symbol: typeof raw.symbol === 'string' ? raw.symbol : 'UNKNOWN',
+    lowerPrice: Number.isFinite(raw.lowerPrice) && Number(raw.lowerPrice) > 0 && Number(raw.lowerPrice) < currentPrice ? Number(raw.lowerPrice) : currentPrice * (1 - range),
+    upperPrice: Number.isFinite(raw.upperPrice) && Number(raw.upperPrice) > currentPrice * (1 - range) ? Number(raw.upperPrice) : currentPrice * (1 + range),
+    levels: Number.isInteger(raw.levels) && Number(raw.levels) >= 2 ? Number(raw.levels) : 6,
+    capital: Number.isFinite(raw.capital) && Number(raw.capital) > 0 ? Number(raw.capital) : Number(authorizedCapital),
+    maxVolatility: Number.isFinite(raw.maxVolatility) && Number(raw.maxVolatility) >= 0 ? Number(raw.maxVolatility) : 100,
+    referencePrice: currentPrice,
+  };
+  const orders = buildGridOrders(parameters, { price: currentPrice, volatility: 0, availableBalance: Number(authorizedCapital), mode: 'PAPER' });
   if (orders.length && typeof database.paperGridLevel.createMany === 'function') {
     await database.paperGridLevel.createMany({ data: orders.map((order) => ({ botId, level: order.level, price: order.price, side: order.side, status: 'OPEN' as const })) });
   }

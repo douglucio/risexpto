@@ -75,7 +75,14 @@ describe('Digital Trader Runtime V2 multi-trader Paper flow', () => {
         const events = await database.botEvent.findMany({ where: { botId: { in: botIds }, type: 'CYCLE_STARTED' } });
         expect(events).toHaveLength(4);
         const orders = await database.order.findMany({ where: { botId: { in: botIds }, tradingMode: 'PAPER' } });
-        expect(new Set(orders.map((order) => order.botId)).size).toBeGreaterThan(0);
+        expect(new Set(orders.map((order) => order.botId)).size).toBe(4);
+        for (const botId of botIds) {
+          expect(orders.filter((order) => order.botId === botId)).toHaveLength(1);
+          const proposals = await database.tradeProposal.count({ where: { botId } });
+          expect(proposals).toBeGreaterThanOrEqual(1);
+          const cycleEvents = await database.botEvent.count({ where: { botId, type: 'CYCLE_STARTED' } });
+          expect(cycleEvents).toBe(2);
+        }
         for (const botId of botIds) {
           const context = await new TraderRuntimeStateService(database).load(botId, 100);
           expect(context.traderInstanceId).toBe(botId);

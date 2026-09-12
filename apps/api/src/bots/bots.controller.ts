@@ -1,8 +1,8 @@
-import { Body, ConflictException, Controller, Get, Param, Patch, Post } from '@nestjs/common';
+import { Body, ConflictException, Controller, Get, Param, Patch, Post, Query } from '@nestjs/common';
 import { CurrentUser } from '../auth/current-user.decorator';
 import type { AuthenticatedUser } from '../auth/auth.types';
 import { BotsService } from './bots.service';
-import type { BotStatusChange, CreateBotBody, RiskProfileBody } from './bots.types';
+import type { BotStatusChange, CreateBotBody, RiskProfileBody, StopModeChange } from './bots.types';
 import { QueueService } from '../queue/queue.service';
 
 @Controller('bots')
@@ -15,6 +15,11 @@ export class BotsController {
   @Get()
   list(@CurrentUser() user: AuthenticatedUser) {
     return this.bots.list(user);
+  }
+
+  @Get(':id/activity')
+  activity(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string, @Query('limit') limit?: string, @Query('offset') offset?: string) {
+    return this.bots.activity(user, id, limit, offset);
   }
 
   @Get(':id')
@@ -45,9 +50,11 @@ export class BotsController {
   changeStatus(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') id: string,
-    @Body('status') status: BotStatusChange,
+    @Body() body: { status?: BotStatusChange; stopMode?: StopModeChange } | BotStatusChange,
   ) {
-    return this.bots.changeStatus(user, id, status);
+    return typeof body === 'string'
+      ? this.bots.changeStatus(user, id, body)
+      : this.bots.changeStatus(user, id, body.status as BotStatusChange, body.stopMode);
   }
 
   @Post(':id/cycle')

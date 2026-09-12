@@ -1,6 +1,7 @@
 import { Decimal } from 'decimal.js';
 
 export type Decision = 'APPROVED' | 'REJECTED';
+export type RiskAction = 'ALLOW' | 'SKIP' | 'PAUSE';
 export type TradingMode = 'PAPER' | 'LIVE';
 export type BotStatus = 'READY' | 'RUNNING' | 'PAUSED' | 'STOPPED' | 'ERROR' | 'RISK_BLOCKED';
 export type RiskLimits = {
@@ -35,6 +36,7 @@ export type RiskContext = {
 export type RiskSnapshot = RiskContext & { proposedValue: number };
 export type RiskDecision = {
   decision: Decision;
+  action: RiskAction;
   reasonCode: string;
   reason: string;
   riskSnapshot: RiskSnapshot;
@@ -147,6 +149,7 @@ export class RiskEngine {
     return failure
       ? {
           decision: 'REJECTED',
+          action: actionForReason(failure[0]),
           reasonCode: failure[0],
           reason: failure[1],
           riskSnapshot: snapshot,
@@ -154,10 +157,17 @@ export class RiskEngine {
         }
       : {
           decision: 'APPROVED',
+          action: 'ALLOW',
           reasonCode: 'APPROVED',
           reason: 'All risk checks passed.',
           riskSnapshot: snapshot,
           timestamp,
         };
   }
+}
+
+function actionForReason(reasonCode: string): RiskAction {
+  if (['DAILY_LOSS_LIMIT', 'DRAWDOWN_LIMIT', 'LIVE_DISABLED', 'BOT_NOT_READY'].includes(reasonCode)) return 'PAUSE';
+  if (['COOLDOWN', 'TRADE_LIMIT', 'INSUFFICIENT_BALANCE', 'EXPOSURE_LIMIT', 'POSITION_PERCENT_LIMIT', 'MAX_POSITIONS'].includes(reasonCode)) return 'SKIP';
+  return 'PAUSE';
 }

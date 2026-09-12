@@ -17,6 +17,9 @@ export type TraderRuntimeContext = {
   averageEntryPrice: Decimal;
   currentMarketPrice: Decimal;
   currentPositionValue: Decimal;
+  currentEquity: Decimal;
+  highWaterMark: Decimal;
+  currentDrawdownPercent: Decimal;
   realizedPnl: Decimal;
   unrealizedPnl: Decimal;
   todayRealizedPnl: Decimal;
@@ -60,6 +63,16 @@ export function calculateTodayUnrealizedPnl(input: {
   return current.minus(baseline);
 }
 
+export function calculateEquityDrawdown(currentEquity: Decimal.Value, highWaterMark: Decimal.Value): {
+  absolute: Decimal;
+  percent: Decimal;
+} {
+  const equity = new Decimal(currentEquity);
+  const high = Decimal.max(new Decimal(highWaterMark), equity);
+  const absolute = Decimal.max(0, high.minus(equity));
+  return { absolute, percent: high.isZero() ? new Decimal(0) : absolute.div(high).times(100) };
+}
+
 export class TraderRuntimeStateService {
   constructor(private readonly database: PrismaClient) {}
 
@@ -72,7 +85,7 @@ export class TraderRuntimeStateService {
         exchangeConnection: true,
         paperPortfolio: true,
         paperCapitalAllocation: true,
-        positions: { where: { status: 'OPEN', tradingMode: 'PAPER' } },
+        positions: { where: { status: 'OPEN', managed: true, tradingMode: 'PAPER' } },
         paperReservations: { where: { status: 'ACTIVE' } },
         paperBalances: true,
         orders: { where: { tradingMode: 'PAPER', status: { in: ['CREATED', 'SUBMITTED', 'PARTIALLY_FILLED'] } } },
@@ -100,6 +113,12 @@ export class TraderRuntimeStateService {
     const allocated = new Decimal(bot.paperCapitalAllocation?.allocated ?? bot.exchangeConnection?.allocatedCapital ?? authorized);
     const quoteBalance = bot.paperBalances.find((balance) => balance.asset === configuration.quoteCurrency);
     const available = Decimal.max(0, new Decimal(quoteBalance?.free ?? authorized).minus(reservations));
+    const currentEquity = new Decimal(quoteBalance?.free ?? authorized).plus(currentValue);
+    const highWaterMark = Decimal.max(new Decimal(bot.equityHighWaterMark ?? 0), currentEquity);
+    if (highWaterMark.greaterThan(new Decimal(bot.equityHighWaterMark ?? 0)) && typeof this.database.bot.update === 'function') {
+      await this.database.bot.update({ where: { id: bot.id }, data: { equityHighWaterMark: highWaterMark } });
+    }
+    const drawdown = Decimal.max(0, highWaterMark.minus(currentEquity));
     const unrealized = price.minus(average).times(quantity);
     const today = new Date();
     today.setUTCHours(0, 0, 0, 0);
@@ -140,7 +159,10 @@ export class TraderRuntimeStateService {
       lastTradeAt,
       lastBuyAt: lastBuy,
       lastSellAt: lastSell,
-      currentDrawdown: Decimal.max(0, realizedPnl.negated()),
+      currentEquity,
+      highWaterMark,
+      currentDrawdownPercent: highWaterMark.isZero() ? new Decimal(0) : drawdown.div(highWaterMark).times(100),
+      currentDrawdown: drawdown,
       dailyLoss: Decimal.max(0, todayRealized.negated()),
       traderStatus: bot.status,
       riskPreset: bot.riskProfile?.preset ?? null,
@@ -155,7 +177,7 @@ export class TraderRuntimeStateService {
 
   private async spentCapital(botId: string): Promise<Decimal> {
     const positions = await this.database.position.findMany({
-      where: { botId, tradingMode: 'PAPER', status: 'OPEN' },
+      where: { botId, tradingMode: 'PAPER', status: 'OPEN', managed: true },
       select: { quantity: true, averagePrice: true },
     });
     return calculateSpentCapital(positions);

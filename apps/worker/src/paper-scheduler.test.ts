@@ -52,4 +52,25 @@ describe('paper scheduler', () => {
     await expect(schedulePaperCycles(database, { add }, new Date())).resolves.toBe(0);
     expect(add).not.toHaveBeenCalled();
   });
+
+  it('schedules every catalog trader from its execution profile without strategy intervalMs', async () => {
+    const now = new Date('2026-09-08T12:00:00.000Z');
+    const updateMany = vi.fn().mockResolvedValue({ count: 1 });
+    const add = vi.fn().mockResolvedValue({ id: 'job' });
+    const database = {
+      bot: {
+        findMany: vi.fn().mockResolvedValue(['atlas', 'luna', 'dca-one', 'pulse'].map((digitalTraderSlug) => ({
+          id: `bot-${digitalTraderSlug}`,
+          digitalTraderSlug,
+          nextRunAt: null,
+          configuration: { parameters: {}, evaluationIntervalMs: 60_000 },
+        }))),
+        updateMany,
+      },
+    } as unknown as PrismaClient;
+
+    await expect(schedulePaperCycles(database, { add }, now)).resolves.toBe(4);
+    expect(add).toHaveBeenCalledTimes(4);
+    expect(updateMany).toHaveBeenCalledTimes(4);
+  });
 });

@@ -16,6 +16,8 @@ describe('digital trader domain', () => {
   it('requires both portfolio risk and the connection kill switch', () => {
     expect(evaluatePortfolioRisk({ proposedExposure: 10, allocatedCapital: 100, maximumExposure: 100, dailyLoss: 0, maximumDailyLoss: 10, killSwitchActive: true }).reasonCode).toBe('CONNECTION_KILL_SWITCH');
     expect(evaluatePortfolioRisk({ side: 'SELL', proposedExposure: 1000, allocatedCapital: 1000, maximumExposure: 1, dailyLoss: 100, maximumDailyLoss: 1, killSwitchActive: false }).approved).toBe(true);
+    expect(evaluatePortfolioRisk({ proposedExposure: 600, currentExposure: 500, allocatedCapital: 1000, maximumExposure: 1000, dailyLoss: 0, maximumDailyLoss: 100, killSwitchActive: false })).toMatchObject({ approved: false, action: 'SKIP' });
+    expect(evaluatePortfolioRisk({ proposedExposure: 1, allocatedCapital: 1, maximumExposure: 100, dailyLoss: 100, maximumDailyLoss: 100, killSwitchActive: false })).toMatchObject({ approved: false, action: 'PAUSE' });
   });
   it('consumes subscription credits before purchased credits', () => {
     const ledger = new AiCreditLedger(); ledger.credit('SUBSCRIPTION_CREDITS', 2); ledger.credit('PURCHASED_CREDITS', 3);

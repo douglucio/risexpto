@@ -3731,3 +3731,54 @@ provider e moeda-base.
   de quatro traders para restart/reprocessamento. A execução contra
   PostgreSQL local foi tentada fora do sandbox, mas o servidor `127.0.0.1:5432`
   não estava disponível.
+
+## 2026-09-12 — Digital Trader Runtime V3 — Operational Correctness
+
+As fases 01–133 permanecem preservadas. Esta rodada separa o agendamento
+operacional da configuração de estratégia, formaliza o timeframe de market
+data e corrige progressivamente as garantias de capital, risco, estado e
+reprodutibilidade Paper. LIVE continua bloqueado.
+
+| Fase | Escopo | Estado |
+|---:|---|---|
+| 134 | Multi-Strategy Scheduling | ✅ Concluída — todos os Digital Traders usam cadence persistida e jobs determinísticos; fallback legado preservado. |
+| 135 | Strategy Timeframes & Evaluation Cadence | ✅ Concluída — cadence, timeframe, profundidade e mínimo de candles persistidos e usados pelo worker. |
+| 136 | Paper Portfolio Capital Accounting Fix | ✅ CODE_IMPLEMENTED / TYPECHECKED — saldo livre não é subtraído duas vezes; claim condicional. |
+| 137 | Trader Stop & Position Ownership Lifecycle | ✅ CODE_IMPLEMENTED / TYPECHECKED — keep assets e liquidate explícitos, com holding não gerenciado. |
+| 138 | Risk Decision Severity | ✅ CODE_IMPLEMENTED / TESTED — ALLOW/SKIP/PAUSE persistem reason e não pausam skips. |
+| 139 | Real Portfolio Exposure Enforcement | ✅ CODE_IMPLEMENTED / TESTED — BUY usa current + proposed; SELL reduz risco. |
+| 140 | Equity & Real Drawdown Accounting | ✅ CODE_IMPLEMENTED / TYPECHECKED — high-water mark e drawdown Decimal persistidos. |
+| 141 | Atlas Grid Engine V3 | ✅ CODE_IMPLEMENTED / TESTED — referência de preço, ranges dinâmicos e venda parcial. Rearm avançado segue no gate E2E. |
+| 142 | Unify Strategy Runtime and Backtest | ✅ CODE_IMPLEMENTED / TYPECHECKED — backtest chama os packages compartilhados de DCA/Grid/Trend/Breakout. |
+| 143 | Backtest Metrics Correctness | ✅ CODE_IMPLEMENTED / TESTED — retornos por equity anterior e Sharpe sem mistura de séries. |
+| 144 | Deterministic Trader Scenario Tests | ✅ TESTED — cenários determinísticos individuais para os quatro traders. |
+| 145 | Multi-Trader E2E V3 | 🟨 Preparada — assertions individuais fortalecidas; execução requer PostgreSQL/Redis E2E. |
+| 146 | Trader Activity Timeline | ✅ CODE_IMPLEMENTED / TYPECHECKED — BotEvent exposto com paginação limitada por trader. UI detalhada permanece no gate manual. |
+| 147 | Notifications Runtime Hardening | ✅ CODE_IMPLEMENTED / TESTED — dedupe/throttle por tipo e reason em IN_APP. |
+| 148 | Paper Operational Readiness Gate | 🟨 BLOCKED_EXTERNAL — código, testes determinísticos e documentação atualizados; gate E2E longo requer PostgreSQL/Redis disponíveis. |
+
+### Auditoria V3 — 2026-09-12
+
+- Fases 134–144 e 146–147 foram implementadas e validadas por testes focados,
+  typecheck e build dos pacotes afetados.
+- A suíte raiz executou 45 tarefas com sucesso; os testes HTTP de autenticação
+  continuam bloqueados pelo sandbox (`listen EPERM` em `0.0.0.0`) e os testes
+  E2E de PostgreSQL/Redis permanecem opt-in/skipped sem os serviços externos.
+- A Fase 145 foi fortalecida para exigir evidência individual para Atlas, Luna,
+  DCA One e Pulse, mas não foi promovida a validação externa sem o ambiente.
+- A Fase 148 não declara readiness para Binance Spot Testnet. LIVE permanece
+  bloqueado; Binance Production e Stripe Live não foram usados.
+
+### Conclusão das Fases 134–135
+
+- `BotConfiguration` agora persiste `evaluationIntervalMs`,
+  `marketDataTimeframe`, `historyDepth` e `minimumCandles`.
+- Os perfis Atlas, Luna, DCA One e Pulse possuem defaults operacionais
+  distintos no catálogo Digital Trader.
+- O scheduler considera todos os traders Paper `RUNNING`, mantém claim
+  atômico e identidade determinística do job, e só usa `parameters.intervalMs`
+  como compatibilidade para registros antigos.
+- O worker consulta candles no timeframe e profundidade do perfil; a cadence
+  de avaliação não é usada como configuração da Strategy Engine.
+- Testes cobrindo os quatro slugs, restart/claim e compatibilidade legada
+  passaram; Binance Production e Stripe Live não foram utilizados.

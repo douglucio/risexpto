@@ -5,6 +5,7 @@ export type GridParameters = {
   levels: number;
   capital: number;
   maxVolatility: number;
+  referencePrice?: number;
 };
 export type GridContext = {
   price: number;
@@ -38,6 +39,7 @@ export function validateGridParameters(value: unknown): GridParameters {
     levels: p.levels!,
     capital: p.capital!,
     maxVolatility: p.maxVolatility!,
+    ...(Number.isFinite(p.referencePrice) && p.referencePrice! > 0 ? { referencePrice: p.referencePrice } : {}),
   };
 }
 export function buildGridOrders(parameters: GridParameters, context: GridContext): GridOrder[] {
@@ -49,9 +51,10 @@ export function buildGridOrders(parameters: GridParameters, context: GridContext
   )
     return [];
   const step = (p.upperPrice - p.lowerPrice) / (p.levels - 1);
+  const referencePrice = p.referencePrice ?? (p.lowerPrice + p.upperPrice) / 2;
   const amount = p.capital / p.levels;
   return Array.from({ length: p.levels }, (_, i) => ({
-    side: i === 0 || i % 2 === 0 ? 'BUY' : 'SELL',
+    side: p.lowerPrice + i * step < referencePrice ? 'BUY' : 'SELL',
     price: Number((p.lowerPrice + i * step).toFixed(8)),
     quoteAmount: amount,
     level: i,

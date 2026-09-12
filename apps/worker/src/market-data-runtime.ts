@@ -1,5 +1,6 @@
 import type { PrismaClient } from '@risexpto/database';
 import { BinancePublicMarketDataClient, type Candle } from '@risexpto/market-data';
+import { runtimeExecutionProfileForTrader } from '@risexpto/digital-traders';
 
 export const DEFAULT_MARKET_DATA_MAX_AGE_MS = 120_000;
 export type MarketDataSyncResult = { symbols: number; snapshots: number };
@@ -10,28 +11,39 @@ export async function syncRunningBotMarketData(
 ): Promise<MarketDataSyncResult> {
   const bots = await database.bot.findMany({
     where: { status: 'RUNNING', archivedAt: null },
-    select: { configuration: { select: { allowedSymbols: true, parameters: true } } },
+    select: {
+      digitalTraderSlug: true,
+      configuration: { select: { allowedSymbols: true, parameters: true, marketDataTimeframe: true, historyDepth: true } },
+    },
   });
-  const symbols = new Set<string>();
+  const requests = new Map<string, { symbol: string; timeframe: string; depth: number }>();
   for (const bot of bots) {
-    for (const symbol of bot.configuration?.allowedSymbols ?? []) addSymbol(symbols, symbol);
+    const profile = runtimeExecutionProfileForTrader(bot.digitalTraderSlug);
+    const timeframe = bot.configuration?.marketDataTimeframe ?? profile.marketDataTimeframe;
+    const depth = bot.configuration?.historyDepth ?? profile.historyDepth;
+    for (const symbol of bot.configuration?.allowedSymbols ?? []) {
+      const normalized = normalizeSymbol(symbol);
+      if (normalized) requests.set(`${normalized}:${timeframe}`, { symbol: normalized, timeframe, depth });
+    }
     const parameters = bot.configuration?.parameters;
     if (
       parameters &&
       typeof parameters === 'object' &&
       !Array.isArray(parameters) &&
       'symbol' in parameters
-    )
-      addSymbol(symbols, parameters.symbol);
+    ) {
+      const symbol = normalizeSymbol(parameters.symbol);
+      if (symbol) requests.set(`${symbol}:${timeframe}`, { symbol, timeframe, depth });
+    }
   }
   let snapshots = 0;
-  for (const symbol of symbols) {
-    const candle = (await client.candles(symbol, '1m', 1))[0];
+  for (const request of requests.values()) {
+    const candle = (await client.candles(request.symbol, request.timeframe as never, 1))[0];
     if (!candle) continue;
-    await persistCandle(database, symbol, candle);
+    await persistCandle(database, request.symbol, request.timeframe, candle);
     snapshots += 1;
   }
-  return { symbols: symbols.size, snapshots };
+  return { symbols: new Set([...requests.values()].map((request) => request.symbol)).size, snapshots };
 }
 
 export function assertFreshMarketData(
@@ -55,6 +67,7 @@ export function createPublicMarketDataClient(env: NodeJS.ProcessEnv = process.en
 async function persistCandle(
   database: PrismaClient,
   symbol: string,
+  interval: string,
   candle: Candle,
 ): Promise<void> {
   await database.marketSnapshot.upsert({
@@ -62,7 +75,7 @@ async function persistCandle(
       provider_symbol_interval_openTime: {
         provider: 'BINANCE',
         symbol,
-        interval: '1m',
+        interval,
         openTime: new Date(candle.openTime),
       },
     },
@@ -78,7 +91,7 @@ async function persistCandle(
     create: {
       provider: 'BINANCE',
       symbol,
-      interval: '1m',
+      interval,
       openTime: new Date(candle.openTime),
       closeTime: new Date(candle.closeTime),
       open: candle.open,
@@ -90,9 +103,9 @@ async function persistCandle(
     },
   });
 }
-function addSymbol(symbols: Set<string>, value: unknown): void {
-  if (typeof value === 'string' && /^[A-Z0-9]{5,20}$/.test(value.trim().toUpperCase()))
-    symbols.add(value.trim().toUpperCase());
+function normalizeSymbol(value: unknown): string | null {
+  if (typeof value === 'string' && /^[A-Z0-9]{5,20}$/.test(value.trim().toUpperCase())) return value.trim().toUpperCase();
+  return null;
 }
 function configuredMaxAge(): number {
   const value = Number(process.env.MARKET_DATA_MAX_AGE_MS ?? DEFAULT_MARKET_DATA_MAX_AGE_MS);
